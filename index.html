@@ -110,7 +110,7 @@ header p{margin:0;color:var(--muted);max-width:40em;font-size:15px;text-wrap:pre
 .inv-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;border-radius:16px}
 .inv-sizer{position:relative}
 .inv-stage{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--paper);filter:brightness(var(--paper-dim));border-radius:24px;overflow:hidden}
-.inv-stage .frame{position:absolute;inset:0;border:11px solid var(--orange);border-radius:24px;pointer-events:none;z-index:3}
+.inv-stage .frame{position:absolute;top:0;left:0;right:0;bottom:0;border:11px solid var(--orange);border-radius:24px;pointer-events:none;z-index:3}
 .inv-stage svg{position:absolute;left:0;top:0}
 .inv-stage .c{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;line-height:1;letter-spacing:0}
 .inv-stage .p{font-family:var(--f-form);font-weight:700;color:var(--form-ink);-webkit-text-stroke:.6px var(--form-ink)}
@@ -148,6 +148,40 @@ footer{color:var(--muted);font-size:13px}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 @media (max-width:639px){.toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}}
 @media (prefers-reduced-motion:reduce){.toast,.tips summary::after{transition:none}}
+.pv-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pvbtn{font:inherit;font-size:14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:99px;padding:0 14px;min-height:36px;cursor:pointer;white-space:nowrap}
+.pvbtn:hover{border-color:var(--accent);color:var(--accent)}
+.pvbtn:disabled{opacity:.5;cursor:progress}
+.pvbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lookup{font-size:13px;color:var(--muted);min-height:1em}
+.lookup.ok{color:var(--ok)} .lookup.bad{color:var(--warn)}
+.saved-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.btn.link{border:0;background:transparent;color:var(--accent);padding:0 4px;min-height:40px;font-size:14px;font-weight:500}
+.saved{display:flex;flex-wrap:wrap;gap:8px}
+.saved:empty::before{content:"填好買受人和統編後，按「存為常用客戶」，下次點一下就能帶入。";font-size:13px;color:var(--muted)}
+.cust{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:99px;background:var(--sunk);max-width:100%;min-width:0}
+.cust button{font:inherit;border:0;background:transparent;color:var(--fg);cursor:pointer;min-height:36px}
+.cust .pick{padding:0 4px 0 12px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;text-align:left}
+.cust .pick small{color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
+.cust .rm{padding:0 10px;color:var(--muted)}
+.cust .rm:hover{color:var(--warn)}
+.cust.on{border-color:var(--accent);background:var(--accent-soft)}
+.warn{margin:0;padding:12px 14px 12px 32px;border:1px solid var(--warn);border-radius:10px;color:var(--warn);font-size:14px;line-height:1.55;display:grid;gap:4px}
+.panel input.bad{border-color:var(--warn)}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff;padding:0}
+  header,.panel,.tips,footer,.bar,.toast,.pv-head{display:none!important}
+  .wrap,.grid{display:block;padding:0;max-width:none}
+  .preview{position:static}
+  .inv-scroll{overflow:visible}
+  .inv-stage{filter:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.print-img .wrap{display:none!important}
+  body.print-img .print-area{display:block!important}
+  .print-area img{width:100%;height:auto;display:block}
+}
+.print-area{display:none}
 /* bottom bar: phones only */
 .bar{display:none}
 
@@ -163,6 +197,8 @@ footer{color:var(--muted);font-size:13px}
   .panel{max-width:none}
 }
 @media (max-width:639px){
+  .pv-head{flex-direction:column;align-items:stretch;gap:8px}
+  .pv-actions{justify-content:flex-start}
   .wrap{padding-block:20px 120px;gap:18px}
   header p{font-size:14px}
   .panel{padding:2px 16px 16px;border-radius:12px}
@@ -178,6 +214,7 @@ footer{color:var(--muted);font-size:13px}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 </style>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
 </head>
 <body>
 <div class="wrap">
@@ -204,6 +241,11 @@ footer{color:var(--muted);font-size:13px}
         <div class="field" id="ubnField">
           <label for="ubn">統一編號 <span id="ubnChip" class="chip"></span></label>
           <input id="ubn" data-bind="ubn" inputmode="numeric" maxlength="8" placeholder="8 碼數字" enterkeyhint="next">
+          <span class="lookup" id="lookup" aria-live="polite"></span>
+        </div>
+        <div class="field" id="savedField">
+          <div class="saved-head"><span class="lbl">常用客戶</span><button type="button" class="btn link" id="saveCust">＋ 存為常用客戶</button></div>
+          <div class="saved" id="saved"></div>
         </div>
         <div class="field">
           <label for="date">開立日期</label>
@@ -240,6 +282,7 @@ footer{color:var(--muted);font-size:13px}
           <div class="total"><span>總計</span><span id="sTotal"></span></div>
           <div class="cn" id="sCn"></div>
         </div>
+        <ul class="warn" id="warn" hidden></ul>
         <div class="actions"><button type="button" class="btn" id="clear">清除資料</button></div>
       </section>
     </form>
@@ -247,7 +290,11 @@ footer{color:var(--muted);font-size:13px}
     <section class="preview" id="preview" aria-label="擬真發票">
       <div class="pv-head">
         <p class="caption" id="pvCap">擬真發票示意圖：照藍字抄寫，淺藍格子可直接填。</p>
-        <button type="button" class="zoom" id="zoomBtn" aria-pressed="false">放大檢視</button>
+        <div class="pv-actions">
+          <button type="button" class="zoom" id="zoomBtn" aria-pressed="false">放大檢視</button>
+          <button type="button" class="pvbtn" id="dlBtn">下載圖片</button>
+          <button type="button" class="pvbtn" id="printBtn">列印</button>
+        </div>
       </div>
       <div class="inv-scroll" id="invScroll"><div class="inv-sizer" id="sizer"><div class="inv-stage" id="stage"></div></div></div>
       <details class="tips" id="tipsBox" open>
@@ -261,6 +308,7 @@ footer{color:var(--muted);font-size:13px}
   <footer>稅額計算：含稅金額 ÷ 1.05 四捨五入到元為銷售額，總計減銷售額為稅額。內容依統一發票使用辦法（114 年 1 月 1 日施行版本）及加值型及非加值型營業稅法第 32 條整理，僅供參考，實際以財政部及國稅局規定為準。</footer>
 </div>
 
+<div class="print-area" aria-hidden="true"><img id="printImg" alt=""></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="bar" id="bar">
   <div class="t"><small>總計（含稅）</small><b id="barTotal">NT$ 0</b></div>
@@ -303,7 +351,8 @@ const taxType=()=>document.querySelector('input[name=tt]:checked').value;
 
 function calc(){
   const tt=taxType(), rate=tt==="A"?0.05:0;
-  const lines=S.items.map(it=>({...it,amt:Math.round((+it.q||0)*(+it.p||0))}));
+  const num=v=>{const x=parseFloat(v);return isFinite(x)&&x>0?x:0};
+  const lines=S.items.map(it=>({...it,amt:Math.round(num(it.q)*num(it.p))}));
   const raw=lines.reduce((a,l)=>a+l.amt,0);
   let sales,tax,total;
   if(S.type===2){
@@ -465,12 +514,12 @@ function buildInvoice(){
   fit();
 }
 
-let zoomed=false;
+let zoomed=false, printing=false;
 function fit(){
   const k=g(), sc=$("invScroll"), cw=sc.clientWidth, narrow=window.matchMedia("(max-width:1080px)").matches;
   const canFit=!narrow||cw>=760;           // wide enough to read and tap at fit size
   const useZoom=!canFit&&zoomed;
-  const target=useZoom?Math.max(940,cw):cw;
+  const target=printing?1040:(useZoom?Math.max(940,cw):cw);
   const s=target/k.W;
   $("stage").style.transform=`scale(${s})`;
   $("sizer").style.width=target+"px";$("sizer").style.height=(k.H*s)+"px";
@@ -573,7 +622,7 @@ function render(){
   $("sTotal").textContent="NT$ "+money(c.total);
   $("sCn").textContent=c.total>=1e9?"總計超過發票大寫欄位上限（億位），請確認金額":cnUpper(c.total);
   $("barTotal").textContent="NT$ "+money(c.total);
-  renderDyn(c); sync(); fitInvText(); save();
+  renderDyn(c); sync(); fitInvText(); save(); renderWarn(c); renderSaved(); lookupCompany();
 }
 function save(){ try{ localStorage.setItem("invhelper.v1",JSON.stringify({S,incl:incl(),tt:taxType(),date:$("date").value})); }catch(e){} }
 function load(){ try{ const d=JSON.parse(localStorage.getItem("invhelper.v1")||"null"); if(!d||!d.S) return false;
@@ -600,7 +649,7 @@ const TIPS={
 
 function setType(t){
   S.type=t;$("t3").setAttribute("aria-pressed",t===3);$("t2").setAttribute("aria-pressed",t===2);
-  $("buyerField").hidden=t===2;$("ubnField").hidden=t===2;
+  $("buyerField").hidden=t===2;$("ubnField").hidden=t===2;$("savedField").hidden=t===2;
   if(t===2) $("inclY").checked=true; else $("inclN").checked=true;
   S.items=S.items.slice(0,G[t].rows.length-1);
   $("tipsTitle").textContent=t===3?"三聯式開立重點":"二聯式開立重點";
@@ -608,7 +657,7 @@ function setType(t){
   $("tips").innerHTML=TIPS[t].map(x=>`<li>${x}</li>`).join("");
   rebuild();
 }
-document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.bind; if(k){ setB(k,e.target.value); render(); } });
+document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.bind; if(k){ if(k==="buyer") autoName=""; setB(k,e.target.value); render(); } });
 $("t3").onclick=()=>setType(3);$("t2").onclick=()=>setType(2);
 $("addItem").onclick=()=>{if(S.items.length<maxItems()){S.items.push({n:"",q:"1",p:""});rebuild();const el=$("n"+(S.items.length-1));if(el)el.focus({preventScroll:false});save()}};
 $("clear").onclick=()=>{S.buyer="";S.ubn="";S.items=[{n:"",q:"1",p:""}];rebuild();toast("已清除資料")};
@@ -620,6 +669,113 @@ $("zoomBtn").onclick=()=>{zoomed=!zoomed;fit();};
 $("invScroll").addEventListener("click",e=>{ if($("invScroll").classList.contains("fit")){ zoomed=true; fit(); } });
 $("clear2").onclick=()=>$("clear").click();
 $("toInv").onclick=()=>$("preview").scrollIntoView({block:"start"});
+/* ---------- validation hints ---------- */
+function renderWarn(c){
+  const w=[], bad=v=>v!==""&&v!=null&&!(isFinite(parseFloat(v))&&parseFloat(v)>=0);
+  S.items.forEach((it,i)=>{
+    const qb=bad(it.q), pb=bad(it.p);
+    const qi=$("q"+i), pi=$("p"+i); if(qi) qi.classList.toggle("bad",qb); if(pi) pi.classList.toggle("bad",pb);
+    if(qb||pb) w.push(`第 ${i+1} 項的${qb?"數量":"單價"}要填 0 以上的數字。`);
+    if(!String(it.n||"").trim() && parseFloat(it.p)>0) w.push(`第 ${i+1} 項還沒填品名。`);
+  });
+  c.lines.forEach((l,i)=>{ if(l.unit && Math.abs(l.unit-Math.round(l.unit))>1e-9) w.push(`第 ${i+1} 項換算後的單價是 ${trim(l.unit)}，發票上可寫到小數兩位，金額欄以四捨五入後的整數為準。`); });
+  if(S.type===3 && c.total>0){
+    if(!S.buyer.trim()) w.push("三聯式的買受人（公司全名）必填。");
+    if(!S.ubn) w.push("三聯式的統一編號必填。");
+    else if(!ubnValid(S.ubn)) w.push("統一編號檢查碼不符，請再核對一次。");
+  }
+  const el=$("warn"); el.innerHTML=w.map(x=>`<li>${esc(x)}</li>`).join(""); el.hidden=!w.length;
+}
+
+/* ---------- saved customers (kept in this browser only) ---------- */
+const CK="invhelper.customers";
+const getCust=()=>{ try{ const a=JSON.parse(localStorage.getItem(CK)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
+const setCust=a=>{ try{ localStorage.setItem(CK,JSON.stringify(a.slice(0,20))); }catch(e){} };
+function renderSaved(){
+  const list=getCust(), box=$("saved"), cur=S.ubn;
+  box.innerHTML=list.map((c,i)=>`<span class="cust${c.ubn===cur&&c.name===S.buyer?" on":""}"><button type="button" class="pick" data-i="${i}">${esc(c.name)}<small>${esc(c.ubn)}</small></button><button type="button" class="rm" data-rm="${i}" aria-label="移除 ${esc(c.name)}">✕</button></span>`).join("");
+  const can=S.buyer.trim()&&ubnValid(S.ubn)&&!list.some(c=>c.ubn===S.ubn&&c.name===S.buyer.trim());
+  $("saveCust").disabled=!can;
+}
+$("saved").addEventListener("click",e=>{
+  const pk=e.target.closest(".pick"), rm=e.target.closest(".rm"), list=getCust();
+  if(pk){ const c=list[+pk.dataset.i]; S.buyer=c.name; S.ubn=c.ubn; autoName=""; lastLookup=c.ubn; render(); toast(`已帶入 ${c.name}`); }
+  if(rm){ const c=list.splice(+rm.dataset.rm,1)[0]; setCust(list); renderSaved(); toast(`已移除 ${c.name}`); }
+});
+$("saveCust").onclick=()=>{ const list=getCust().filter(c=>c.ubn!==S.ubn); list.unshift({name:S.buyer.trim(),ubn:S.ubn}); setCust(list); renderSaved(); toast("已存為常用客戶"); };
+
+/* ---------- 統編 → 公司名稱 (via /api/company on the hosted site) ---------- */
+let lastLookup="", autoName="";
+function lookupCompany(){
+  const ubn=S.ubn, el=$("lookup");
+  if(S.type!==3||!ubnValid(ubn)){ if(ubn!==lastLookup){ el.textContent=""; el.className="lookup"; } return; }
+  if(ubn===lastLookup||!/^https?:$/.test(location.protocol)) return;
+  lastLookup=ubn; el.textContent="查詢公司名稱中…"; el.className="lookup";
+  fetch("/api/company?ubn="+ubn).then(r=>r.json()).then(d=>{
+    if(S.ubn!==ubn) return;
+    if(d&&d.name){
+      const note=d.status&&!/核准設立|營業中/.test(d.status)?`（登記狀態：${d.status}，請再確認）`:"";
+      if(!S.buyer.trim()||S.buyer===autoName){ S.buyer=d.name; autoName=d.name; render(); }
+      el.textContent=`登記名稱：${d.name}${note}`; el.className="lookup "+(note?"bad":"ok");
+    }else{ el.textContent=d&&d.error?d.error:"查不到登記資料，請手動填寫公司全名。"; el.className="lookup"; }
+  }).catch(()=>{ if(S.ubn===ubn){ el.textContent="目前無法自動查詢，請手動填寫公司全名。"; el.className="lookup"; } });
+}
+
+/* ---------- download image & print ---------- */
+async function sheetCanvas(scale){
+  const st=$("stage"), wrap=document.createElement("div");
+  wrap.style.cssText="position:fixed;left:-20000px;top:0;";
+  const clone=st.cloneNode(true);
+  clone.style.transform="none"; clone.style.filter="none";
+  const src=st.querySelectorAll("input"), dst=clone.querySelectorAll("input");
+  src.forEach((el,i)=>{            // html2canvas mis-places text inside <input>; draw each one as a plain text box instead
+    const d=dst[i];
+    if(el.classList.contains("ghost")){ d.remove(); return; }
+    const box=document.createElement("div"), cs=getComputedStyle(el);
+    box.className="c f"; box.textContent=el.value;
+    box.style.cssText=`left:${el.style.left};top:${el.style.top};width:${el.style.width};height:${el.style.height};font-size:${el.style.fontSize};`+
+      `justify-content:${cs.textAlign==="right"?"flex-end":cs.textAlign==="center"?"center":"flex-start"};padding:0 ${cs.paddingRight} 0 ${cs.paddingLeft};box-sizing:border-box;overflow:hidden`;
+    d.replaceWith(box);
+  });
+  wrap.appendChild(clone); document.body.appendChild(wrap);
+  try{
+    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
+    return await html2canvas(clone,{backgroundColor:"#ffffff",scale,logging:false});
+  }finally{ wrap.remove(); }
+}
+async function exportPNG(){
+  const btn=$("dlBtn"); if(!window.html2canvas){ toast("圖片功能載入中，請稍後再試"); return; }
+  btn.disabled=true; btn.textContent="產生中…";
+  try{
+    const canvas=await sheetCanvas(.6);
+    const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
+    const d=new Date(), name=`發票範例-${S.type===3?"三聯式":"二聯式"}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.png`;
+    const file=new File([blob],name,{type:"image/png"});
+    let shared=false;
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&matchMedia("(pointer:coarse)").matches){
+      try{ await navigator.share({files:[file],title:"發票範例"}); shared=true; }catch(e){ shared=e&&e.name==="AbortError"; }
+    }
+    if(!shared){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast("已下載發票圖片"); }
+  }catch(e){ toast("圖片產生失敗，請再試一次"); }
+  finally{ btn.disabled=false; btn.textContent="下載圖片"; }
+}
+async function printSheet(){
+  const btn=$("printBtn");
+  if(!window.html2canvas){ window.print(); return; }
+  btn.disabled=true; btn.textContent="準備中…";
+  try{
+    const canvas=await sheetCanvas(1), img=$("printImg");
+    await new Promise(r=>{ img.onload=r; img.src=canvas.toDataURL("image/png"); });
+    document.body.classList.add("print-img");
+    window.print();
+  }catch(e){ window.print(); }
+  finally{ btn.disabled=false; btn.textContent="列印"; }
+}
+$("dlBtn").onclick=exportPNG;
+$("printBtn").onclick=printSheet;
+window.addEventListener("beforeprint",()=>{ printing=true; fit(); });
+window.addEventListener("afterprint",()=>{ printing=false; fit(); document.body.classList.remove("print-img"); });
+
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),1800); }
 {
   const n=new Date(), today=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
