@@ -1,10 +1,10 @@
 /* Site header shared by every tool. Uses the page's own tokens. */
 .site-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:14px 0;max-width:1480px;margin:0 auto}
-.site-brand{display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:var(--fg);font-weight:700;letter-spacing:.06em;font-size:15px;white-space:nowrap}
+.site-brand{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding-right:4px;text-decoration:none;color:var(--fg);font-weight:700;letter-spacing:.06em;font-size:15px;white-space:nowrap}
 .site-brand img{width:28px;height:28px;border-radius:7px;display:block}
 .site-nav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-width:0;flex:1}
 .site-nav::-webkit-scrollbar{display:none}
-.site-nav a{flex:none;text-decoration:none;color:var(--muted);font-size:14px;padding:0 12px;min-height:34px;display:inline-flex;align-items:center;border-radius:99px;border:1px solid transparent;white-space:nowrap}
+.site-nav a{flex:none;text-decoration:none;color:var(--muted);font-size:14px;padding:0 14px;min-height:40px;display:inline-flex;align-items:center;border-radius:99px;border:1px solid transparent;white-space:nowrap}
 .site-nav a:hover{color:var(--fg);border-color:var(--line)}
 .site-nav a[aria-current="page"]{color:var(--accent);background:var(--accent-soft);font-weight:700}
 .site-nav a:focus-visible,.site-brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
