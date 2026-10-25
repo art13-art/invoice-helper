@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>租金扣繳計算機｜公司付房租要扣多少稅和補充保費</title>
+<meta name="description" content="公司付房租給個人房東，要先扣 10% 所得稅和 2.11% 二代健保補充保費。輸入租金，馬上算出房東實拿、公司要繳的金額和繳納期限，也能從房東要的實拿金額反推租金。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F3F5F8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<style>
+/* Layout: form on the left, a single "money split" result card + a dated to-do timeline on the right; phones get a sticky net-pay bar. */
+.result{display:grid;gap:18px}
+.r-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.r-top .lbl{display:block}
+.big{font-size:clamp(34px,5vw,46px);font-weight:700;line-height:1.1;color:var(--accent);letter-spacing:0;font-variant-numeric:tabular-nums}
+.big small{font-size:15px;color:var(--muted);font-weight:500;margin-left:6px}
+.gross{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;line-height:1.5}
+.gross b{display:block;color:var(--fg);font-size:20px}
+.bar{display:flex;height:40px;border-radius:10px;overflow:hidden;background:var(--sunk);border:1px solid var(--line)}
+.bar span{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;transition:flex-basis .35s ease;min-width:0}
+.bar .s1{background:var(--c1);color:var(--on-accent)}
+.bar .s2{background:var(--c2);color:#2A1408}
+.bar .s3{background:var(--c3);color:#fff}
+.legend{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.legend li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
+.legend li:first-child{border-top:0}
+.legend i{width:12px;height:12px;border-radius:3px;display:block;transform:translateY(1px)}
+.legend .t{min-width:0}
+.legend .t small{display:block;color:var(--muted);font-size:13px;line-height:1.45}
+.legend .v{font-weight:700;font-variant-numeric:tabular-nums;font-size:18px}
+.legend .zero .v{color:var(--muted);font-weight:500}
+.note{margin:0;padding:12px 14px;border-radius:10px;background:var(--accent-soft);color:var(--fg);font-size:14px;line-height:1.6}
+.note.warm{background:var(--warm-soft)}
+.year{display:flex;gap:8px 18px;flex-wrap:wrap;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.year b{color:var(--fg)}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.empty{display:grid;gap:10px}
+.empty h3{margin:0;font-size:20px;font-family:var(--f-head);letter-spacing:.04em}
+.empty p{margin:0;color:var(--muted)}
+.card h2{margin:0 0 14px;font-family:var(--f-head);font-size:19px;letter-spacing:.06em}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.steps li{display:grid;grid-template-columns:76px minmax(0,1fr);gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.steps li:first-child{border-top:0;padding-top:0}
+.steps .d{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);line-height:1.35}
+.steps .d small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.steps .w b{display:block}
+.steps .w span{color:var(--muted);font-size:14px}
+.side{display:grid;gap:18px;min-width:0}
+.faq details{border-top:1px solid var(--line);padding:2px 0}
+.faq details:first-of-type{border-top:0}
+.faq summary{cursor:pointer;list-style:none;padding:12px 0;font-weight:500;display:flex;gap:8px;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"＋";margin-left:auto;color:var(--muted)}
+.faq details[open] summary::after{content:"－"}
+.faq p{margin:0 0 12px;color:var(--muted);font-size:15px;max-width:60ch}
+.bar-m{display:none}
+@media (min-width:1081px){.side{position:sticky;top:16px}}
+@media (max-width:639px){
+  .wrap{padding-bottom:110px}
+  .bar-m{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;align-items:center;gap:10px;background:var(--surface);border-top:1px solid var(--line);
+    box-shadow:0 -6px 18px rgba(0,0,0,.06);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .bar-m .t{flex:1;min-width:0;display:grid;line-height:1.25}
+  .bar-m small{font-size:12px;color:var(--muted)}
+  .bar-m b{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:0}
+  .steps li{grid-template-columns:64px minmax(0,1fr)}
+  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+}
+@media print{.site-head,.panel,.bar-m,.actions,.faq{display:none!important}.grid{display:block}}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具">
+    <a href="/">手開發票</a>
+    <a href="/rent-withholding/" aria-current="page">租金扣繳</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>租金扣繳計算機</h1>
+    <p>公司付房租給個人房東，要先代扣所得稅和二代健保補充保費。輸入租金，馬上知道房東實拿多少、公司要繳多少、什麼時候繳。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>誰付給誰</h2>
+        <div class="field">
+          <span class="lbl">付租金的是</span>
+          <div class="seg" role="group" aria-label="付租金的是">
+            <button type="button" data-k="payer" data-v="org" aria-pressed="true"><b>公司・行號・機關</b><small>要代扣</small></button>
+            <button type="button" data-k="payer" data-v="person" aria-pressed="false"><b>個人</b><small>例如自己租屋</small></button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">房東是</span>
+          <div class="seg" role="group" aria-label="房東是">
+            <button type="button" data-k="landlord" data-v="person" aria-pressed="true"><b>個人</b><small>自然人</small></button>
+            <button type="button" data-k="landlord" data-v="company" aria-pressed="false"><b>公司行號</b><small>會開發票</small></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <h2><b>2</b>租金</h2>
+        <div class="seg" role="group" aria-label="計算方式">
+          <button type="button" data-k="mode" data-v="gross" aria-pressed="true"><b>我知道租金</b><small>算要扣多少</small></button>
+          <button type="button" data-k="mode" data-v="net" aria-pressed="false"><b>房東要實拿</b><small>反推租金</small></button>
+        </div>
+        <div class="field">
+          <label for="amt" id="amtLbl">每月租金（合約上的金額）</label>
+          <div class="money"><input id="amt" inputmode="numeric" placeholder="例如 30000" enterkeyhint="done"></div>
+        </div>
+        <div class="field">
+          <span class="lbl">多久付一次</span>
+          <div class="chips" role="radiogroup" aria-label="多久付一次">
+            <label><input type="radio" name="cyc" value="1" checked>每月</label>
+            <label><input type="radio" name="cyc" value="3">每季</label>
+            <label><input type="radio" name="cyc" value="6">每半年</label>
+            <label><input type="radio" name="cyc" value="12">每年</label>
+          </div>
+          <p class="hint">要不要扣是看「每次付多少」，一次付好幾個月，單次金額比較容易超過門檻。</p>
+        </div>
+        <div class="field">
+          <label for="day">這次付款日</label>
+          <input id="day" type="date">
+        </div>
+        <details class="more" id="adv">
+          <summary>房東身分（不確定就不用改）</summary>
+          <div class="inner">
+            <div class="chips" role="radiogroup" aria-label="房東身分">
+              <label><input type="radio" name="res" value="1" checked>住在台灣</label>
+              <label><input type="radio" name="res" value="0">非居住者</label>
+            </div>
+            <p class="hint">非居住者：當年在台灣住不到 183 天的外籍人士，或戶籍在國內但長住國外的人。扣繳率是 20%，不論金額大小都要扣。</p>
+            <label class="check"><input type="checkbox" id="nhi" checked><span>要扣二代健保補充保費<br><span class="hint">房東是台灣健保的保險對象就要扣。低收入戶、中低收入戶等特定身分免扣，請以健保署規定為準。</span></span></label>
+          </div>
+        </details>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="todo" aria-label="接下來要做的事"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>月租不到 2 萬，為什麼還要扣？</summary><p>門檻看的是「每次付款」的金額。例如月租 1.8 萬、一次付一季 5.4 萬，這筆付款就超過門檻，要扣 10% 所得稅和 2.11% 補充保費。改成每月付就不用扣。</p></details>
+        <details><summary>房東說不要扣，可以嗎？</summary><p>不行。公司、行號、機關付租金給個人房東，依法就是扣繳義務人，沒扣或沒申報會被補稅並處罰。如果房東在意實拿金額，可以用「房東要實拿」反推合約租金，把扣掉的部分先加進去。</p></details>
+        <details><summary>房東被扣的錢拿得回來嗎？</summary><p>扣繳的所得稅是預繳，房東隔年 5 月報綜所稅時會抵減應納稅額，多繳的會退。補充保費則不會退。</p></details>
+        <details><summary>房東是公司，或我是個人租屋呢？</summary><p>房東是公司行號，由對方開統一發票，公司不用代扣。個人租屋自住，付房租時也不用扣，報稅時可以看看能不能用房屋租金支出特別扣除額。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">依所得稅法第 88、92 條、各類所得扣繳率標準（租賃所得居住者 10%、每次應扣繳稅額不超過 2,000 元免扣繳；非居住者 20%）及全民健康保險法補充保險費規定（費率 2.11%、單次給付達 2 萬元起扣、上限 1,000 萬元）計算。僅供參考，實際以國稅局及健保署規定為準。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small id="barLbl">房東實拿</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const S={payer:"org",landlord:"person",mode:"gross"};
+const TAX_RES=.10, TAX_NONRES=.20, TAX_FREE=2000, NHI=.0211, NHI_MIN=20000, NHI_CAP=1e7;
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const cyc=()=>+document.querySelector('input[name=cyc]:checked').value;
+const resident=()=>document.querySelector('input[name=res]:checked').value==="1";
+const amt=()=>{ const v=parseInt(String($("amt").value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
+const CYC_NAME={1:"每月",3:"每季",6:"每半年",12:"每年"};
+
+/* one payment */
+function split(P){
+  const res=resident(), nhiOn=$("nhi").checked;
+  let tax=Math.floor(P*(res?TAX_RES:TAX_NONRES));
+  if(res && tax<=TAX_FREE) tax=0;
+  const nhi=nhiOn&&P>=NHI_MIN?Math.round(Math.min(P,NHI_CAP)*NHI):0;
+  return {P,tax,nhi,net:P-tax-nhi};
+}
+/* smallest payment whose net reaches the target (net is not monotonic around the thresholds, so check candidates) */
+function solve(T){
+  if(split(T).net>=T) return split(T);
+  const rate=resident()?TAX_RES:TAX_NONRES, rates=[rate,rate+NHI,NHI];
+  const cands=[];
+  rates.forEach(r=>{ const e=Math.ceil(T/(1-r)); for(let p=Math.max(T,e-40);p<=e+40;p++){ const s=split(p); if(s.net>=T) cands.push(s); } });
+  const capE=Math.ceil((T+Math.round(NHI_CAP*NHI))/(1-rate)); for(let p=capE-40;p<=capE+40;p++){ const s=split(p); if(s.net>=T) cands.push(s); }
+  if(!cands.length) return split(T);
+  // among payments that land within 3 元 of the target, prefer the roundest number (30,000 over 29,999)
+  const tz=n=>{let z=0;while(n>0&&n%10===0){z++;n/=10;}return z;};
+  const min=Math.min(...cands.map(c=>c.net-T));
+  const near=cands.filter(c=>c.net-T<=min+3);
+  near.sort((a,b)=>tz(b.P)-tz(a.P)||a.P-b.P);
+  return near[0];
+}
+
+const fmtD=d=>`${d.getMonth()+1}/${d.getDate()}`;
+const fmtY=d=>`${d.getFullYear()-1911} 年`;
+function payDay(){ const v=$("day").value; return v?new Date(v+"T00:00"):new Date(); }
+
+function render(){
+  const k=cyc(), a=amt(), active=S.payer==="org"&&S.landlord==="person";
+  $("amtLbl").textContent=S.mode==="gross"?(k===1?"每月租金（合約上的金額）":"每月租金（合約上的金額）"):"房東每月要實拿";
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.k]===b.dataset.v));
+  const R=$("result"), T=$("todo");
+
+  if(!active){
+    const isPerson=S.payer==="person";
+    R.innerHTML=`<div class="empty"><span class="lbl">結果</span><h3>${isPerson?"個人付房租不用代扣":"房東是公司，不用代扣"}</h3>
+      <p>${isPerson?"只有公司、行號、機關團體付租金時才要代扣所得稅和補充保費。個人租屋自住，照合約金額付給房東就好。":"房東是公司行號時，由對方開立統一發票給你，你照發票金額付款，不用代扣所得稅和補充保費。"}</p>
+      ${isPerson?`<p class="note">報稅時可以看看能不能用「房屋租金支出特別扣除額」，記得留好租約和付款紀錄。</p>`:`<p class="note">記得跟房東索取發票，公司才能拿來報帳和扣抵進項稅額。</p>`}</div>`;
+    T.hidden=true; $("barLbl").textContent="不用代扣"; $("barVal").textContent="NT$ 0";
+    save(); return;
+  }
+  T.hidden=false;
+
+  const target=a*k;
+  const s=S.mode==="gross"?split(target):solve(target);
+  const P=s.P, perMonth=P/k;
+  const pct=x=>P?Math.max(0,x/P*100):0;
+  const over=S.mode==="net"&&a?s.net-target:0;
+  const nhiOn=$("nhi").checked, res=resident();
+
+  let why="";
+  if(!a) why=`<p class="note">輸入租金，就會算出房東實拿和公司要繳的金額。</p>`;
+  else if(s.tax===0&&s.nhi===0) why=`<p class="note">這次付款 ${money(P)} 元，沒有超過門檻，不用代扣，全額付給房東。${k===1&&perMonth>=15000?" 如果改成一次付好幾個月，單次金額超過門檻就要扣。":""}</p>`;
+  else if(s.tax===0&&s.nhi>0) why=`<p class="note">這次付款剛好達 2 萬元，要扣補充保費；但所得稅扣繳額沒超過 2,000 元，所以不用扣所得稅。</p>`;
+  else if(k>1&&perMonth<=20000&&res) why=`<p class="note warm">月租沒超過 2 萬，但${CYC_NAME[k]}付一次、單次 ${money(P)} 元超過門檻，所以要扣。改成每月付就不用扣。</p>`;
+
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">${S.mode==="gross"?"房東實拿":"合約租金應該寫"}</span>
+        <div class="big" id="bigNum">${S.mode==="gross"?money(s.net):money(k===1?P:Math.ceil(perMonth))}<small>元${S.mode==="gross"?(k===1?"／月":"／每次"):"／月"}</small></div></div>
+      <div class="gross">${S.mode==="gross"?"每次付款":"每次付款"}<b>NT$ ${money(P)}</b>${CYC_NAME[k]}${k>1?`（${k} 個月）`:""}</div>
+    </div>
+    ${a?`<div class="bar" aria-hidden="true">
+      <span class="s1" style="flex-basis:${pct(s.net)}%">${pct(s.net)>14?"房東實拿":""}</span>
+      <span class="s2" style="flex-basis:${pct(s.tax)}%">${pct(s.tax)>7?"稅":""}</span>
+      <span class="s3" style="flex-basis:${pct(s.nhi)}%"></span>
+    </div>`:""}
+    <ul class="legend">
+      <li><i style="background:var(--c1)"></i><span class="t">匯給房東<small>${S.mode==="net"&&a?(over>0?`比目標多 ${money(over)} 元，因為稅額尾數捨去`:"剛好等於房東要的金額"):"每次付款扣掉下面兩項"}</small></span><span class="v">${money(s.net)}</span></li>
+      <li class="${s.tax?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">代扣所得稅 ${res?"10%":"20%"}<small>${s.tax?"公司代繳給國稅局":res?"扣繳額沒超過 2,000 元，免扣":"—"}</small></span><span class="v">${money(s.tax)}</span></li>
+      <li class="${s.nhi?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">代扣補充保費 2.11%<small>${s.nhi?"公司代繳給健保署":nhiOn?"單次未達 2 萬元，免扣":"已設定免扣"}</small></span><span class="v">${money(s.nhi)}</span></li>
+    </ul>
+    ${why}
+    ${a?`<div class="year">一年付 ${12/k} 次：<span>租金 <b>${money(P*12/k)}</b></span><span>房東實拿 <b>${money(s.net*12/k)}</b></span><span>代扣合計 <b>${money((s.tax+s.nhi)*12/k)}</b></span></div>
+    <div class="actions"><button type="button" class="btn" id="copy">複製說明給房東</button></div>`:""}`;
+  if(a) $("copy").onclick=()=>copyText(msgFor(s,k));
+
+  // timeline
+  const d=payDay(), y=d.getFullYear(), m=d.getMonth();
+  const next10=new Date(y,m+1,10), nextEnd=new Date(y,m+2,0), plus10=new Date(y,m,d.getDate()+10);
+  const jan31=new Date(y+1,0,31), feb10=new Date(y+1,1,10);
+  const steps=[[d,"付款給房東",`匯 ${money(s.net)} 元，並保留付款紀錄。`]];
+  if(s.tax) steps.push(res?[next10,"繳納扣繳稅款",`把代扣的 ${money(s.tax)} 元用扣繳稅款繳款書繳到國庫（銀行、郵局或線上）。`]
+                         :[plus10,"繳稅並申報（非居住者）",`付款後 10 天內繳納 ${money(s.tax)} 元，並開具扣繳憑單向國稅局申報。`]);
+  if(s.nhi) steps.push([nextEnd,"繳納補充保費",`把代扣的 ${money(s.nhi)} 元繳給健保署，用健保署的補充保費繳款單或線上繳納。`]);
+  if(s.tax&&res) steps.push([jan31,"申報扣繳憑單",`明年 1 月底前向國稅局申報這一年的租賃所得扣繳憑單（所得類別 51）。`]);
+  if(!s.tax&&res&&a) steps.push([jan31,"申報免扣繳憑單",`沒扣稅也要在明年 1 月底前申報免扣繳憑單，讓國稅局知道這筆租金。`]);
+  if(s.nhi) steps.push([jan31,"申報補充保費明細",`明年 1 月底前向健保署申報扣費明細；每次繳費時已一併申報就不用再報。`]);
+  if(res&&a) steps.push([feb10,"把憑單交給房東",`明年 2 月 10 日前把扣繳憑單（或免扣繳憑單）寄給房東，房東報稅要用。`]);
+  T.innerHTML=`<h2>接下來要做的事</h2><ol class="steps">${steps.map(([dt,t,w])=>`<li><span class="d">${fmtD(dt)}<small>${dt.getFullYear()!==y?fmtY(dt):"前"}</small></span><span class="w"><b>${t}</b><span>${w}</span></span></li>`).join("")}</ol>
+    <p class="hint" style="margin-top:12px">期限遇假日順延到下一個上班日。</p>`;
+  T.querySelectorAll(".steps li:first-child .d small").forEach(e=>e.textContent="付款日");
+
+  $("barLbl").textContent=S.mode==="gross"?"房東實拿":"每次付款應付";
+  $("barVal").textContent="NT$ "+money(S.mode==="gross"?s.net:P);
+  save();
+}
+
+function msgFor(s,k){
+  const d=payDay();
+  return `房東您好：\n本次租金（${CYC_NAME[k]}${k>1?`，共 ${k} 個月`:""}）${money(s.P)} 元，`+
+    (s.tax||s.nhi?`依法代扣${s.tax?`所得稅 ${money(s.tax)} 元`:""}${s.tax&&s.nhi?"、":""}${s.nhi?`二代健保補充保費 ${money(s.nhi)} 元`:""}，實際匯款 ${money(s.net)} 元。\n`:`未達代扣門檻，全額匯款 ${money(s.net)} 元。\n`)+
+    `${resident()?`${s.tax?"扣繳憑單":"免扣繳憑單"}會在 ${d.getFullYear()-1910} 年 2 月 10 日前寄給您，報稅時可${s.tax?"抵減稅額":"使用"}。`:""}謝謝！`;
+}
+function copyText(t){
+  const done=()=>toast("已複製，可以直接貼給房東");
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,()=>fallback(t,done)); else fallback(t,done);
+}
+function fallback(t,done){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); done();}catch(e){ toast("無法自動複製，請手動選取"); } ta.remove(); }
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),1800); }
+
+/* remember the last inputs in this browser */
+const KEY="taxtools.rent.v1";
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,cyc:cyc(),res:resident(),nhi:$("nhi").checked})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+  Object.assign(S,d.S||{}); $("amt").value=d.amt??"";
+  const c=document.querySelector(`input[name=cyc][value="${d.cyc}"]`); if(c) c.checked=true;
+  document.querySelector(`input[name=res][value="${d.res?1:0}"]`).checked=true; $("nhi").checked=d.nhi!==false;
+  if(!d.res||d.nhi===false) $("adv").open=true;
+}catch(e){} }
+
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
+$("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n){ e.target.value=n; } render(); });
+document.querySelectorAll('input[name=cyc],input[name=res],#nhi,#day').forEach(e=>e.addEventListener("change",render));
+document.querySelectorAll('input[name=res]').forEach(e=>e.addEventListener("change",()=>{ $("nhi").checked=resident(); render(); }));
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+{ const n=new Date(); $("day").value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; }
+load(); if(!$("amt").value) $("amt").value="30,000";
+render();
+</script>
+</body>
+</html>
