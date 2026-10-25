@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>報稅行事曆｜營業稅、扣繳、綜所稅、房屋稅期限一次看</title>
+<meta name="description" content="依你的身分列出接下來每個報稅和繳費期限：營業稅、扣繳、補充保費、勞健保、綜所稅、營所稅、房屋稅、地價稅、牌照稅。遇假日自動順延，可以訂閱到手機行事曆，期限前提醒你。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F3F5F8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Layout: filters + subscribe on the left, a "next deadline" hero and a month-by-month timeline on the right. */
+.next{display:grid;gap:8px}
+.next .when{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.next .days{font-size:clamp(40px,6vw,56px);font-weight:700;line-height:1;color:var(--accent);font-variant-numeric:tabular-nums}
+.next .days small{font-size:16px;color:var(--muted);font-weight:500;margin-left:4px}
+.next h2{margin:0;font-family:var(--f-head);font-size:clamp(20px,2.6vw,26px);letter-spacing:.04em}
+.next p{margin:0;color:var(--muted)}
+.month{display:grid;gap:0}
+.month h3{margin:0 0 6px;font-size:14px;color:var(--muted);letter-spacing:.12em;font-weight:700}
+.ev{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.ev:first-of-type{border-top:0}
+.ev .d{display:grid;align-content:start;text-align:center;border-radius:10px;background:var(--sunk);padding:6px 0;font-variant-numeric:tabular-nums}
+.ev .d b{font-size:24px;line-height:1.1}
+.ev .d span{font-size:12px;color:var(--muted)}
+.ev.soon .d{background:var(--accent);color:var(--on-accent)}
+.ev.soon .d span{color:var(--on-accent)}
+.ev.past{opacity:.45}
+.ev .t b{display:block;font-size:16px}
+.ev .t p{margin:2px 0 0;color:var(--muted);font-size:14px;line-height:1.6}
+.ev .meta{display:flex;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:13px}
+.tag{display:inline-flex;align-items:center;padding:0 8px;border-radius:99px;background:var(--sunk);color:var(--muted);line-height:22px}
+.tag.shift{background:var(--warm-soft);color:var(--fg)}
+.ev .meta{align-items:center}
+.ev .meta a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:99px;color:var(--accent);font-weight:500;text-decoration:none}
+.ev .meta a:hover{border-color:var(--accent)}
+.ev.monthly .t b{font-weight:500}
+.timeline{display:grid;gap:22px}
+.sub-actions{display:grid;gap:8px}
+.sub-actions .btn,.sub-actions a.btn{width:100%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
+.count{font-size:13px;color:var(--muted)}
+@media (max-width:639px){ .ev{grid-template-columns:54px minmax(0,1fr);gap:12px} .ev .d b{font-size:20px} }
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>報稅行事曆</h1>
+    <p>選你的身分，列出接下來每一個報稅和繳費期限。遇到週末或國定假日已經自動順延；訂閱到手機行事曆，期限前會提醒你。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>我是（可以多選）</h2>
+        <div class="chips" id="roles" role="group" aria-label="身分">
+          <label><input type="checkbox" value="company" checked>公司・行號</label>
+          <label><input type="checkbox" value="person" checked>上班族・接案</label>
+          <label><input type="checkbox" value="landlord">房東・屋主</label>
+          <label><input type="checkbox" value="car">有車</label>
+        </div>
+        <label class="check" id="monthlyRow"><input type="checkbox" id="monthly" checked><span>顯示每月例行繳費<br><span class="hint">扣繳稅款、補充保費、勞健保，每個月都有。</span></span></label>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>放進手機行事曆</h2>
+        <div class="sub-actions">
+          <a class="btn primary" id="subApple" href="#">訂閱到 iPhone 行事曆</a>
+          <a class="btn" id="subGoogle" href="#" target="_blank" rel="noopener">加到 Google 日曆</a>
+          <button type="button" class="btn" id="dl">下載行事曆檔（.ics）</button>
+          <button type="button" class="btn" id="cpUrl">複製訂閱網址</button>
+        </div>
+        <p class="hint">訂閱會自動更新：期限有變動或新年度公布時，手機上的行事曆會跟著更新，每個期限前 7 天提醒（每月例行的前 2 天）。下載檔案則是一次性的。</p>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card next" id="next" aria-live="polite"></section>
+      <section class="card">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <h2 style="margin:0">接下來的期限</h2><span class="count" id="count"></span>
+        </div>
+        <div class="timeline" id="list"></div>
+      </section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>期限遇到假日怎麼算？</summary><p>期限的最後一天碰到週末或國定假日，順延到下一個上班日。這裡已經依行政院人事行政總處公布的辦公日曆算好，標示「順延」的就是原本落在假日的。</p></details>
+        <details><summary>沒有營業額、沒有代扣，也要申報嗎？</summary><p>營業稅即使這兩個月沒有銷售，也要辦理零申報。扣繳稅款只有上個月真的有代扣才要繳；但年度的扣繳憑單，連免扣繳的也要申報。</p></details>
+        <details><summary>財政部宣布延長申報怎麼辦？</summary><p>遇到特殊情況（例如 1 月有連假，扣繳憑單延到 2 月 5 日），以財政部公告為準。我們每月檢查官方公告並更新，訂閱的行事曆也會跟著更新。</p></details>
+        <details><summary>訂閱和下載有什麼不同？</summary><p>訂閱是一個會自動更新的行事曆，新年度的期限會自己出現；下載的檔案只是當下的一份清單，之後有變動不會更新。iPhone 按「訂閱到 iPhone 行事曆」後選「訂閱」即可；Google 日曆會開啟加入頁面。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">期限依所得稅法第 92 條、加值型及非加值型營業稅法第 35 條、全民健康保險法、勞工保險條例、房屋稅條例、土地稅法、使用牌照稅法等規定整理，假日依行政院人事行政總處辦公日曆表順延。僅供參考，實際以財政部、地方稅務局、勞保局及健保署公告為準。資料更新：<span id="gen"></span>。</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const WD="日一二三四五六";
+let DATA=null, showAll=false;
+const KEY="taxtools.calendar.v1";
+const roles=()=>[...document.querySelectorAll("#roles input:checked")].map(i=>i.value);
+const today=()=>{ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); };
+const D=s=>new Date(s+"T00:00");
+const md=s=>{ const d=D(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+
+function feedURL(scheme){
+  const r=roles(), m=$("monthly").checked?"1":"0";
+  return `${scheme||location.protocol}//${location.host}/api/calendar?roles=${r.join(",")}&monthly=${m}`;
+}
+
+function render(){
+  const r=roles(), showM=$("monthly").checked;
+  $("monthlyRow").hidden=!r.includes("company");
+  try{ localStorage.setItem(KEY,JSON.stringify({r,showM})); }catch(e){}
+  const subs=[$("subApple"),$("subGoogle"),$("dl"),$("cpUrl")];
+  subs.forEach(b=>{ if(b.tagName==="BUTTON") b.disabled=!r.length; else b.toggleAttribute("aria-disabled",!r.length); });
+  $("subApple").href=feedURL("webcal:");
+  $("subGoogle").href="https://calendar.google.com/calendar/render?cid="+encodeURIComponent(feedURL("webcal:"));
+  if(!DATA) return;
+  const t=today();
+  const items=DATA.items.filter(it=>it.roles.some(x=>r.includes(x))&&(showM||it.kind!=="monthly"));
+  const upcoming=items.filter(it=>D(it.due)>=t);
+  $("count").textContent=r.length?(showAll?`共 ${upcoming.length} 個期限`:`未來 3 個月・全部共 ${upcoming.length} 個`):"";
+  if(!r.length){ $("next").innerHTML=`<span class="lbl">下一個期限</span><h2>先選你的身分</h2><p>勾選左邊的身分，就會列出跟你有關的期限。</p>`; $("list").innerHTML=""; return; }
+
+  // next important deadline (prefer non-monthly when one is within the same week)
+  const nx=upcoming[0];
+  if(nx){
+    const days=Math.round((D(nx.due)-t)/864e5);
+    $("next").innerHTML=`<span class="lbl">下一個期限</span>
+      <div class="when"><span class="days">${days===0?"今天":days}<small>${days===0?"截止":"天後"}</small></span><span class="num">${md(nx.due)}（${WD[D(nx.due).getDay()]}）截止${nx.orig?"，遇假日順延":""}</span></div>
+      <h2>${esc(nx.title)}</h2><p>${esc(nx.desc)}</p>
+      ${nx.link?`<div class="actions" style="margin-top:8px"><a class="btn" style="display:inline-flex;align-items:center;text-decoration:none" href="${nx.link}">打開相關工具</a></div>`:""}`;
+  }else $("next").innerHTML=`<span class="lbl">下一個期限</span><h2>目前沒有資料</h2>`;
+
+  // group by month
+  const horizon=new Date(t); horizon.setMonth(horizon.getMonth()+3);
+  const shown=showAll?upcoming:upcoming.filter(it=>D(it.due)<horizon), rest=upcoming.length-shown.length;
+  const groups={};
+  shown.forEach(it=>{ const d=D(it.due), k=`${d.getFullYear()}-${d.getMonth()}`; (groups[k]=groups[k]||{y:d.getFullYear(),m:d.getMonth()+1,items:[]}).items.push(it); });
+  $("list").innerHTML=Object.values(groups).map(g=>`<section class="month"><h3>${g.y-1911} 年 ${g.m} 月</h3>${g.items.map(it=>{
+    const d=D(it.due), days=Math.round((d-t)/864e5);
+    const tags=it.roles.filter(x=>r.includes(x)).map(x=>`<span class="tag">${esc(DATA.roles[x])}</span>`).join("");
+    return `<div class="ev ${days<=14?"soon":""} ${it.kind}"><div class="d"><b>${d.getMonth()+1}/${d.getDate()}</b><span>週${WD[d.getDay()]}</span></div>
+      <div class="t"><b>${esc(it.title)}</b><p>${it.start?`${md(it.start)}～${md(it.due)}・`:""}${esc(it.desc)}</p>
+      <div class="meta">${tags}${it.orig?`<span class="tag shift">原 ${md(it.orig)}，遇假日順延</span>`:""}${days<=14?`<span class="tag shift">還有 ${days} 天</span>`:""}${it.link?`<a href="${it.link}">打開相關工具</a>`:""}</div></div></div>`;
+  }).join("")}</section>`).join("")+(rest?`<button type="button" class="btn" id="more" style="width:100%">顯示之後的 ${rest} 個期限</button>`:(showAll&&upcoming.some(it=>D(it.due)>=horizon)?`<button type="button" class="btn" id="less" style="width:100%">只看未來 3 個月</button>`:""));
+  const m=$("more"); if(m) m.onclick=()=>{ showAll=true; render(); };
+  const l=$("less"); if(l) l.onclick=()=>{ showAll=false; render(); $("list").scrollIntoView({block:"start"}); };
+}
+
+$("dl").onclick=()=>{
+  const r=roles(), showM=$("monthly").checked, t=today();
+  const items=DATA.items.filter(it=>it.roles.some(x=>r.includes(x))&&(showM||it.kind!=="monthly")&&D(it.due)>=t);
+  downloadICS(items.map(it=>[D(it.due),it.title,(it.start?`期間 ${md(it.start)}～${md(it.due)}。`:"")+it.desc]),"報稅行事曆","報稅行事曆.ics");
+};
+$("cpUrl").onclick=()=>copyText(feedURL("https:"),"已複製訂閱網址，可以貼到任何行事曆的「從網址新增」");
+$("subApple").addEventListener("click",e=>{ if(!roles().length) e.preventDefault(); });
+$("subGoogle").addEventListener("click",e=>{ if(!roles().length) e.preventDefault(); });
+document.querySelectorAll("#roles input,#monthly").forEach(i=>i.addEventListener("change",render));
+$("f").addEventListener("submit",e=>e.preventDefault());
+try{ const s=JSON.parse(localStorage.getItem(KEY)||"null"); if(s){ document.querySelectorAll("#roles input").forEach(i=>i.checked=s.r.includes(i.value)); $("monthly").checked=s.showM!==false; } }catch(e){}
+function fromHash(){ const pre=location.hash.slice(1); if(/^(company|person|landlord|car)$/.test(pre)){ document.querySelectorAll("#roles input").forEach(i=>i.checked=i.value===pre); return true; } return false; }
+fromHash(); window.addEventListener("hashchange",()=>{ if(fromHash()) render(); });
+render();
+fetch("/assets/deadlines.json").then(r=>r.json()).then(d=>{ DATA=d; $("gen").textContent=d.generated.replace(/-/g,"/"); render(); })
+  .catch(()=>{ $("next").innerHTML=`<p class="note warm">期限資料載入失敗，請重新整理再試一次。</p>`; });
+</script>
+</body>
+</html>

@@ -3,810 +3,111 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>手開發票小幫手｜三聯式、二聯式發票怎麼開＋稅額自動計算</title>
+<title>稅務小工具｜手開發票、扣繳、含稅換算、統編查詢、報稅行事曆</title>
+<meta name="description" content="給中小企業、記帳人員、接案者和房東的免費稅務小工具：手開發票範例、租金與勞報扣繳計算、含稅未稅換算、統編查詢、報稅行事曆。依現行法規計算，手機也好用。">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="發票小幫手">
 <meta name="theme-color" content="#F3F5F8">
-<meta name="description" content="輸入買方統編、品項與金額，自動算出營業稅、總計與中文大寫，並產生擬真三聯式／二聯式手開發票範例，照著寫就不會開錯。">
-<style>
-:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-body{margin:0}
-img{max-width:100%}
-[hidden]{display:none!important}
-</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;700&family=LXGW+WenKai+TC:wght@700&display=swap">
-<style>
-/* Layout: desktop = form column + pinned invoice preview; phone = one column, invoice fits the width (tap to zoom), sticky total bar. */
-:root{
-  --bg:#F3F5F8; --surface:#FFFFFF; --sunk:#F7F9FC; --fg:#1A2230; --muted:#5A6577; --line:#DCE2EA; --line-strong:#B9C3D1;
-  --accent:#2B5FB4; --on-accent:#FFFFFF; --accent-soft:#E7EEFA; --ok:#1F7A4D; --warn:#B4532A;
-  --f-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
-  --f-head:"Noto Serif TC","Songti TC","PMingLiU",serif;
-  --paper:#FFFFFF; --paper-dim:1; --form-ink:#141414; --fill:#4A9DE6; --orange:#EE8A5E; --stamp:#3C6EC2;
-  --f-form:"LXGW WenKai TC","BiauKai","DFKai-SB","Kaiti TC","STKaiti",serif;
-  --f-fill:"Noto Sans TC","PingFang TC",system-ui,sans-serif;
-  --tap:44px; --r:10px;
-}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0F141B; --surface:#171E28; --sunk:#121821; --fg:#E4E9F0; --muted:#9AA5B5; --line:#273140; --line-strong:#3A4658;
-  --accent:#8DB4F2; --on-accent:#0E1726; --accent-soft:#1D2A40; --ok:#6CCB9A; --warn:#E58A62; --paper-dim:.93; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0F141B; --surface:#171E28; --sunk:#121821; --fg:#E4E9F0; --muted:#9AA5B5; --line:#273140; --line-strong:#3A4658;
-  --accent:#8DB4F2; --on-accent:#0E1726; --accent-soft:#1D2A40; --ok:#6CCB9A; --warn:#E58A62; --paper-dim:.93; color-scheme:dark}
-
-*,*::before,*::after{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:16px;line-height:1.65;letter-spacing:.02em;
-  -webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1480px;margin:0 auto;padding-block:28px 48px;display:grid;gap:24px}
-header{display:grid;gap:6px}
-header h1{font-family:var(--f-head);font-weight:700;font-size:clamp(26px,3.2vw,36px);line-height:1.25;margin:0;letter-spacing:.06em;text-wrap:balance}
-header p{margin:0;color:var(--muted);max-width:40em;font-size:15px;text-wrap:pretty}
-
-.grid{display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px;align-items:stretch}
-.preview{position:sticky;top:max(16px,env(safe-area-inset-top,0px));align-self:start;display:grid;gap:10px;min-width:0}
-
-/* form */
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 22px 22px;display:grid;min-width:0}
-.sec{display:grid;gap:14px;padding-block:20px;border-top:1px solid var(--line)}
-.sec:first-child{border-top:0}
-.sec h2{margin:0;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.12em;display:flex;align-items:center;gap:8px}
-.sec h2 b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;letter-spacing:0}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:4px}
-.seg button{font:inherit;border:0;background:transparent;color:var(--muted);min-height:56px;border-radius:9px;cursor:pointer;display:grid;gap:0;align-content:center;line-height:1.3}
-.seg button b{font-size:17px;font-weight:700;color:var(--fg);letter-spacing:.08em}
-.seg button small{font-size:12px}
-.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
-.seg button[aria-pressed="true"] b{color:var(--on-accent)}
-.field{display:grid;gap:6px}
-.field label,.lbl{font-size:14px;color:var(--muted);font-weight:500}
-.panel input:not([type=radio]){font:inherit;font-size:16px;color:var(--fg);background:var(--sunk);border:1px solid var(--line-strong);border-radius:8px;
-  padding:0 12px;min-height:var(--tap);width:100%;min-width:0;letter-spacing:.02em}
-/* iOS Safari gives date inputs an intrinsic width and its own chrome; reset so it stays inside the field */
-.panel input[type=date]{-webkit-appearance:none;appearance:none;display:block;max-width:100%;line-height:var(--tap);height:var(--tap);text-align:left}
-.panel input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
-.panel input[type=date]::-webkit-datetime-edit{padding:0}
-.panel input[type=date]::-webkit-calendar-picker-indicator{margin:0;opacity:.6}
-.field{min-width:0}
-.panel input::placeholder{color:var(--muted);opacity:.7}
-.panel input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--surface)}
-.num{text-align:right;font-variant-numeric:tabular-nums}
-.chip{display:inline-block;font-size:12px;padding:0 8px;border-radius:99px;margin-left:6px;font-weight:500;line-height:20px}
-.chip.ok{color:var(--ok);background:var(--accent-soft)}
-.chip.bad{color:var(--warn);border:1px solid var(--warn)}
-.items{display:grid;gap:10px}
-.item{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 40px;grid-template-areas:"n n x" "q p p";gap:8px;align-items:center;
-  padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--sunk)}
-.item .in{grid-area:n} .item .iq{grid-area:q} .item .ip{grid-area:p} .item .btn.icon{grid-area:x}
-.item input:not([type=radio]){background:var(--surface)}
-.item .idx,.item.head{display:none}
-.item .lab{display:grid;gap:2px}
-.item .lab span{font-size:12px;color:var(--muted)}
-.btn{font:inherit;font-size:15px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 14px;min-height:var(--tap);cursor:pointer}
-.btn:focus-visible,.seg button:focus-visible,.zoom:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn.icon{width:40px;padding:0;color:var(--muted);border-color:transparent;background:transparent;font-size:18px}
-.btn.icon:hover:not(:disabled){color:var(--warn)}
-.btn.add{justify-self:start;color:var(--accent);border-color:var(--accent);background:transparent;font-weight:500}
-.btn:disabled{opacity:.35;cursor:default}
-.radios{display:flex;gap:8px;flex-wrap:wrap}
-.radios label{position:relative;display:flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:99px;
-  font-size:15px;color:var(--fg);cursor:pointer;font-weight:400}
-.radios input{position:absolute;opacity:0;pointer-events:none}
-.radios label:has(input:checked){background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:700}
-.radios label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
-
-.sum{display:grid;gap:8px;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:16px;font-variant-numeric:tabular-nums}
-.sum .row{display:flex;justify-content:space-between;gap:12px;font-size:15px;color:var(--muted)}
-.sum .row span:last-child{color:var(--fg)}
-.sum .total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:10px}
-.sum .total span:first-child{font-weight:700}
-.sum .total span:last-child{font-size:26px;font-weight:700;color:var(--accent);letter-spacing:0}
-.sum .cn{font-size:15px;line-height:1.5;word-break:break-all}
-.actions{display:flex;gap:10px;justify-content:flex-end;padding-top:16px}
-
-/* preview */
-.pv-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.caption{font-size:13px;color:var(--muted);margin:0}
-.zoom{display:none;font:inherit;font-size:14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:99px;padding:0 14px;min-height:40px;cursor:pointer;white-space:nowrap}
-.inv-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;border-radius:16px}
-.inv-sizer{position:relative}
-.inv-stage{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--paper);filter:brightness(var(--paper-dim));border-radius:24px;overflow:hidden}
-.inv-stage .frame{position:absolute;top:0;left:0;right:0;bottom:0;border:11px solid var(--orange);border-radius:24px;pointer-events:none;z-index:3}
-.inv-stage svg{position:absolute;left:0;top:0}
-.inv-stage .c{position:absolute;display:flex;align-items:center;justify-content:center;white-space:nowrap;line-height:1;letter-spacing:0}
-.inv-stage .p{font-family:var(--f-form);font-weight:700;color:var(--form-ink);-webkit-text-stroke:.6px var(--form-ink)}
-.inv-stage .f{font-family:var(--f-fill);font-weight:400;color:var(--fill);font-variant-numeric:tabular-nums}
-.inv-stage .jb{font-family:var(--f-fill);font-weight:500;color:var(--form-ink);-webkit-text-stroke:0}
-.inv-stage .or{font-family:var(--f-fill);font-weight:500;color:var(--orange);-webkit-text-stroke:0}
-.inv-stage .stamp{font-family:var(--f-fill);font-weight:700;color:var(--stamp)}
-.inv-stage .end{justify-content:flex-end}
-[hidden]{display:none!important}
-.inv-stage .start{justify-content:flex-start}
-.inv-stage input.fi{position:absolute;box-sizing:border-box;border:0;margin:0;padding:0 18px;background:transparent;letter-spacing:0;
-  font-family:var(--f-fill);font-weight:400;color:var(--fill);line-height:1;outline:none;border-radius:6px;z-index:2}
-.inv-stage input.fi::placeholder{color:var(--fill);opacity:1}
-.inv-stage input.fi:focus{box-shadow:inset 0 0 0 4px var(--fill)}
-.inv-stage input.ghost{color:transparent;caret-color:transparent;font-size:10px}
-.inv-stage input.ghost:focus{box-shadow:none}
-.inv-stage .ubnbox.cur{box-shadow:inset 0 0 0 4px var(--fill)}
-.inv-scroll.fit .inv-stage{cursor:zoom-in}
-.inv-scroll.fit .inv-stage input{pointer-events:none}
-
-.tips{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 20px}
-.tips summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;font-family:var(--f-head);font-size:18px;font-weight:700;letter-spacing:.06em;min-height:44px}
-.tips summary::-webkit-details-marker{display:none}
-.tips summary::after{content:"";margin-left:auto;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
-.tips[open] summary::after{transform:rotate(-135deg)}
-.tips .tcount{font-family:var(--f-ui);font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
-.tips[open] summary{margin-bottom:10px}
-.tips ol{margin:0;padding-left:1.4em;columns:2;column-gap:32px}
-.tips li{margin-bottom:6px;break-inside:avoid;font-size:14px;line-height:1.6;color:var(--fg)}
-.tips li::marker{color:var(--accent);font-weight:700}
-footer{color:var(--muted);font-size:13px}
-
-.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);opacity:0;pointer-events:none;
-  background:var(--fg);color:var(--bg);font-size:14px;padding:8px 16px;border-radius:99px;z-index:30;transition:opacity .2s,transform .2s}
-.toast.on{opacity:1;transform:translate(-50%,0)}
-@media (max-width:639px){.toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}}
-@media (prefers-reduced-motion:reduce){.toast,.tips summary::after{transition:none}}
-.pv-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.pvbtn{font:inherit;font-size:14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:99px;padding:0 14px;min-height:40px;cursor:pointer;white-space:nowrap}
-.pvbtn:hover{border-color:var(--accent);color:var(--accent)}
-.pvbtn:disabled{opacity:.5;cursor:progress}
-.pvbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.lookup{font-size:13px;color:var(--muted);min-height:1em}
-.lookup.ok{color:var(--ok)} .lookup.bad{color:var(--warn)}
-.saved-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.btn.link{border:0;background:transparent;color:var(--accent);padding:0 4px;min-height:40px;font-size:14px;font-weight:500}
-.saved{display:flex;flex-wrap:wrap;gap:8px}
-.saved:empty::before{content:"填好買受人和統編後，按「存為常用客戶」，下次點一下就能帶入。";font-size:13px;color:var(--muted)}
-.cust{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:99px;background:var(--sunk);max-width:100%;min-width:0}
-.cust button{font:inherit;border:0;background:transparent;color:var(--fg);cursor:pointer;min-height:36px}
-.cust .pick{padding:0 4px 0 12px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;text-align:left}
-.cust .pick small{color:var(--muted);margin-left:6px;font-variant-numeric:tabular-nums}
-.cust .rm{padding:0 10px;color:var(--muted)}
-.cust .rm:hover{color:var(--warn)}
-.cust.on{border-color:var(--accent);background:var(--accent-soft)}
-.warn{margin:0;padding:12px 14px 12px 32px;border:1px solid var(--warn);border-radius:10px;color:var(--warn);font-size:14px;line-height:1.55;display:grid;gap:4px}
-.panel input.bad{border-color:var(--warn)}
-@media print{
-  @page{size:A4 landscape;margin:10mm}
-  body{background:#fff;padding:0}
-  header,.panel,.tips,footer,.bar,.toast,.pv-head{display:none!important}
-  .wrap,.grid{display:block;padding:0;max-width:none}
-  .preview{position:static}
-  .inv-scroll{overflow:visible}
-  .inv-stage{filter:none!important}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body.print-img .wrap{display:none!important}
-  body.print-img .print-area{display:block!important}
-  .print-area img{width:100%;height:auto;display:block}
-}
-.print-area{display:none}
-/* bottom bar: phones only */
-.bar{display:none}
-
-@media (max-width:1080px){
-  .grid{grid-template-columns:minmax(0,1fr)}
-  .preview{position:static;order:-1}
-  .preview .tips{order:3}
-  .zoom{display:inline-flex;align-items:center}
-  .tips ol{columns:1}
-}
-@media (max-width:1080px) and (min-width:640px){
-  .grid{grid-template-columns:minmax(0,1fr)}
-  .panel{max-width:none}
-}
-@media (max-width:639px){
-  .pv-head{flex-direction:column;align-items:stretch;gap:8px}
-  .pv-actions{justify-content:flex-start}
-  .wrap{padding-block:20px 120px;gap:18px}
-  header p{font-size:14px}
-  .panel{padding:2px 16px 16px;border-radius:12px}
-  .actions{display:none}
-  .bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;align-items:center;gap:10px;
-    background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(0,0,0,.06);
-    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-  .bar .t{flex:1;min-width:0;display:grid;line-height:1.25}
-  .bar .t small{font-size:12px;color:var(--muted)}
-  .bar .t b{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:0}
-  .bar .btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
-}
-@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-</style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<link rel="stylesheet" href="/assets/base.css">
 <link rel="stylesheet" href="/assets/nav.css">
+<style>
+/* Home: a short promise, the next deadline, then tools grouped by who uses them. Each tool tile carries a one-character mark like the app icon. */
+.hero{display:grid;gap:10px;max-width:46em;padding-block:8px 4px}
+.hero h1{font-family:var(--f-head);font-size:clamp(30px,4.6vw,46px);line-height:1.2;margin:0;letter-spacing:.06em;text-wrap:balance}
+.nw{display:inline-block}
+.hero p{margin:0;color:var(--muted);font-size:16px;max-width:36em;text-wrap:pretty}
+.deadline{display:flex;align-items:center;gap:16px;flex-wrap:wrap;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;max-width:760px}
+.deadline:hover{border-color:var(--accent)}
+.deadline .days{font-size:34px;font-weight:700;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;min-width:2.2em}
+.deadline .days small{font-size:14px;color:var(--muted);font-weight:500;margin-left:2px}
+.deadline .t{flex:1;min-width:12em}
+.deadline .t span{display:block;font-size:13px;color:var(--muted)}
+.deadline .t b{font-size:17px}
+.deadline .go{color:var(--accent);font-weight:700;font-size:14px;white-space:nowrap}
+.group{display:grid;gap:12px}
+.group h2{margin:0;font-size:14px;letter-spacing:.14em;color:var(--muted);font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.tile{display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:start;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:96px;transition:border-color .15s,transform .15s}
+.tile:hover{border-color:var(--accent);transform:translateY(-1px)}
+.tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mark{width:48px;height:48px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--f-head);font-size:24px;font-weight:700;position:relative;overflow:hidden}
+.mark::after{content:"";position:absolute;left:8px;right:8px;bottom:9px;height:3px;background:var(--warm);border-radius:2px}
+.tile b{display:block;font-size:17px;margin-bottom:2px}
+.tile .d{display:block;color:var(--muted);font-size:14px;line-height:1.55}
+.tile.soon{opacity:.6;pointer-events:none}
+.tile.soon .mark{background:var(--line-strong)}
+.tile.soon b::after{content:"即將推出";font-size:12px;font-weight:500;color:var(--muted);margin-left:8px;padding:1px 8px;border:1px solid var(--line-strong);border-radius:99px}
+.promise{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.promise div{padding:14px 16px;border-radius:12px;background:var(--sunk);border:1px solid var(--line)}
+.promise b{display:block;margin-bottom:2px}
+.promise span{color:var(--muted);font-size:14px}
+</style>
 </head>
 <body>
 <header class="site-head">
   <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
-  <nav class="site-nav" aria-label="工具">
-    <a href="/" aria-current="page">手開發票</a>
-    <a href="/rent-withholding/">租金扣繳</a>
-    <a href="/labor-report/">勞報扣繳</a>
-    <a href="/tax-included/">含稅換算</a>
-  </nav>
+  <nav class="site-nav" aria-label="工具"></nav>
 </header>
-<div class="wrap">
-  <header>
-    <h1>手開發票小幫手</h1>
-    <p>填入買方和品項，自動算好稅額與中文大寫，照著擬真發票上的藍字抄寫就不會開錯。</p>
-  </header>
 
-  <div class="grid">
-    <form class="panel" id="f" autocomplete="off">
-      <section class="sec">
-        <h2><b>1</b>發票種類</h2>
-        <div class="seg" role="group" aria-label="發票種類">
-          <button type="button" id="t3" aria-pressed="true"><b>三聯式</b><small>買方是公司行號</small></button>
-          <button type="button" id="t2" aria-pressed="false"><b>二聯式</b><small>買方是一般消費者</small></button>
-        </div>
-      </section>
-      <section class="sec" id="buyerSec">
-        <h2><b>2</b>買方與日期</h2>
-        <div class="field" id="buyerField">
-          <label for="buyer">買受人（公司全名）</label>
-          <input id="buyer" data-bind="buyer" placeholder="例：大樹文創有限公司" enterkeyhint="next">
-        </div>
-        <div class="field" id="ubnField">
-          <label for="ubn">統一編號 <span id="ubnChip" class="chip"></span></label>
-          <input id="ubn" data-bind="ubn" inputmode="numeric" maxlength="8" placeholder="8 碼數字" enterkeyhint="next">
-          <span class="lookup" id="lookup" aria-live="polite"></span>
-        </div>
-        <div class="field" id="savedField">
-          <div class="saved-head"><span class="lbl">常用客戶</span><button type="button" class="btn link" id="saveCust">＋ 存為常用客戶</button></div>
-          <div class="saved" id="saved"></div>
-        </div>
-        <div class="field">
-          <label for="date">開立日期</label>
-          <input id="date" type="date">
-        </div>
-      </section>
-      <section class="sec">
-        <h2><b>3</b><span id="itemsLbl">品項</span></h2>
-        <div class="items" id="items">
-          <div class="item head"><span></span><span>品名</span><span>數量</span><span>單價</span><span></span></div>
-        </div>
-        <button type="button" class="btn add" id="addItem">＋ 新增品項</button>
-      </section>
-      <section class="sec">
-        <h2><b>4</b>計稅方式</h2>
-        <div class="field">
-          <span class="lbl">輸入的單價是</span>
-          <div class="radios">
-            <label><input type="radio" name="incl" id="inclN" value="0" checked>未稅</label>
-            <label><input type="radio" name="incl" id="inclY" value="1">含稅</label>
-          </div>
-        </div>
-        <div class="field">
-          <span class="lbl">課稅別</span>
-          <div class="radios">
-            <label><input type="radio" name="tt" id="ttA" value="A" checked>應稅 5%</label>
-            <label><input type="radio" name="tt" id="ttZ" value="Z">零稅率</label>
-            <label><input type="radio" name="tt" id="ttF" value="F">免稅</label>
-          </div>
-        </div>
-        <div class="sum" aria-live="polite">
-          <div class="row"><span>銷售額（未稅）</span><span id="sSales"></span></div>
-          <div class="row"><span>營業稅</span><span id="sTax"></span></div>
-          <div class="total"><span>總計</span><span id="sTotal"></span></div>
-          <div class="cn" id="sCn"></div>
-        </div>
-        <ul class="warn" id="warn" hidden></ul>
-        <div class="actions"><button type="button" class="btn" id="clear">清除資料</button></div>
-      </section>
-    </form>
+<div class="wrap" style="gap:32px">
+  <section class="hero">
+    <h1><span class="nw">報稅、扣繳、開發票</span><br><span class="nw">先在這裡算一次</span></h1>
+    <p>給中小企業、記帳人員、接案者和房東的免費小工具。依現行法規計算，每一步怎麼算都寫清楚，手機也好用。</p>
+  </section>
 
-    <section class="preview" id="preview" aria-label="擬真發票">
-      <div class="pv-head">
-        <p class="caption" id="pvCap">擬真發票示意圖：照藍字抄寫，淺藍格子可直接填。</p>
-        <div class="pv-actions">
-          <button type="button" class="zoom" id="zoomBtn" aria-pressed="false">放大檢視</button>
-          <button type="button" class="pvbtn" id="dlBtn">下載圖片</button>
-          <button type="button" class="pvbtn" id="printBtn">列印</button>
-        </div>
-      </div>
-      <div class="inv-scroll" id="invScroll"><div class="inv-sizer" id="sizer"><div class="inv-stage" id="stage"></div></div></div>
-      <details class="tips" id="tipsBox" open>
-        <summary><span id="tipsTitle">三聯式開立重點</span><span class="tcount" id="tipsCount"></span></summary>
-        <ol id="tips"></ol>
-      </details>
-    </section>
-  </div>
+  <a class="deadline" id="deadline" href="/tax-calendar/" hidden></a>
 
+  <section class="group">
+    <h2>公司・記帳人員</h2>
+    <div class="tiles">
+      <a class="tile" href="/invoice-helper/"><span class="mark">票</span><span><b>手開發票小幫手</b><span class="d">三聯式、二聯式怎麼開，自動算稅額和中文大寫，附擬真範例圖。</span></span></a>
+      <a class="tile" href="/labor-report/"><span class="mark">勞</span><span><b>勞報單扣繳計算機</b><span class="d">接案、稿費、兼職要扣多少稅和補充保費，附申報期限和資料清單。</span></span></a>
+      <a class="tile" href="/rent-withholding/"><span class="mark">租</span><span><b>租金扣繳計算機</b><span class="d">公司付房租給個人房東，算出代扣金額、房東實拿和繳納期限。</span></span></a>
+      <a class="tile" href="/tax-included/"><span class="mark">稅</span><span><b>含稅未稅計算機</b><span class="d">5% 營業稅換算，尾數怎麼算一目了然，附發票用中文大寫。</span></span></a>
+      <a class="tile" href="/company-lookup/"><span class="mark">編</span><span><b>統編查詢</b><span class="d">用統編或公司名稱查全名、狀態和地址，一鍵帶進手開發票。</span></span></a>
+      <a class="tile" href="/tax-calendar/#company"><span class="mark">曆</span><span><b>報稅行事曆</b><span class="d">營業稅、扣繳、補充保費、勞健保期限，可訂閱到手機。</span></span></a>
+    </div>
+  </section>
 
-  <footer>稅額計算：含稅金額 ÷ 1.05 四捨五入到元為銷售額，總計減銷售額為稅額。內容依統一發票使用辦法（114 年 1 月 1 日施行版本）及加值型及非加值型營業稅法第 32 條整理，僅供參考，實際以財政部及國稅局規定為準。</footer>
+  <section class="group">
+    <h2>接案者・上班族</h2>
+    <div class="tiles">
+      <a class="tile" href="/labor-report/#payee"><span class="mark">勞</span><span><b>接案實拿怎麼算</b><span class="d">報價 3 萬實拿多少？想實拿 3 萬要報多少？扣的稅怎麼退？</span></span></a>
+      <a class="tile" href="/tax-calendar/#person"><span class="mark">曆</span><span><b>個人報稅期限</b><span class="d">扣繳憑單什麼時候寄來、5 月綜所稅，訂閱到手機就不會忘。</span></span></a>
+      <span class="tile soon"><span class="mark">綜</span><span><b>綜所稅試算</b><span class="d">用 115 年度的免稅額和扣除額試算，比較列舉和標準扣除。</span></span></span>
+    </div>
+  </section>
+
+  <section class="group">
+    <h2>房東・屋主</h2>
+    <div class="tiles">
+      <a class="tile" href="/rent-withholding/#landlord"><span class="mark">租</span><span><b>房東實拿多少</b><span class="d">租給公司被扣多少、租金要寫多少，報稅時租賃所得怎麼算。</span></span></a>
+      <a class="tile" href="/tax-calendar/#landlord"><span class="mark">曆</span><span><b>房屋稅、地價稅期限</b><span class="d">5 月房屋稅、11 月地價稅、5 月綜所稅，一次列好。</span></span></a>
+    </div>
+  </section>
+
+  <section class="promise" aria-label="我們的原則">
+    <div><b>依現行法規</b><span class="d">稅率和門檻集中管理，每月對照財政部、健保署公告更新。</span></div>
+    <div><b>算法寫清楚</b><span class="d">不只給答案，也告訴你為什麼要扣、為什麼免扣。</span></div>
+    <div><b>資料留在你手上</b><span class="d">輸入的金額和常用客戶只存在自己的瀏覽器裡；統編查詢只會送出你要查的統編或名稱。</span></div>
+  </section>
+
+  <p class="site-foot">本站為民間提供的免費工具，非政府官方網站。計算結果僅供參考，實際以財政部、國稅局、地方稅務局、健保署及勞保局規定為準。</p>
 </div>
 
-<div class="print-area" aria-hidden="true"><img id="printImg" alt=""></div>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-<div class="bar" id="bar">
-  <div class="t"><small>總計（含稅）</small><b id="barTotal">NT$ 0</b></div>
-  <button type="button" class="btn" id="clear2">清除</button>
-  <button type="button" class="btn primary" id="toInv">看發票</button>
-</div>
-
+<script src="/assets/nav.js"></script>
 <script>
-const $=id=>document.getElementById(id);
-const S={type:3,buyer:"",ubn:"",items:[{n:"",q:"1",p:""}]};
-const CN="零壹貳參肆伍陸柒捌玖", CNS="〇一二三四五六七八九十";
-
-function cnUpper(n){
-  if(!n) return "新臺幣零元整";
-  const units=["","拾","佰","仟"], big=["","萬","億"];
-  const groups=[];let x=n;while(x>0){groups.push(x%10000);x=Math.floor(x/10000);}
-  let s="";
-  for(let g=groups.length-1;g>=0;g--){
-    const part=groups[g];
-    if(!part){ if(s) s+="零"; continue; }
-    if(s && part<1000) s+="零";
-    const d=String(part).padStart(4,"0");let ps="";
-    for(let i=0;i<4;i++){const v=+d[i]; if(v) ps+=CN[v]+units[3-i]; else if(ps) ps+="零";}
-    s+=ps.replace(/零+$/,"")+big[g];
-  }
-  return "新臺幣"+s.replace(/零+/g,"零").replace(/零$/,"")+"元整";
-}
-function ubnValid(v){
-  if(!/^\d{8}$/.test(v))return false;
-  const w=[1,2,1,2,1,2,4,1];let sum=0;
-  for(let i=0;i<8;i++){const p=+v[i]*w[i];sum+=Math.floor(p/10)+p%10;}
-  return sum%5===0||(v[6]==="7"&&(sum+1)%5===0);
-}
-const money=n=>n.toLocaleString("zh-TW");
-const trim=n=>n.toLocaleString("zh-TW",{maximumFractionDigits:2});
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const cnSmall=n=>n<=10?CNS[n]:n<20?"十"+CNS[n-10]:CNS[Math.floor(n/10)]+"十"+(n%10?CNS[n%10]:"");
-const incl=()=>$("inclY").checked;
-const taxType=()=>document.querySelector('input[name=tt]:checked').value;
-
-function calc(){
-  const tt=taxType(), rate=tt==="A"?0.05:0;
-  const num=v=>{const x=parseFloat(v);return isFinite(x)&&x>0?x:0};
-  const lines=S.items.map(it=>({...it,amt:Math.round(num(it.q)*num(it.p))}));
-  const raw=lines.reduce((a,l)=>a+l.amt,0);
-  let sales,tax,total;
-  if(S.type===2){
-    total=(incl()||!rate)?raw:Math.round(raw*1.05); sales=Math.round(total/(1+rate)); tax=total-sales;
-    lines.forEach(l=>{l.show=(incl()||!rate)?l.amt:Math.round(l.amt*1.05); l.unit=+l.q?l.show/l.q:0});
-  }else if(!rate){ sales=raw;tax=0;total=raw; lines.forEach(l=>{l.show=l.amt;l.unit=+l.p||0});
-  }else if(incl()){ total=raw; sales=Math.round(total/1.05); tax=total-sales;
-    let acc=0; lines.forEach((l,i)=>{l.show=i===lines.length-1?sales-acc:Math.round(l.amt/1.05);acc+=l.show;l.unit=+l.q?l.show/l.q:0});
-  }else{ sales=raw; tax=Math.round(sales*0.05); total=sales+tax; lines.forEach(l=>{l.show=l.amt;l.unit=+l.p||0}); }
-  return {lines,sales,tax,total,tt};
-}
-/* The invoice's 單價 cell can be typed into only when the form's price basis matches what that invoice prints. */
-const priceEditable=()=>S.type===3?(!incl()||taxType()!=="A"):(incl()||taxType()!=="A");
-
-/* ---------- geometry, in sheet units, measured from scans of the real forms ---------- */
-const G={
-3:{W:2290,H:1335, L:140,C1:657,C2:857,C3:1067,C4:1440,R:2018, top:405,
-   rows:[470,550,628,707,785,863], bottomRows:{sales:[863,940],tax:[940,1038,982],total:[1038,1110],cn:[1110,1198]},
-   end:1198, unitX:[435,555,675,800,925,1045,1165,1290,1405], noteY:1226, noteX:150,
-   copy:{y:1220,x:[1725,1810,1988]}, stampLbl:[628,707], blank:[470,628],
-   stampText:[840,1055], stampSize:124,
-   hdr:{y:438,x:[220,585,700,815,905,1015,1110,1395,1545,1910]},
-   code:"JB", codeXY:[165,97],
-   title:{y:85,x:[690,885,1075,1265,1330,1395,1470,1560,1615],t:"統一發票（三聯式）"},
-   period:{y:157,yr:930,nian:1025,m1:1150,m2:1260,yue:1327,fen:1370},
-   date:{y:295,chars:[1015,1080,1145,1205],yr:1277,nian:1333,m:1392,yue:1475,d:1550,ri:1622},
-   addr:{y:368,line:[93,2055],omit:[2077,317]},
-   valInset:{amt:45,price:27}},
-2:{W:2268,H:1333, L:45,C1:590,C2:821,C3:1052,C4:1470,R:2120, top:410,
-   rows:[477,555,632,708,785,860,937,1012], bottomRows:{total:[1012,1088],cn:[1088,1165],ttype:[1165,1227]},
-   end:1227, unitX:[390,520,650,782,907,1037,1167,1299,1432], noteY:1252, noteX:50,
-   copy:{y:1258,x:[1746,1843,2041]}, stampLbl:[632,708], blank:[477,632],
-   stampText:[875,1090], stampSize:124,
-   hdr:{y:445,x:[170,458,650,775,872,997,1102,1397,1528,2058]},
-   code:"JG", codeXY:[177,100],
-   title:{y:100,x:[825,1022,1222,1422,1492,1548,1605,1662,1708],t:"統一發票（二聯式）"},
-   period:{y:162,yr:1005,nian:1097,m1:1215,m2:1392,yue:1477,fen:1542},
-   date:{y:220,chars:[922,992,1062,1132],yr:1217,nian:1272,m:1334,yue:1407,d:1470,ri:1549},
-   addr:{y:348,line:[35,2143],omit:[2048,308]},
-   valInset:{amt:53,price:15}}
-};
-const g=()=>G[S.type];
-
-/* text helpers: a box centred on (x,y) so glyphs sit exactly on the measured point */
-const box=(x,y,w,h,cls,t,size,extra="")=>`<div class="c ${cls}" style="left:${x-w/2}px;top:${y-h/2}px;width:${w}px;height:${h}px;font-size:${size}px;${extra}"><span>${t}</span></div>`;
-const P=(x,y,t,size)=>box(x,y,size*12,size*1.6,"p",t,size);
-const Pc=(x,y,t,size,cls)=>box(x,y,size*12,size*1.6,cls,t,size);
-const F=(x,y,t,size)=>box(x,y,size*14,size*1.6,"f",t,size);
-/* right-aligned value inside a cell, right edge at xr */
-const FR=(xr,y,t,size,w)=>`<div class="c f end" style="left:${xr-w}px;top:${y-size*.8}px;width:${w}px;height:${size*1.6}px;font-size:${size}px"><span>${t}</span></div>`;
-/* characters spread evenly between two centres */
-const spread=(str,x1,x2,y,size)=>{const a=[...str];return a.map((c,i)=>P(a.length<2?x1:x1+(x2-x1)*i/(a.length-1),y,c,size)).join("");};
-
-function buildInvoice(){
-  const k=g(), three=S.type===3, n=S.items.length, pe=priceEditable();
-  const {L,C1,C2,C3,C4,R,top,rows,end}=k;
-  const ln=(x1,y1,x2,y2,w=3.5)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#141414" stroke-width="${w}" stroke-linecap="square"/>`;
-  const itemsBottom=rows[rows.length-1];
-  let svg=`<svg width="${k.W}" height="${k.H}" viewBox="0 0 ${k.W} ${k.H}" aria-hidden="true">`;
-  for(let i=0;i<n;i++) svg+=`<rect x="${L}" y="${rows[i]}" width="${(pe?C3:C2)-L}" height="${rows[i+1]-rows[i]}" fill="#DCE7F6"/>`;
-  svg+=`<rect x="${C4}" y="${k.stampLbl[1]}" width="${R-C4}" height="${end-k.stampLbl[1]}" fill="#DCE7F6"/>`;
-  if(three){ svg+=`<rect x="367" y="257" width="600" height="71" fill="none" stroke="#141414" stroke-width="3.5"/>`;
-    for(let i=1;i<8;i++) svg+=ln(367+75*i,257,367+75*i,328); }
-  svg+=`<rect x="${L}" y="${top}" width="${R-L}" height="${end-top}" fill="none" stroke="#141414" stroke-width="6"/>`;
-  svg+=ln(C1,top,C1,itemsBottom)+ln(C2,top,C2,itemsBottom);
-  const cnTop=k.bottomRows.cn[0];
-  svg+=ln(C3,top,C3,cnTop)+ln(C4,top,C4,end,4.5);
-  svg+=ln(L,rows[0],R,rows[0],5);
-  for(let i=1;i<rows.length-1;i++) svg+=ln(L,rows[i],C4,rows[i]);
-  svg+=ln(C4,k.stampLbl[0],R,k.stampLbl[0])+ln(C4,k.stampLbl[1],R,k.stampLbl[1]);
-  svg+=ln(L,itemsBottom,C4,itemsBottom,5);
-  const B=k.bottomRows;
-  if(three){
-    svg+=ln(L,B.sales[1],C4,B.sales[1]);
-    svg+=ln(537,B.tax[0],537,B.tax[1])+ln(717,B.tax[0],717,B.tax[1])+ln(900,B.tax[0],900,B.tax[1])+ln(537,B.tax[2],C3,B.tax[2]);
-    svg+=ln(L,B.tax[1],C4,B.tax[1])+ln(L,B.total[1],C4,B.total[1],5);
-  }else{
-    svg+=ln(L,B.total[1],C4,B.total[1],5)+ln(L,B.cn[1],C4,B.cn[1],5);
-    [470,638,802,967,1137,1305].forEach(x=>svg+=ln(x,B.ttype[0],x,B.ttype[1]));
-  }
-  // struck-out rows
-  svg+=`<line x1="${k.addr.line[0]}" y1="${k.addr.y}" x2="${k.addr.line[1]}" y2="${k.addr.y}" stroke="#EE8A5E" stroke-opacity=".78" stroke-width="15"/>`;
-  if(!three) svg+=`<line x1="35" y1="263" x2="845" y2="263" stroke="#EE8A5E" stroke-opacity=".78" stroke-width="15"/>`;
-  svg+=`</svg>`;
-
-  let h=`<div class="frame"></div>`+svg;
-  h+=Pc(k.codeXY[0],k.codeXY[1],k.code,62,"jb");
-  [...k.title.t].forEach((c,i)=>h+=P(k.title.x[i],k.title.y,c,52));
-  // buyer / ubn
-  if(three){
-    h+=spread("買受人",150,285,220,46)+P(323,220,"：",46);
-    h+=spread("統一編號",150,285,292,40)+P(323,292,"：",46);
-    h+=`<input class="fi" data-bind="buyer" aria-label="發票上的買受人" placeholder="必填" style="left:352px;top:186px;width:1100px;height:70px;font-size:58px;padding-left:20px">`;
-    for(let i=0;i<8;i++) h+=`<div class="c f ubnbox" data-ubn="${i}" style="left:${367+75*i}px;top:257px;width:75px;height:71px;font-size:52px"></div>`;
-    h+=`<div class="c f start" id="ubnPh" style="left:387px;top:257px;width:300px;height:71px;font-size:58px">必填</div>`;
-    h+=`<input class="fi ghost" data-bind="ubn" inputmode="numeric" maxlength="8" aria-label="發票上的統一編號" style="left:367px;top:257px;width:600px;height:71px">`;
-  }else{
-    h+=P(65,263,"買",46)+P(160,263,"受",46)+P(255,263,"人",46)+P(300,263,"：",46);
-    h+=Pc(778,222,"可省略",50,"or");
-  }
-  // address (struck, optional)
-  const a=k.addr;
-  if(three){
-    h+=P(150,a.y,"地",44)+P(265,a.y,"址",44)+P(310,a.y,"：",44)+P(557,a.y,"縣市",34);
-    h+=P(810,a.y-18,"鄉鎮",30)+P(810,a.y+18,"市區",30);
-    [[1045,"路街"],[1220,"段"],[1370,"巷"],[1525,"弄"],[1680,"號"],[1830,"樓"],[1985,"室"]].forEach(([x,t])=>h+=P(x,a.y,t,34));
-  }else{
-    h+=P(65,a.y,"地",44)+P(258,a.y,"址",44)+P(300,a.y,"：",44)+P(540,a.y,"縣市",40);
-    h+=P(832,a.y-22,"鄉鎮",36)+P(832,a.y+22,"市區",36);
-    [[1057,"路街"],[1212,"段"],[1387,"巷"],[1565,"弄"],[1740,"號"],[1918,"樓"],[2096,"室"]].forEach(([x,t])=>h+=P(x,a.y,t,38));
-  }
-  h+=Pc(a.omit[0],a.omit[1],"可省略",50,"or");
-  // date captions
-  const d=k.date;
-  d.chars.forEach((x,i)=>h+=P(x,d.y,"中華民國"[i],44));
-  h+=P(d.nian,d.y,"年",44)+P(d.yue,d.y,"月",44)+P(d.ri,d.y,"日",44);
-  h+=P(k.period.nian,k.period.y,"年",46)+P(k.period.yue,k.period.y,"月",46)+P(k.period.fen,k.period.y,"份",46);
-  // header
-  const hx=k.hdr.x; ["品","名","數","量","單","價","金","額","備","註"].forEach((c,i)=>h+=P(hx[i],k.hdr.y,c,44));
-  // item inputs
-  for(let i=0;i<n;i++){
-    const y=rows[i], hh=rows[i+1]-rows[i];
-    h+=`<input class="fi" data-bind="n${i}" aria-label="第${i+1}項品名" placeholder="請填上品項" style="left:${L+4}px;top:${y+4}px;width:${C1-L-8}px;height:${hh-8}px;font-size:62px;text-align:center">`;
-    h+=`<input class="fi" data-bind="q${i}" inputmode="decimal" aria-label="第${i+1}項數量" style="left:${C1+4}px;top:${y+4}px;width:${C2-C1-8}px;height:${hh-8}px;font-size:52px;text-align:center">`;
-    if(pe) h+=`<input class="fi" data-bind="p${i}" inputmode="decimal" aria-label="第${i+1}項單價" placeholder="0" style="left:${C2+4}px;top:${y+4}px;width:${C3-C2-8}px;height:${hh-8}px;font-size:42px;text-align:right;padding-right:${k.valInset.price-4}px">`;
-  }
-  // 備註 column
-  const mid=(C4+R)/2;
-  h+=P(mid,(k.stampLbl[0]+k.stampLbl[1])/2,"營業人蓋用統一發票專用章",36);
-  h+=Pc(mid,k.stampText[0],"記得要蓋",k.stampSize,"stamp")+Pc(mid,k.stampText[1],"發票章唷",k.stampSize,"stamp");
-  // bottom labels
-  const cy=r=>(r[0]+r[1])/2;
-  if(three){
-    [[235,"銷"],[420,"售"],[605,"額"],[795,"合"],[985,"計"]].forEach(([x,t])=>h+=P(x,cy(B.sales),t,46));
-    h+=P(185,cy([B.tax[0],B.tax[1]]),"營",46)+P(335,cy([B.tax[0],B.tax[1]]),"業",46)+P(485,cy([B.tax[0],B.tax[1]]),"稅",46);
-    const sy=(B.tax[0]+B.tax[2])/2;
-    h+=spread("應稅",590,665,sy,34)+spread("零稅率",770,846,sy,34)+spread("免稅",945,1022,sy,34);
-    h+=P(253,cy(B.total),"總",46)+P(937,cy(B.total),"計",46);
-  }else{
-    h+=P(153,cy(B.total),"總",46)+P(922,cy(B.total),"計",46);
-    const ty=cy(B.ttype);
-    h+=P(108,ty,"課",44)+P(253,ty,"稅",44)+P(395,ty,"別",44);
-    h+=P(500,ty,"應",44)+P(605,ty,"稅",44)+spread("零稅率",842,926,ty,40)+P(1172,ty,"免",44)+P(1257,ty,"稅",44);
-  }
-  const cnY=cy(B.cn), lx=three?235:165;
-  h+=P(lx,cnY-19,"總計新臺幣",33)+P(lx,cnY+19,"（中文大寫）",31);
-  ["億","仟","佰","拾","萬","仟","佰","拾","元"].forEach((u,i)=>h+=P(k.unitX[i],cnY,u,46));
-  h+=`<div class="c p start" style="left:${k.noteX}px;top:${k.noteY-24}px;width:1400px;height:48px;font-size:31px;letter-spacing:1px">※應稅、零稅率、免稅之銷售額應分別開立統一發票，並應於各該欄打「✓」。</div>`;
-  h+=P(k.copy.x[0],k.copy.y,"第",38)+P(k.copy.x[1],k.copy.y,"聯",38)+P(k.copy.x[2],k.copy.y,"聯",38);
-  h+=`<div id="dyn"></div>`;
-
-  const st=$("stage");
-  st.style.width=k.W+"px";st.style.height=k.H+"px";
-  st.innerHTML=h;
-  st.querySelectorAll("input.fi:not(.ghost)").forEach(el=>el.dataset.fs=parseFloat(el.style.fontSize));
-  const gi=st.querySelector("input.ghost");
-  if(gi){ const upd=()=>{document.querySelectorAll(".ubnbox").forEach((b,i)=>b.classList.toggle("cur",document.activeElement===gi&&i===Math.min(S.ubn.length,7)))};
-    gi.addEventListener("focus",upd);gi.addEventListener("blur",upd);gi.addEventListener("input",upd); }
-  fit();
-}
-
-let zoomed=false, printing=false;
-function fit(){
-  const k=g(), sc=$("invScroll"), cw=sc.clientWidth, narrow=window.matchMedia("(max-width:1080px)").matches;
-  const canFit=!narrow||cw>=760;           // wide enough to read and tap at fit size
-  const useZoom=!canFit&&zoomed;
-  const target=printing?1040:(useZoom?Math.max(940,cw):cw);
-  const s=target/k.W;
-  $("stage").style.transform=`scale(${s})`;
-  $("sizer").style.width=target+"px";$("sizer").style.height=(k.H*s)+"px";
-  sc.classList.toggle("fit",!canFit&&!zoomed);
-  const zb=$("zoomBtn"); zb.hidden=canFit;
-  zb.textContent=zoomed?"縮小看全貌":"放大檢視";zb.setAttribute("aria-pressed",zoomed);
-  $("pvCap").textContent=canFit?"擬真發票示意圖：照藍字抄寫，淺藍格子可直接填。":(zoomed?"左右滑動查看，淺藍格子可直接填。":"點發票可放大，照藍字抄寫。");
-}
-
-function renderDyn(c){
-  const k=g(), three=S.type===3, n=S.items.length, pe=priceEditable(), B=k.bottomRows;
-  const {C3,C4,rows}=k, AW=C4-k.valInset.amt-C3-16;
-  const dt=$("date").value?new Date($("date").value+"T00:00"):new Date();
-  const roc=dt.getFullYear()-1911, m=dt.getMonth()+1, day=dt.getDate(), pS=m%2?m:m-1;
-  const cy=r=>(r[0]+r[1])/2;
-  let h="";
-  const pd=k.period;
-  h+=F(pd.nian-88,pd.y,String(roc).split("").map(x=>CNS[+x]).join(""),40);
-  h+=F(pd.m1-(three?0:0),pd.y,cnSmall(pS)+"、",50)+F(pd.m2,pd.y,cnSmall(pS+1),50);
-  const d=k.date;
-  h+=F(d.nian-66,d.y,roc,46)+F(d.m,d.y,m,50)+F(d.d,d.y,day,50);
-  c.lines.forEach((l,i)=>{
-    const y=(rows[i]+rows[i+1])/2;
-    if(!pe) h+=FR(C3-k.valInset.price,y,trim(l.unit),42,C3-k.valInset.price-k.C2-14);
-    h+=FR(C4-k.valInset.amt,y,money(l.show),56,AW);
-  });
-  let svg="";
-  const last=rows.length-1;
-  if(n<last){
-    const x1=C3,y1=rows[last],x2=C4,y2=rows[n], mx=(x1+x2)/2, my=(y1+y2)/2;
-    const len=Math.hypot(x2-x1,y2-y1), ux=-(y2-y1)/len*38, uy=(x2-x1)/len*38;
-    svg+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#141414" stroke-width="3"/>`+
-         `<line x1="${mx-ux}" y1="${my-uy}" x2="${mx+ux}" y2="${my+uy}" stroke="#141414" stroke-width="3"/>`;
-  }
-  const vx=(C4-k.valInset.amt);
-  if(three){
-    h+=FR(vx,cy(B.sales),money(c.sales),56,AW)+FR(vx,(B.tax[0]+B.tax[1])/2,money(c.tax),56,AW)+FR(vx,cy(B.total),money(c.total),56,AW);
-    h+=F({A:627,Z:808,F:983}[c.tt],(B.tax[2]+B.tax[1])/2,"V",50);
-  }else{
-    h+=FR(vx,cy(B.total),money(c.total),56,AW);
-    h+=F({A:720,Z:1052,F:1387}[c.tt],cy(B.ttype),"V",50);
-  }
-  if(c.total>0&&c.total<1e9){
-    const ds=String(c.total).padStart(9," ").slice(-9), gap=(k.unitX[1]-k.unitX[0])/2;
-    ds.split("").forEach((ch,i)=>{ if(ch!==" ") h+=F(k.unitX[i]-gap,cy(B.cn),CN[+ch],46); });
-  }
-  if(three){
-    for(let i=0;i<8;i++){const b=document.querySelector(`[data-ubn="${i}"]`); if(b) b.textContent=S.ubn[i]||"";}
-    const ph=$("ubnPh"); if(ph) ph.hidden=!!S.ubn;
-  }
-  $("dyn").innerHTML=h+`<svg width="${k.W}" height="${k.H}" viewBox="0 0 ${k.W} ${k.H}" style="pointer-events:none" aria-hidden="true">${svg}</svg>`;
-}
-
-/* ---------- form ---------- */
-function getB(k){ if(k==="buyer"||k==="ubn") return S[k]; const it=S.items[+k.slice(1)]; return it?it[k[0]]:""; }
-function setB(k,v){ if(k==="ubn") v=v.replace(/\D/g,"").slice(0,8); if(k==="buyer"||k==="ubn") S[k]=v; else { const it=S.items[+k.slice(1)]; if(it) it[k[0]]=v; } }
-const _cv=document.createElement("canvas").getContext("2d");
-function fitInvText(){
-  document.querySelectorAll("#stage input.fi:not(.ghost)").forEach(el=>{
-    const base=+el.dataset.fs; if(!base) return;
-    const cs=getComputedStyle(el), avail=el.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-4;
-    _cv.font=`400 ${base}px ${cs.fontFamily}`;
-    const tw=_cv.measureText(el.value||el.placeholder||"").width;
-    el.style.fontSize=(tw>avail?Math.max(base*avail/tw,base*.45):base)+"px";
-  });
-  document.querySelectorAll("#stage .c.f").forEach(el=>{
-    if(!el.dataset.fs) el.dataset.fs=parseFloat(el.style.fontSize);
-    el.style.fontSize=el.dataset.fs+"px";
-    const sp=el.firstElementChild, tw=sp?sp.offsetWidth:el.scrollWidth;
-    if(tw>el.clientWidth) el.style.fontSize=(el.dataset.fs*el.clientWidth/tw*.97)+"px";
-  });
-}
-function sync(){ document.querySelectorAll("[data-bind]").forEach(el=>{ const v=String(getB(el.dataset.bind)); if(el===document.activeElement&&el.value.replace(/\D/g,"")===v&&el.dataset.bind==="ubn") return; if(el===document.activeElement&&el.dataset.bind!=="ubn") return; if(el.value!==v) el.value=v; }); }
-const maxItems=()=>g().rows.length-1;
-
-function renderItems(){
-  const bx=$("items");bx.querySelectorAll(".item:not(.head)").forEach(e=>e.remove());
-  S.items.forEach((it,i)=>{
-    const r=document.createElement("div");r.className="item";
-    r.innerHTML=`<span class="idx">${i+1}</span>
-      <input class="in" id="n${i}" data-bind="n${i}" aria-label="第${i+1}項品名" placeholder="第 ${i+1} 項品名" enterkeyhint="next">
-      <label class="iq lab"><span>數量</span><input class="num" id="q${i}" data-bind="q${i}" inputmode="decimal"></label>
-      <label class="ip lab"><span>單價（${incl()?"含稅":"未稅"}）</span><input class="num" id="p${i}" data-bind="p${i}" inputmode="decimal" placeholder="0"></label>
-      <button type="button" class="btn icon" aria-label="刪除第${i+1}項" ${S.items.length<2?"disabled":""}>✕</button>`;
-    r.querySelector("button").onclick=()=>{S.items.splice(i,1);rebuild()};
-    bx.appendChild(r);
-  });
-  $("addItem").disabled=S.items.length>=maxItems();
-  $("addItem").textContent=S.items.length>=maxItems()?`已達上限 ${maxItems()} 項`:"＋ 新增品項";
-  $("itemsLbl").textContent=`品項（最多 ${maxItems()} 項）`;
-}
-
-function render(){
-  const c=calc(), ubn=S.ubn.trim(), chip=$("ubnChip");
-  if(!ubn){chip.textContent="";chip.className="chip"}
-  else if(ubnValid(ubn)){chip.textContent="格式正確";chip.className="chip ok"}
-  else{chip.textContent=/^\d{8}$/.test(ubn)?"檢查碼不符":"需為 8 碼數字";chip.className="chip bad"}
-  $("sSales").textContent="NT$ "+money(c.sales);
-  $("sTax").textContent="NT$ "+money(c.tax);
-  $("sTotal").textContent="NT$ "+money(c.total);
-  $("sCn").textContent=c.total>=1e9?"總計超過發票大寫欄位上限（億位），請確認金額":cnUpper(c.total);
-  $("barTotal").textContent="NT$ "+money(c.total);
-  renderDyn(c); sync(); fitInvText(); save(); renderWarn(c); renderSaved(); lookupCompany();
-}
-function save(){ try{ localStorage.setItem("invhelper.v1",JSON.stringify({S,incl:incl(),tt:taxType(),date:$("date").value})); }catch(e){} }
-function load(){ try{ const d=JSON.parse(localStorage.getItem("invhelper.v1")||"null"); if(!d||!d.S) return false;
-  Object.assign(S,d.S); if(!Array.isArray(S.items)||!S.items.length) S.items=[{n:"",q:"1",p:""}];
-  return d; }catch(e){ return false; } }
-function rebuild(){ renderItems(); buildInvoice(); render(); }
-
-const TIPS={
-3:["賣給營業人（公司行號）時開立三聯式（統一發票使用辦法第 7 條）。",
-   "買受人名稱和統一編號必填；地址可以不填（第 9 條）。",
-   "銷售額與營業稅額要分開寫。售價本來含稅時，含稅金額 ÷ 1.05 四捨五入是銷售額，差額是稅額（營業稅法第 32 條）。",
-   "在應稅、零稅率或免稅欄打「✓」；不同課稅別的銷售額要分開開立。",
-   "扣抵聯和收執聯都要蓋統一發票專用章後交給買方，存根聯自己留（第 7、8 條）。",
-   "寫錯不要塗改：另開一張新的，寫錯的扣抵聯、收執聯註明「作廢」，黏貼在存根聯上（第 24 條）。",
-   "實務建議：沒用到的金額格畫斜線劃掉，總計依欄位用中文大寫填寫，避免被補寫。"],
-2:["賣給非營業人（一般消費者）時開立二聯式（統一發票使用辦法第 7 條）。",
-   "依定價開立，單價、金額直接寫含稅數字，不能另外加收 5%（第 9 條、營業稅法第 32 條）。",
-   "買受人名稱和地址可以不填，買方要求時要填；製造業、進口貿易業賣給消費者，須填買受人名稱及地址或身分證字號（第 9 條）。",
-   "買方是營業人、要扣抵進項稅額時，應改開三聯式。",
-   "在應稅、零稅率或免稅後面的格子打「✓」。",
-   "收執聯要蓋統一發票專用章後交給買方，存根聯自己留（第 7、8 條）。",
-   "寫錯不要塗改：另開一張新的，寫錯的收執聯註明「作廢」，黏貼在存根聯上（第 24 條）。",
-   "實務建議：沒用到的金額格畫斜線劃掉，總計依欄位用中文大寫填寫，避免被補寫。"]};
-
-function setType(t){
-  S.type=t;$("t3").setAttribute("aria-pressed",t===3);$("t2").setAttribute("aria-pressed",t===2);
-  $("buyerField").hidden=t===2;$("ubnField").hidden=t===2;$("savedField").hidden=t===2;
-  if(t===2) $("inclY").checked=true; else $("inclN").checked=true;
-  S.items=S.items.slice(0,G[t].rows.length-1);
-  $("tipsTitle").textContent=t===3?"三聯式開立重點":"二聯式開立重點";
-  $("tipsCount").textContent=`${TIPS[t].length} 項`;
-  $("tips").innerHTML=TIPS[t].map(x=>`<li>${x}</li>`).join("");
-  rebuild();
-}
-document.addEventListener("input",e=>{ const k=e.target.dataset&&e.target.dataset.bind; if(k){ if(k==="buyer") autoName=""; setB(k,e.target.value); render(); } });
-$("t3").onclick=()=>setType(3);$("t2").onclick=()=>setType(2);
-$("addItem").onclick=()=>{if(S.items.length<maxItems()){S.items.push({n:"",q:"1",p:""});rebuild();const el=$("n"+(S.items.length-1));if(el)el.focus({preventScroll:false});save()}};
-$("clear").onclick=()=>{S.buyer="";S.ubn="";S.items=[{n:"",q:"1",p:""}];rebuild();toast("已清除資料")};
-$("date").addEventListener("input",render);
-document.querySelectorAll('input[name=incl],input[name=tt]').forEach(e=>e.addEventListener("change",()=>{renderItems();buildInvoice();render()}));
-$("f").addEventListener("submit",e=>e.preventDefault());
-window.addEventListener("resize",fit);
-$("zoomBtn").onclick=()=>{zoomed=!zoomed;fit();};
-$("invScroll").addEventListener("click",e=>{ if($("invScroll").classList.contains("fit")){ zoomed=true; fit(); } });
-$("clear2").onclick=()=>$("clear").click();
-$("toInv").onclick=()=>$("preview").scrollIntoView({block:"start"});
-/* ---------- validation hints ---------- */
-function renderWarn(c){
-  const w=[], bad=v=>v!==""&&v!=null&&!(isFinite(parseFloat(v))&&parseFloat(v)>=0);
-  S.items.forEach((it,i)=>{
-    const qb=bad(it.q), pb=bad(it.p);
-    const qi=$("q"+i), pi=$("p"+i); if(qi) qi.classList.toggle("bad",qb); if(pi) pi.classList.toggle("bad",pb);
-    if(qb||pb) w.push(`第 ${i+1} 項的${qb?"數量":"單價"}要填 0 以上的數字。`);
-    if(!String(it.n||"").trim() && parseFloat(it.p)>0) w.push(`第 ${i+1} 項還沒填品名。`);
-  });
-  c.lines.forEach((l,i)=>{ if(l.unit && Math.abs(l.unit-Math.round(l.unit))>1e-9) w.push(`第 ${i+1} 項換算後的單價是 ${trim(l.unit)}，發票上可寫到小數兩位，金額欄以四捨五入後的整數為準。`); });
-  if(S.type===3 && c.total>0){
-    if(!S.buyer.trim()) w.push("三聯式的買受人（公司全名）必填。");
-    if(!S.ubn) w.push("三聯式的統一編號必填。");
-    else if(!ubnValid(S.ubn)) w.push("統一編號檢查碼不符，請再核對一次。");
-  }
-  const el=$("warn"); el.innerHTML=w.map(x=>`<li>${esc(x)}</li>`).join(""); el.hidden=!w.length;
-}
-
-/* ---------- saved customers (kept in this browser only) ---------- */
-const CK="invhelper.customers";
-const getCust=()=>{ try{ const a=JSON.parse(localStorage.getItem(CK)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
-const setCust=a=>{ try{ localStorage.setItem(CK,JSON.stringify(a.slice(0,20))); }catch(e){} };
-function renderSaved(){
-  const list=getCust(), box=$("saved"), cur=S.ubn;
-  box.innerHTML=list.map((c,i)=>`<span class="cust${c.ubn===cur&&c.name===S.buyer?" on":""}"><button type="button" class="pick" data-i="${i}">${esc(c.name)}<small>${esc(c.ubn)}</small></button><button type="button" class="rm" data-rm="${i}" aria-label="移除 ${esc(c.name)}">✕</button></span>`).join("");
-  const can=S.buyer.trim()&&ubnValid(S.ubn)&&!list.some(c=>c.ubn===S.ubn&&c.name===S.buyer.trim());
-  $("saveCust").disabled=!can;
-}
-$("saved").addEventListener("click",e=>{
-  const pk=e.target.closest(".pick"), rm=e.target.closest(".rm"), list=getCust();
-  if(pk){ const c=list[+pk.dataset.i]; S.buyer=c.name; S.ubn=c.ubn; autoName=""; lastLookup=c.ubn; render(); toast(`已帶入 ${c.name}`); }
-  if(rm){ const c=list.splice(+rm.dataset.rm,1)[0]; setCust(list); renderSaved(); toast(`已移除 ${c.name}`); }
-});
-$("saveCust").onclick=()=>{ const list=getCust().filter(c=>c.ubn!==S.ubn); list.unshift({name:S.buyer.trim(),ubn:S.ubn}); setCust(list); renderSaved(); toast("已存為常用客戶"); };
-
-/* ---------- 統編 → 公司名稱 (via /api/company on the hosted site) ---------- */
-let lastLookup="", autoName="";
-function lookupCompany(){
-  const ubn=S.ubn, el=$("lookup");
-  if(S.type!==3||!ubnValid(ubn)){ if(ubn!==lastLookup){ el.textContent=""; el.className="lookup"; } return; }
-  if(ubn===lastLookup||!/^https?:$/.test(location.protocol)) return;
-  lastLookup=ubn; el.textContent="查詢公司名稱中…"; el.className="lookup";
-  fetch("/api/company?ubn="+ubn).then(r=>r.json()).then(d=>{
-    if(S.ubn!==ubn) return;
-    if(d&&d.name){
-      const note=d.status&&!/核准設立|營業中/.test(d.status)?`（登記狀態：${d.status}，請再確認）`:"";
-      if(!S.buyer.trim()||S.buyer===autoName){ S.buyer=d.name; autoName=d.name; render(); }
-      el.textContent=`登記名稱：${d.name}${note}`; el.className="lookup "+(note?"bad":"ok");
-    }else{ el.textContent=d&&d.error?d.error:"查不到登記資料，請手動填寫公司全名。"; el.className="lookup"; }
-  }).catch(()=>{ if(S.ubn===ubn){ el.textContent="目前無法自動查詢，請手動填寫公司全名。"; el.className="lookup"; } });
-}
-
-/* ---------- download image & print ---------- */
-async function sheetCanvas(scale){
-  const st=$("stage"), wrap=document.createElement("div");
-  wrap.style.cssText="position:fixed;left:-20000px;top:0;";
-  const clone=st.cloneNode(true);
-  clone.style.transform="none"; clone.style.filter="none";
-  const src=st.querySelectorAll("input"), dst=clone.querySelectorAll("input");
-  src.forEach((el,i)=>{            // html2canvas mis-places text inside <input>; draw each one as a plain text box instead
-    const d=dst[i];
-    if(el.classList.contains("ghost")){ d.remove(); return; }
-    const box=document.createElement("div"), cs=getComputedStyle(el);
-    box.className="c f"; box.textContent=el.value;
-    box.style.cssText=`left:${el.style.left};top:${el.style.top};width:${el.style.width};height:${el.style.height};font-size:${el.style.fontSize};`+
-      `justify-content:${cs.textAlign==="right"?"flex-end":cs.textAlign==="center"?"center":"flex-start"};padding:0 ${cs.paddingRight} 0 ${cs.paddingLeft};box-sizing:border-box;overflow:hidden`;
-    d.replaceWith(box);
-  });
-  wrap.appendChild(clone); document.body.appendChild(wrap);
-  try{
-    if(document.fonts&&document.fonts.ready) await document.fonts.ready;
-    return await html2canvas(clone,{backgroundColor:"#ffffff",scale,logging:false});
-  }finally{ wrap.remove(); }
-}
-async function exportPNG(){
-  const btn=$("dlBtn"); if(!window.html2canvas){ toast("圖片功能載入中，請稍後再試"); return; }
-  btn.disabled=true; btn.textContent="產生中…";
-  try{
-    const canvas=await sheetCanvas(.6);
-    const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
-    const d=new Date(), name=`發票範例-${S.type===3?"三聯式":"二聯式"}-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}.png`;
-    const file=new File([blob],name,{type:"image/png"});
-    let shared=false;
-    if(navigator.canShare&&navigator.canShare({files:[file]})&&matchMedia("(pointer:coarse)").matches){
-      try{ await navigator.share({files:[file],title:"發票範例"}); shared=true; }catch(e){ shared=e&&e.name==="AbortError"; }
-    }
-    if(!shared){ const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast("已下載發票圖片"); }
-  }catch(e){ toast("圖片產生失敗，請再試一次"); }
-  finally{ btn.disabled=false; btn.textContent="下載圖片"; }
-}
-async function printSheet(){
-  const btn=$("printBtn");
-  if(!window.html2canvas){ window.print(); return; }
-  btn.disabled=true; btn.textContent="準備中…";
-  try{
-    const canvas=await sheetCanvas(1), img=$("printImg");
-    await new Promise(r=>{ img.onload=r; img.src=canvas.toDataURL("image/png"); });
-    document.body.classList.add("print-img");
-    window.print();
-  }catch(e){ window.print(); }
-  finally{ btn.disabled=false; btn.textContent="列印"; }
-}
-$("dlBtn").onclick=exportPNG;
-$("printBtn").onclick=printSheet;
-window.addEventListener("beforeprint",()=>{ printing=true; fit(); });
-window.addEventListener("afterprint",()=>{ printing=false; fit(); document.body.classList.remove("print-img"); });
-
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),1800); }
-{
-  const n=new Date(), today=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
-  const saved=load();
-  $("date").value=today;   // invoices are dated the day they are issued, so a saved draft keeps today's date
-  if(window.matchMedia("(max-width:639px)").matches) $("tipsBox").open=false;
-  setType(saved&&saved.S.type===2?2:3);
-  if(saved){
-    $(saved.incl?"inclY":"inclN").checked=true;
-    const tt=document.querySelector(`input[name=tt][value="${saved.tt}"]`); if(tt) tt.checked=true;
-    rebuild();
-  }
-}
+fetch("/assets/deadlines.json").then(r=>r.json()).then(d=>{
+  const n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  const it=d.items.find(x=>x.kind==="main"&&!x.roles.every(r=>r==="car")&&new Date(x.due+"T00:00")>=t); if(!it) return;
+  const due=new Date(it.due+"T00:00"), days=Math.round((due-t)/864e5), a=document.getElementById("deadline");
+  a.innerHTML=`<span class="days">${days===0?"今天":days}<small>${days===0?"":"天"}</small></span><span class="t"><span>下一個報稅期限・${due.getMonth()+1}/${due.getDate()} 截止</span><b>${it.title}</b></span><span class="go">看全部期限 →</span>`;
+  a.hidden=false;
+}).catch(()=>{});
 </script>
-
 </body>
 </html>

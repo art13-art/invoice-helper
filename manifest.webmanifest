@@ -1,6 +1,6 @@
 {
-  "name": "手開發票小幫手",
-  "short_name": "發票小幫手",
+  "name": "稅務小工具",
+  "short_name": "稅務小工具",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F3F5F8",

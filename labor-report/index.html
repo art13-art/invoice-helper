@@ -39,12 +39,7 @@
 <body>
 <header class="site-head">
   <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
-  <nav class="site-nav" aria-label="工具">
-    <a href="/">手開發票</a>
-    <a href="/rent-withholding/">租金扣繳</a>
-    <a href="/labor-report/" aria-current="page">勞報扣繳</a>
-    <a href="/tax-included/">含稅換算</a>
-  </nav>
+  <nav class="site-nav" aria-label="工具"></nav>
 </header>
 
 <div class="wrap">
@@ -137,6 +132,7 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="/assets/nav.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const R_=window.RATES, F=R_.fee, W=R_.salary, NHI=R_.nhi.rate;

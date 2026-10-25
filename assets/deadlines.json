@@ -1,0 +1,824 @@
+{
+ "generated": "2026-10-25",
+ "range": [
+  "2026-10-25",
+  "2027-12-31"
+ ],
+ "roles": {
+  "company": "公司・行號",
+  "person": "上班族・接案",
+  "landlord": "房東・屋主",
+  "car": "有車"
+ },
+ "items": [
+  {
+   "id": "plate2-2026-10-31",
+   "due": "2026-11-02",
+   "orig": "2026-10-31",
+   "start": "2026-10-01",
+   "title": "營業用車牌照稅（第二期）",
+   "roles": [
+    "car"
+   ],
+   "desc": "只有營業用車需要繳第二期；自用車 4 月已經繳過全年。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2026-10-31",
+   "due": "2026-11-02",
+   "orig": "2026-10-31",
+   "start": null,
+   "title": "繳納 9 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2026-10-31",
+   "due": "2026-11-02",
+   "orig": "2026-10-31",
+   "start": null,
+   "title": "繳納 9 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2026-11-10",
+   "due": "2026-11-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 10 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2026-11-15",
+   "due": "2026-11-16",
+   "orig": "2026-11-15",
+   "start": "2026-11-01",
+   "title": "營業稅申報（9–10 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "land-2026-11-30",
+   "due": "2026-11-30",
+   "orig": null,
+   "start": "2026-11-01",
+   "title": "繳納地價稅",
+   "roles": [
+    "landlord"
+   ],
+   "desc": "地方稅務局寄發稅單，繳納今年度的地價稅。自用住宅用地符合條件可申請 2‰ 優惠稅率（9 月 22 日前申請）。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2026-11-30",
+   "due": "2026-11-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 10 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2026-11-30",
+   "due": "2026-11-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 10 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2026-12-10",
+   "due": "2026-12-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 11 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "ins-2026-12-31",
+   "due": "2026-12-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 11 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2026-12-31",
+   "due": "2026-12-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 11 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-01-10",
+   "due": "2027-01-11",
+   "orig": "2027-01-10",
+   "start": null,
+   "title": "繳納 12 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2027-01-15",
+   "due": "2027-01-15",
+   "orig": null,
+   "start": "2027-01-01",
+   "title": "營業稅申報（11–12 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "whfile-2027-01-31",
+   "due": "2027-02-01",
+   "orig": "2027-01-31",
+   "start": "2027-01-01",
+   "title": "申報 115 年度扣繳憑單",
+   "roles": [
+    "company"
+   ],
+   "desc": "上一年度付給個人的薪資、租金、勞報等，向國稅局申報扣繳憑單或免扣繳憑單。1 月有連續 3 天以上國定假日時延長到 2 月 5 日，以財政部公告為準。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "nhifile-2027-01-31",
+   "due": "2027-02-01",
+   "orig": "2027-01-31",
+   "start": null,
+   "title": "申報補充保費扣費明細",
+   "roles": [
+    "company"
+   ],
+   "desc": "向健保署申報上一年度代扣補充保費的明細；每次繳費時已經一併申報的就不用再報。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-01-31",
+   "due": "2027-02-01",
+   "orig": "2027-01-31",
+   "start": null,
+   "title": "繳納 12 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-01-31",
+   "due": "2027-02-01",
+   "orig": "2027-01-31",
+   "start": null,
+   "title": "繳納 12 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "whgive-2027-02-10",
+   "due": "2027-02-11",
+   "orig": "2027-02-10",
+   "start": null,
+   "title": "把扣繳憑單交給所得人",
+   "roles": [
+    "company"
+   ],
+   "desc": "把扣繳憑單寄給員工、房東、接案者，他們報稅要用。申報期間延長時，交付期限延到 2 月 15 日。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "whget-2027-02-10",
+   "due": "2027-02-11",
+   "orig": "2027-02-10",
+   "start": null,
+   "title": "確認收到扣繳憑單",
+   "roles": [
+    "person",
+    "landlord"
+   ],
+   "desc": "公司應在這天前把扣繳憑單寄給你；沒收到可以跟對方要，報稅時也能用自然人憑證或健保卡下載所得資料。",
+   "link": "/labor-report/#payee",
+   "kind": "main"
+  },
+  {
+   "id": "wh-2027-02-10",
+   "due": "2027-02-11",
+   "orig": "2027-02-10",
+   "start": null,
+   "title": "繳納 1 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "ins-2027-02-28",
+   "due": "2027-03-02",
+   "orig": "2027-02-28",
+   "start": null,
+   "title": "繳納 1 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-02-28",
+   "due": "2027-03-02",
+   "orig": "2027-02-28",
+   "start": null,
+   "title": "繳納 1 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-03-10",
+   "due": "2027-03-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 2 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2027-03-15",
+   "due": "2027-03-15",
+   "orig": null,
+   "start": "2027-03-01",
+   "title": "營業稅申報（1–2 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-03-31",
+   "due": "2027-03-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 2 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-03-31",
+   "due": "2027-03-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 2 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-04-10",
+   "due": "2027-04-12",
+   "orig": "2027-04-10",
+   "start": null,
+   "title": "繳納 3 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "plate-2027-04-30",
+   "due": "2027-05-03",
+   "orig": "2027-04-30",
+   "start": "2027-04-01",
+   "title": "繳納使用牌照稅",
+   "roles": [
+    "car"
+   ],
+   "desc": "自用汽機車一年繳一次（150cc 以下機車免稅）；營業用車分 4 月、10 月兩期。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-04-30",
+   "due": "2027-05-03",
+   "orig": "2027-04-30",
+   "start": null,
+   "title": "繳納 3 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-04-30",
+   "due": "2027-05-03",
+   "orig": "2027-04-30",
+   "start": null,
+   "title": "繳納 3 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-05-10",
+   "due": "2027-05-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 4 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2027-05-15",
+   "due": "2027-05-17",
+   "orig": "2027-05-15",
+   "start": "2027-05-01",
+   "title": "營業稅申報（3–4 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "cit-2027-05-31",
+   "due": "2027-05-31",
+   "orig": null,
+   "start": "2027-05-01",
+   "title": "申報 115 年度營利事業所得稅",
+   "roles": [
+    "company"
+   ],
+   "desc": "會計年度採曆年制的公司，申報上一年度營利事業所得稅和未分配盈餘。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "pit-2027-05-31",
+   "due": "2027-05-31",
+   "orig": null,
+   "start": "2027-05-01",
+   "title": "申報 115 年度綜合所得稅",
+   "roles": [
+    "person",
+    "landlord",
+    "company"
+   ],
+   "desc": "個人報上一年度的所得，薪資、租金、勞報、股利都要列入；被扣繳的稅可以抵減，多扣的會退。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "house-2027-05-31",
+   "due": "2027-05-31",
+   "orig": null,
+   "start": "2027-05-01",
+   "title": "繳納房屋稅",
+   "roles": [
+    "landlord"
+   ],
+   "desc": "地方稅務局寄發稅單，繳納上一年度 7 月到今年 6 月的房屋稅。自住和出租的稅率不同。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-05-31",
+   "due": "2027-05-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 4 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-05-31",
+   "due": "2027-05-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 4 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-06-10",
+   "due": "2027-06-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 5 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "ins-2027-06-30",
+   "due": "2027-06-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 5 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-06-30",
+   "due": "2027-06-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 5 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-07-10",
+   "due": "2027-07-12",
+   "orig": "2027-07-10",
+   "start": null,
+   "title": "繳納 6 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2027-07-15",
+   "due": "2027-07-15",
+   "orig": null,
+   "start": "2027-07-01",
+   "title": "營業稅申報（5–6 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-07-31",
+   "due": "2027-08-02",
+   "orig": "2027-07-31",
+   "start": null,
+   "title": "繳納 6 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-07-31",
+   "due": "2027-08-02",
+   "orig": "2027-07-31",
+   "start": null,
+   "title": "繳納 6 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-08-10",
+   "due": "2027-08-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 7 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "ins-2027-08-31",
+   "due": "2027-08-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 7 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-08-31",
+   "due": "2027-08-31",
+   "orig": null,
+   "start": null,
+   "title": "繳納 7 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-09-10",
+   "due": "2027-09-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 8 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2027-09-15",
+   "due": "2027-09-16",
+   "orig": "2027-09-15",
+   "start": "2027-09-01",
+   "title": "營業稅申報（7–8 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "citpre-2027-09-30",
+   "due": "2027-09-30",
+   "orig": null,
+   "start": "2027-09-01",
+   "title": "營利事業所得稅暫繳申報",
+   "roles": [
+    "company"
+   ],
+   "desc": "按上年度應納稅額的一半暫繳。獨資、合夥、小規模營利事業、上年度沒有應納稅額，或暫繳稅額 2,000 元以下的免辦。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-09-30",
+   "due": "2027-09-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 8 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-09-30",
+   "due": "2027-09-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 8 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-10-10",
+   "due": "2027-10-12",
+   "orig": "2027-10-10",
+   "start": null,
+   "title": "繳納 9 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "plate2-2027-10-31",
+   "due": "2027-11-01",
+   "orig": "2027-10-31",
+   "start": "2027-10-01",
+   "title": "營業用車牌照稅（第二期）",
+   "roles": [
+    "car"
+   ],
+   "desc": "只有營業用車需要繳第二期；自用車 4 月已經繳過全年。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-10-31",
+   "due": "2027-11-01",
+   "orig": "2027-10-31",
+   "start": null,
+   "title": "繳納 9 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-10-31",
+   "due": "2027-11-01",
+   "orig": "2027-10-31",
+   "start": null,
+   "title": "繳納 9 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-11-10",
+   "due": "2027-11-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 10 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "vat-2027-11-15",
+   "due": "2027-11-15",
+   "orig": null,
+   "start": "2027-11-01",
+   "title": "營業稅申報（9–10 月）",
+   "roles": [
+    "company"
+   ],
+   "desc": "使用統一發票的營業人，申報上兩個月的銷售額並繳納營業稅；沒有銷售也要零申報。",
+   "link": "/tax-included/",
+   "kind": "main"
+  },
+  {
+   "id": "land-2027-11-30",
+   "due": "2027-11-30",
+   "orig": null,
+   "start": "2027-11-01",
+   "title": "繳納地價稅",
+   "roles": [
+    "landlord"
+   ],
+   "desc": "地方稅務局寄發稅單，繳納今年度的地價稅。自用住宅用地符合條件可申請 2‰ 優惠稅率（9 月 22 日前申請）。",
+   "link": null,
+   "kind": "main"
+  },
+  {
+   "id": "ins-2027-11-30",
+   "due": "2027-11-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 10 月勞保、健保、勞退",
+   "roles": [
+    "company"
+   ],
+   "desc": "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。",
+   "link": null,
+   "kind": "monthly"
+  },
+  {
+   "id": "nhi-2027-11-30",
+   "due": "2027-11-30",
+   "orig": null,
+   "start": null,
+   "title": "繳納 10 月補充保費",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  },
+  {
+   "id": "wh-2027-12-10",
+   "due": "2027-12-10",
+   "orig": null,
+   "start": null,
+   "title": "繳納 11 月扣繳稅款",
+   "roles": [
+    "company"
+   ],
+   "desc": "上個月付薪資、租金、勞報有代扣所得稅的，要在這天前繳到國庫；沒有代扣就不用。",
+   "link": "/labor-report/",
+   "kind": "monthly"
+  }
+ ]
+}

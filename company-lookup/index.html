@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>統編查詢｜用統一編號或公司名稱查公司資料</title>
+<meta name="description" content="輸入統一編號或公司名稱，查公司全名、登記狀態、代表人、地址和資本額，並檢查統編檢查碼。一鍵複製名稱和統編，或直接帶進手開發票。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F3F5F8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Layout: one search field on top, the answer card directly under it; the checksum explainer and FAQ sit below. */
+.search-wrap{max-width:860px;display:grid;gap:18px}
+.search{display:flex;gap:8px}
+.search .field{flex:1}
+.search input{font-size:18px!important;min-height:54px!important}
+.search .btn{min-height:54px;padding:0 20px}
+.recent{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.recent .lbl{font-size:13px}
+.recent button{font:inherit;font-size:14px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:99px;min-height:40px;padding:0 14px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent button:hover{border-color:var(--accent);color:var(--accent)}
+.co-name{font-family:var(--f-head);font-size:clamp(24px,3.6vw,32px);line-height:1.3;margin:4px 0 0;letter-spacing:.04em;word-break:break-word}
+.co-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:2px 10px;border-radius:99px;border:1px solid currentColor;line-height:1.6}
+.pill.ok{color:var(--ok)}
+.pill.bad{color:var(--warn)}
+.pill.kind{color:var(--muted);font-weight:500}
+.ubn-big{font-size:28px;font-weight:700;letter-spacing:.12em;font-variant-numeric:tabular-nums;color:var(--accent)}
+.facts{display:grid;grid-template-columns:7em minmax(0,1fr);gap:0;margin:0}
+.facts dt,.facts dd{padding:10px 0;border-top:1px solid var(--line);margin:0}
+.facts dt{color:var(--muted);font-size:14px}
+.facts dd{font-variant-numeric:tabular-nums;word-break:break-word}
+.list{list-style:none;margin:0;padding:0;display:grid}
+.list li{border-top:1px solid var(--line)}
+.list li:first-child{border-top:0}
+.list button{width:100%;font:inherit;background:transparent;border:0;color:var(--fg);text-align:left;cursor:pointer;padding:12px 4px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;min-height:56px}
+.list button:hover b{color:var(--accent)}
+.list b{font-size:16px;word-break:break-word}
+.list .u{font-variant-numeric:tabular-nums;letter-spacing:.06em;color:var(--muted)}
+.list small{grid-column:1/-1;color:var(--muted);font-size:13px}
+.chk{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;font-variant-numeric:tabular-nums;text-align:center;max-width:520px}
+.chk div{display:grid;gap:2px;padding:6px 0;border-radius:8px;background:var(--sunk);font-size:14px}
+.chk b{font-size:18px}
+.chk span{color:var(--muted);font-size:12px}
+.chk i{font-style:normal;font-weight:700;color:var(--accent)}
+.status-line{font-size:15px;margin:0}
+@media (max-width:639px){ .search{flex-direction:column} .search .btn{width:100%} .facts{grid-template-columns:5.5em minmax(0,1fr)} }
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>統編查詢</h1>
+    <p>輸入統一編號或公司名稱，查公司全名、登記狀態、代表人和地址。開發票、填勞報單前先確認，名稱和統編就不會寫錯。</p>
+  </div>
+
+  <div class="search-wrap">
+    <form class="search" id="f" role="search" autocomplete="off">
+      <div class="field">
+        <label for="q" class="lbl">統一編號或公司名稱</label>
+        <input id="q" type="search" placeholder="例如 22099131 或 台灣積體電路" enterkeyhint="search" autocapitalize="off" spellcheck="false">
+      </div>
+      <button class="btn primary" type="submit" style="align-self:end">查詢</button>
+    </form>
+    <div class="recent" id="recent"></div>
+
+    <section class="card" id="out" aria-live="polite"></section>
+
+    <section class="card" id="how">
+      <h2>統編檢查碼怎麼算</h2>
+      <p class="hint" style="margin-bottom:12px">統一編號最後一碼是檢查碼，打錯一個數字通常就會不符。每一位乘上 1、2、1、2、1、2、4、1，把每個乘積的十位數和個位數加起來，總和能被 5 整除就是有效的統編（2023 年起由「被 10 整除」放寬為「被 5 整除」）。第 7 碼是 7 時，乘積 28 的位數和可以算 10，也可以算 1。</p>
+      <div id="chk"></div>
+    </section>
+
+    <section class="card faq">
+      <h2>常見問題</h2>
+      <details><summary>為什麼查不到？</summary><p>這裡查的是經濟部的公司和商業（行號）登記。機關、學校、非營利團體、執行業務事務所等也有統編，但不在這份資料裡；可以改到財政部稅籍登記資料查詢。剛設立或剛變更的公司，資料可能要幾天才會更新。</p></details>
+      <details><summary>用公司名稱查，為什麼只有部分結果？</summary><p>名稱查詢只列出目前「核准設立」的公司，最多 20 筆。名稱越完整，結果越準；行號（商號）請改用統編查詢。</p></details>
+      <details><summary>狀態是「解散」或「撤銷」可以開發票嗎？</summary><p>公司已經解散或撤銷，通常已經停止營業，開三聯式發票前請先跟對方確認是否填錯統編，或是否有新設立的公司。</p></details>
+      <details><summary>資料來源是什麼？</summary><p>經濟部商工行政資料開放平臺（公司登記、商業登記資料），每次查詢的結果會暫存一天。正式資料以經濟部商工登記公示資料查詢服務為準。</p></details>
+    </section>
+  </div>
+
+  <p class="site-foot">資料來源：經濟部商工行政資料開放平臺。統編檢查碼依財政部財政資訊中心公告的檢查邏輯（可被 5 整除）。僅供參考，正式資料以經濟部商工登記公示資料為準。</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const W=[1,2,1,2,1,2,4,1];
+function ubnCheck(v){
+  if(!/^\d{8}$/.test(v)) return {ok:false,steps:null};
+  const steps=v.split("").map((d,i)=>{ const p=+d*W[i]; return {d:+d,w:W[i],p,s:Math.floor(p/10)+p%10}; });
+  const sum=steps.reduce((a,x)=>a+x.s,0);
+  const ok=sum%5===0||(v[6]==="7"&&(sum-9)%5===0);
+  return {ok,steps,sum};
+}
+const rocDate=s=>{ s=String(s||"").trim(); if(!/^\d{7}$/.test(s)) return s||"—"; return `民國 ${+s.slice(0,3)} 年 ${+s.slice(3,5)} 月 ${+s.slice(5,7)} 日`; };
+const okStatus=s=>/核准設立|營業中|核准登記/.test(s||"");
+
+/* recent lookups and saved customers live only in this browser */
+const RK="taxtools.lookup.recent", CK="invhelper.customers";
+const getJ=(k)=>{ try{ const a=JSON.parse(localStorage.getItem(k)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } };
+const setJ=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+function addRecent(c){ const a=getJ(RK).filter(x=>x.ubn!==c.ubn); a.unshift({ubn:c.ubn,name:c.name}); setJ(RK,a.slice(0,6)); showRecent(); }
+function showRecent(){
+  const a=getJ(RK); const el=$("recent");
+  el.innerHTML=a.length?`<span class="lbl">最近查過</span>`+a.map(x=>`<button type="button" data-u="${esc(x.ubn)}">${esc(x.name)}</button>`).join(""):"";
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{ $("q").value=b.dataset.u; go(); });
+}
+
+function showChk(v){
+  const r=ubnCheck(v);
+  if(!r.steps){ $("chk").innerHTML=`<p class="hint">輸入 8 碼統編，這裡會逐位算給你看。</p>`; return; }
+  $("chk").innerHTML=`<div class="chk">${r.steps.map(x=>`<div><b>${x.d}</b><span>× ${x.w}</span><span>= ${x.p}</span><i>${x.s}</i></div>`).join("")}</div>
+    <p class="status-line" style="margin-top:10px">位數和合計 <b>${r.sum}</b>${v[6]==="7"?`（第 7 碼是 7，也可以算 ${r.sum-9}）`:""}：<b style="color:var(--${r.ok?"ok":"warn"})">${r.ok?"可被 5 整除，檢查碼正確":"不能被 5 整除，檢查碼不符"}</b></p>`;
+}
+
+function card(c){
+  const ok=okStatus(c.status);
+  return `<span class="lbl">查詢結果</span>
+    <div class="co-top"><span class="pill ${ok?"ok":"bad"}">${esc(c.status||"狀態不明")}</span><span class="pill kind">${esc(c.kind)}</span></div>
+    <h2 class="co-name">${esc(c.name)}</h2>
+    <div class="ubn-big">${esc(c.ubn)}</div>
+    ${ok?"":`<p class="note warm" style="margin-top:12px">這家${c.kind==="公司"?"公司":"行號"}目前不是正常營業狀態。開發票或付款前，請先跟對方確認統編有沒有填錯。</p>`}
+    <dl class="facts" style="margin-top:14px">
+      <dt>代表人</dt><dd>${esc(c.owner||"—")}</dd>
+      <dt>地址</dt><dd>${esc(c.address||"—")}</dd>
+      <dt>資本額</dt><dd>${c.capital?`NT$ ${money(c.capital)}`:"—"}</dd>
+      <dt>設立日期</dt><dd>${esc(rocDate(c.setup))}</dd>
+      ${c.authority?`<dt>登記機關</dt><dd>${esc(c.authority)}</dd>`:""}
+    </dl>
+    <div class="actions" style="margin-top:16px">
+      <button type="button" class="btn primary" id="cpBoth">複製名稱＋統編</button>
+      <button type="button" class="btn" id="cpName">只複製名稱</button>
+      <button type="button" class="btn" id="cpUbn">只複製統編</button>
+      <a class="btn" style="display:inline-flex;align-items:center;text-decoration:none" href="/invoice-helper/?buyer=${encodeURIComponent(c.name)}&ubn=${c.ubn}">用這家開發票</a>
+      <button type="button" class="btn" id="save">存為常用客戶</button>
+    </div>`;
+}
+function bindCard(c){
+  $("cpBoth").onclick=()=>copyText(`${c.name}\n統一編號：${c.ubn}`,"已複製名稱和統編");
+  $("cpName").onclick=()=>copyText(c.name,"已複製公司名稱");
+  $("cpUbn").onclick=()=>copyText(c.ubn,"已複製統編");
+  const saved=getJ(CK).some(x=>x.ubn===c.ubn);
+  const b=$("save"); if(saved){ b.textContent="已在常用客戶"; b.disabled=true; }
+  b.onclick=()=>{ const a=getJ(CK).filter(x=>x.ubn!==c.ubn); a.unshift({name:c.name,ubn:c.ubn}); setJ(CK,a.slice(0,20)); b.textContent="已在常用客戶"; b.disabled=true; toast("已存為常用客戶，手開發票也能直接帶入"); };
+}
+
+let seq=0;
+async function go(){
+  const raw=$("q").value.trim(), out=$("out"), my=++seq;
+  const digits=raw.replace(/\s/g,"");
+  if(!raw){ out.innerHTML=`<p class="hint">輸入統一編號（8 碼數字）或公司名稱，按「查詢」。</p>`; showChk(""); return; }
+  if(/^\d+$/.test(digits)){
+    showChk(digits);
+    if(digits.length!==8){ out.innerHTML=`<p class="note">統一編號是 8 碼數字，目前是 ${digits.length} 碼。</p>`; return; }
+    const r=ubnCheck(digits);
+    if(!r.ok){ out.innerHTML=`<p class="note warm">統編 ${digits} 的檢查碼不符，通常是其中一碼打錯了。請再核對一次（下方有逐位計算）。</p>`; return; }
+    out.innerHTML=`<p class="hint">查詢中…</p>`;
+    try{
+      const d=await (await fetch("/api/company?ubn="+digits)).json(); if(my!==seq) return;
+      if(d&&d.name){ out.innerHTML=card(d); bindCard(d); addRecent(d); }
+      else out.innerHTML=d&&d.error?`<p class="note warm">${esc(d.error)}</p>`:`<p class="note">檢查碼正確，但在公司和商業登記裡查不到 ${digits}。可能是機關、學校、團體或執行業務者的統編，請看下方「為什麼查不到？」。</p>`;
+    }catch(e){ if(my===seq) out.innerHTML=`<p class="note warm">目前連不上查詢服務，請稍後再試。統編檢查碼是正確的。</p>`; }
+    return;
+  }
+  showChk("");
+  if(raw.length<2){ out.innerHTML=`<p class="note">公司名稱請至少輸入 2 個字。</p>`; return; }
+  out.innerHTML=`<p class="hint">搜尋「${esc(raw)}」中…</p>`;
+  try{
+    const d=await (await fetch("/api/company?q="+encodeURIComponent(raw))).json(); if(my!==seq) return;
+    const list=d.results||[];
+    if(!list.length){ out.innerHTML=d.error?`<p class="note warm">${esc(d.error)}</p>`:`<p class="note">找不到名稱含「${esc(raw)}」、目前核准設立的公司。試試更完整的名稱，或改用統編查詢。</p>`; return; }
+    out.innerHTML=`<span class="lbl">找到 ${list.length} 家${list.length>=20?"（只列前 20 家，名稱打完整一點會更準）":""}，點一下看詳細資料</span>
+      <ul class="list" style="margin-top:8px">${list.map(x=>`<li><button type="button" data-u="${esc(x.ubn)}"><b>${esc(x.name)}</b><span class="u">${esc(x.ubn)}</span>${x.address?`<small>${esc(x.address)}</small>`:""}</button></li>`).join("")}</ul>`;
+    out.querySelectorAll(".list button").forEach(b=>b.onclick=()=>{ $("q").value=b.dataset.u; go(); out.scrollIntoView({behavior:"smooth",block:"start"}); });
+  }catch(e){ if(my===seq) out.innerHTML=`<p class="note warm">目前連不上查詢服務，請稍後再試。</p>`; }
+}
+
+$("f").addEventListener("submit",e=>{ e.preventDefault(); $("q").blur(); go(); });
+$("q").addEventListener("input",()=>{ const v=$("q").value.replace(/\s/g,""); if(/^\d+$/.test(v)) showChk(v); if(/^\d{8}$/.test(v)) go(); });
+const pre=new URLSearchParams(location.search).get("q"); if(pre){ $("q").value=pre; }
+showRecent(); go();
+</script>
+</body>
+</html>
