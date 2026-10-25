@@ -13,68 +13,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
 <script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
 <link rel="stylesheet" href="/assets/base.css">
 <link rel="stylesheet" href="/assets/nav.css">
-<style>
-/* Layout: form on the left, a single "money split" result card + a dated to-do timeline on the right; phones get a sticky net-pay bar. */
-.result{display:grid;gap:18px}
-.r-top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
-.r-top .lbl{display:block}
-.big{font-size:clamp(34px,5vw,46px);font-weight:700;line-height:1.1;color:var(--accent);letter-spacing:0;font-variant-numeric:tabular-nums}
-.big small{font-size:15px;color:var(--muted);font-weight:500;margin-left:6px}
-.gross{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:14px;line-height:1.5}
-.gross b{display:block;color:var(--fg);font-size:20px}
-.bar{display:flex;height:40px;border-radius:10px;overflow:hidden;background:var(--sunk);border:1px solid var(--line)}
-.bar span{display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;transition:flex-basis .35s ease;min-width:0}
-.bar .s1{background:var(--c1);color:var(--on-accent)}
-.bar .s2{background:var(--c2);color:#2A1408}
-.bar .s3{background:var(--c3);color:#fff}
-.legend{display:grid;gap:0;margin:0;padding:0;list-style:none}
-.legend li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
-.legend li:first-child{border-top:0}
-.legend i{width:12px;height:12px;border-radius:3px;display:block;transform:translateY(1px)}
-.legend .t{min-width:0}
-.legend .t small{display:block;color:var(--muted);font-size:13px;line-height:1.45}
-.legend .v{font-weight:700;font-variant-numeric:tabular-nums;font-size:18px}
-.legend .zero .v{color:var(--muted);font-weight:500}
-.note{margin:0;padding:12px 14px;border-radius:10px;background:var(--accent-soft);color:var(--fg);font-size:14px;line-height:1.6}
-.note.warm{background:var(--warm-soft)}
-.year{display:flex;gap:8px 18px;flex-wrap:wrap;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
-.year b{color:var(--fg)}
-.actions{display:flex;gap:10px;flex-wrap:wrap}
-.empty{display:grid;gap:10px}
-.empty h3{margin:0;font-size:20px;font-family:var(--f-head);letter-spacing:.04em}
-.empty p{margin:0;color:var(--muted)}
-.card h2{margin:0 0 14px;font-family:var(--f-head);font-size:19px;letter-spacing:.06em}
-.steps{list-style:none;margin:0;padding:0;display:grid;gap:0}
-.steps li{display:grid;grid-template-columns:76px minmax(0,1fr);gap:14px;padding:12px 0;border-top:1px solid var(--line)}
-.steps li:first-child{border-top:0;padding-top:0}
-.steps .d{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);line-height:1.35}
-.steps .d small{display:block;font-weight:500;color:var(--muted);font-size:12px}
-.steps .w b{display:block}
-.steps .w span{color:var(--muted);font-size:14px}
-.side{display:grid;gap:18px;min-width:0}
-.faq details{border-top:1px solid var(--line);padding:2px 0}
-.faq details:first-of-type{border-top:0}
-.faq summary{cursor:pointer;list-style:none;padding:12px 0;font-weight:500;display:flex;gap:8px;align-items:center}
-.faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:"＋";margin-left:auto;color:var(--muted)}
-.faq details[open] summary::after{content:"－"}
-.faq p{margin:0 0 12px;color:var(--muted);font-size:15px;max-width:60ch}
-.bar-m{display:none}
-@media (min-width:1081px){.side{position:sticky;top:16px}}
-@media (max-width:639px){
-  .wrap{padding-bottom:110px}
-  .bar-m{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:20;align-items:center;gap:10px;background:var(--surface);border-top:1px solid var(--line);
-    box-shadow:0 -6px 18px rgba(0,0,0,.06);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-  .bar-m .t{flex:1;min-width:0;display:grid;line-height:1.25}
-  .bar-m small{font-size:12px;color:var(--muted)}
-  .bar-m b{font-size:22px;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:0}
-  .steps li{grid-template-columns:64px minmax(0,1fr)}
-  .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
-}
-@media print{.site-head,.panel,.bar-m,.actions,.faq{display:none!important}.grid{display:block}}
-</style>
+<link rel="stylesheet" href="/assets/calc.css">
 </head>
 <body>
 <header class="site-head">
@@ -82,6 +24,7 @@
   <nav class="site-nav" aria-label="工具">
     <a href="/">手開發票</a>
     <a href="/rent-withholding/" aria-current="page">租金扣繳</a>
+    <a href="/labor-report/">勞報扣繳</a>
   </nav>
 </header>
 
@@ -143,7 +86,13 @@
               <label><input type="radio" name="res" value="0">非居住者</label>
             </div>
             <p class="hint">非居住者：當年在台灣住不到 183 天的外籍人士，或戶籍在國內但長住國外的人。扣繳率是 20%，不論金額大小都要扣。</p>
-            <label class="check"><input type="checkbox" id="nhi" checked><span>要扣二代健保補充保費<br><span class="hint">房東是台灣健保的保險對象就要扣。低收入戶、中低收入戶等特定身分免扣，請以健保署規定為準。</span></span></label>
+            <span class="lbl">補充保費（房東的健保身分）</span>
+            <div class="chips" role="radiogroup" aria-label="補充保費身分">
+              <label><input type="radio" name="nhist" value="normal" checked>一般</label>
+              <label><input type="radio" name="nhist" value="vulnerable">特定弱勢身分</label>
+              <label><input type="radio" name="nhist" value="exempt">免扣</label>
+            </div>
+            <p class="hint">特定弱勢身分：中低收入戶、中低收入老人、領身心障礙生活補助、特殊境遇家庭、接受生活扶助的弱勢兒少等，單次未達基本工資 29,500 元免扣（要先提供證明）。免扣：低收入戶，或沒有台灣健保投保資格（例如戶籍已遷出國外）。</p>
           </div>
         </details>
       </section>
@@ -174,7 +123,8 @@
 <script>
 const $=id=>document.getElementById(id);
 const S={payer:"org",landlord:"person",mode:"gross"};
-const R_=window.RATES, TAX_RES=R_.rent.resident, TAX_NONRES=R_.rent.nonResident, TAX_FREE=R_.rent.exemptTaxAtOrBelow, NHI=R_.nhi.rate, NHI_MIN=R_.nhi.minPerPayment, NHI_CAP=R_.nhi.capPerPayment;
+const R_=window.RATES, TAX_RES=R_.rent.resident, TAX_NONRES=R_.rent.nonResident, TAX_FREE=R_.rent.exemptTaxAtOrBelow, NHI=R_.nhi.rate;
+const nhiStatus=()=>document.querySelector("input[name=nhist]:checked").value;
 const money=n=>Math.round(n).toLocaleString("zh-TW");
 const cyc=()=>+document.querySelector('input[name=cyc]:checked').value;
 const resident=()=>document.querySelector('input[name=res]:checked').value==="1";
@@ -183,27 +133,14 @@ const CYC_NAME={1:"每月",3:"每季",6:"每半年",12:"每年"};
 
 /* one payment */
 function split(P){
-  const res=resident(), nhiOn=$("nhi").checked;
+  const res=resident();
   let tax=Math.floor(P*(res?TAX_RES:TAX_NONRES));
   if(res && tax<=TAX_FREE) tax=0;
-  const nhi=nhiOn&&P>=NHI_MIN?Math.round(Math.min(P,NHI_CAP)*NHI):0;
+  const nhi=nhiPremium(P,"rent",nhiStatus());
   return {P,tax,nhi,net:P-tax-nhi};
 }
 /* smallest payment whose net reaches the target (net is not monotonic around the thresholds, so check candidates) */
-function solve(T){
-  if(split(T).net>=T) return split(T);
-  const rate=resident()?TAX_RES:TAX_NONRES, rates=[rate,rate+NHI,NHI];
-  const cands=[];
-  rates.forEach(r=>{ const e=Math.ceil(T/(1-r)); for(let p=Math.max(T,e-40);p<=e+40;p++){ const s=split(p); if(s.net>=T) cands.push(s); } });
-  const capE=Math.ceil((T+Math.round(NHI_CAP*NHI))/(1-rate)); for(let p=capE-40;p<=capE+40;p++){ const s=split(p); if(s.net>=T) cands.push(s); }
-  if(!cands.length) return split(T);
-  // among payments that land within 3 元 of the target, prefer the roundest number (30,000 over 29,999)
-  const tz=n=>{let z=0;while(n>0&&n%10===0){z++;n/=10;}return z;};
-  const min=Math.min(...cands.map(c=>c.net-T));
-  const near=cands.filter(c=>c.net-T<=min+3);
-  near.sort((a,b)=>tz(b.P)-tz(a.P)||a.P-b.P);
-  return near[0];
-}
+function solve(T){ const r=resident()?TAX_RES:TAX_NONRES; return solveGross(T,split,[r,r+NHI,NHI]); }
 
 const fmtD=d=>`${d.getMonth()+1}/${d.getDate()}`;
 const fmtY=d=>`${d.getFullYear()-1911} 年`;
@@ -230,12 +167,12 @@ function render(){
   const P=s.P, perMonth=P/k;
   const pct=x=>P?Math.max(0,x/P*100):0;
   const over=S.mode==="net"&&a?s.net-target:0;
-  const nhiOn=$("nhi").checked, res=resident();
+  const nhiSt=nhiStatus(), res=resident(), nhiMin=nhiSt==="vulnerable"?R_.nhi.vulnerableMin:R_.nhi.minPerPayment;
 
   let why="";
   if(!a) why=`<p class="note">輸入租金，就會算出房東實拿和公司要繳的金額。</p>`;
   else if(s.tax===0&&s.nhi===0) why=`<p class="note">這次付款 ${money(P)} 元，沒有超過門檻，不用代扣，全額付給房東。${k===1&&perMonth>=15000?" 如果改成一次付好幾個月，單次金額超過門檻就要扣。":""}</p>`;
-  else if(s.tax===0&&s.nhi>0) why=`<p class="note">這次付款剛好達 2 萬元，要扣補充保費；但所得稅扣繳額沒超過 2,000 元，所以不用扣所得稅。</p>`;
+  else if(s.tax===0&&s.nhi>0) why=`<p class="note">這次付款達 ${money(nhiMin)} 元，要扣補充保費；但所得稅扣繳額沒超過 2,000 元，所以不用扣所得稅。</p>`;
   else if(k>1&&perMonth<=20000&&res) why=`<p class="note warm">月租沒超過 2 萬，但${CYC_NAME[k]}付一次、單次 ${money(P)} 元超過門檻，所以要扣。改成每月付就不用扣。</p>`;
 
   R.innerHTML=`
@@ -252,12 +189,12 @@ function render(){
     <ul class="legend">
       <li><i style="background:var(--c1)"></i><span class="t">匯給房東<small>${S.mode==="net"&&a?(over>0?`比目標多 ${money(over)} 元，因為稅額尾數捨去`:"剛好等於房東要的金額"):"每次付款扣掉下面兩項"}</small></span><span class="v">${money(s.net)}</span></li>
       <li class="${s.tax?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">代扣所得稅 ${res?"10%":"20%"}<small>${s.tax?"公司代繳給國稅局":res?"扣繳額沒超過 2,000 元，免扣":"—"}</small></span><span class="v">${money(s.tax)}</span></li>
-      <li class="${s.nhi?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">代扣補充保費 2.11%<small>${s.nhi?"公司代繳給健保署":nhiOn?"單次未達 2 萬元，免扣":"已設定免扣"}</small></span><span class="v">${money(s.nhi)}</span></li>
+      <li class="${s.nhi?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">代扣補充保費 2.11%<small>${s.nhi?"公司代繳給健保署":nhiSt!=="exempt"?`單次未達 ${money(nhiMin)} 元，免扣`:"房東屬免扣身分"}</small></span><span class="v">${money(s.nhi)}</span></li>
     </ul>
     ${why}
     ${a?`<div class="year">一年付 ${12/k} 次：<span>租金 <b>${money(P*12/k)}</b></span><span>房東實拿 <b>${money(s.net*12/k)}</b></span><span>代扣合計 <b>${money((s.tax+s.nhi)*12/k)}</b></span></div>
     <div class="actions"><button type="button" class="btn" id="copy">複製說明給房東</button></div>`:""}`;
-  if(a) $("copy").onclick=()=>copyText(msgFor(s,k));
+  if(a) $("copy").onclick=()=>copyText(msgFor(s,k),"已複製，可以直接貼給房東");
 
   // timeline
   const d=payDay(), y=d.getFullYear(), m=d.getMonth();
@@ -274,7 +211,7 @@ function render(){
   T.innerHTML=`<h2>接下來要做的事</h2><ol class="steps">${steps.map(([dt,t,w])=>`<li><span class="d">${fmtD(dt)}<small>${dt.getFullYear()!==y?fmtY(dt):"前"}</small></span><span class="w"><b>${t}</b><span>${w}</span></span></li>`).join("")}</ol>
     <div class="actions" style="margin-top:14px"><button type="button" class="btn" id="ics">加入手機行事曆</button></div>
     <p class="hint" style="margin-top:10px">期限遇假日順延到下一個上班日。加入行事曆後，每個期限前 3 天會提醒你。</p>`;
-  $("ics").onclick=()=>downloadICS(steps.slice(1));
+  $("ics").onclick=()=>downloadICS(steps.slice(1),"租金扣繳","租金扣繳期限.ics");
   T.querySelectorAll(".steps li:first-child .d small").forEach(e=>e.textContent="付款日");
 
   $("barLbl").textContent=S.mode==="gross"?"房東實拿":"每次付款應付";
@@ -282,46 +219,27 @@ function render(){
   save();
 }
 
-function downloadICS(items){
-  const pad=n=>String(n).padStart(2,"0"), ymd=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
-  const now=new Date(), stamp=`${ymd(now)}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
-  const esc=t=>t.replace(/[\\,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
-  const ev=items.map(([d,t,w],i)=>{ const e=new Date(d); e.setDate(e.getDate()+1);
-    return ["BEGIN:VEVENT",`UID:rent-${ymd(d)}-${i}-${now.getTime()}@taxtools.tw`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${ymd(d)}`,`DTEND;VALUE=DATE:${ymd(e)}`,
-      `SUMMARY:${esc("租金扣繳："+t)}`,`DESCRIPTION:${esc(w+" （租金扣繳計算機 taxtools.tw）")}`,
-      "BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${esc(t)}`,"TRIGGER:-P3D","END:VALARM","END:VEVENT"].join("\r\n"); });
-  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//taxtools.tw//rent//ZH","CALSCALE:GREGORIAN",...ev,"END:VCALENDAR"].join("\r\n");
-  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"}), a=document.createElement("a");
-  a.href=URL.createObjectURL(blob); a.download="租金扣繳期限.ics"; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast("已產生行事曆檔，打開就能加入");
-}
 function msgFor(s,k){
   const d=payDay();
   return `房東您好：\n本次租金（${CYC_NAME[k]}${k>1?`，共 ${k} 個月`:""}）${money(s.P)} 元，`+
     (s.tax||s.nhi?`依法代扣${s.tax?`所得稅 ${money(s.tax)} 元`:""}${s.tax&&s.nhi?"、":""}${s.nhi?`二代健保補充保費 ${money(s.nhi)} 元`:""}，實際匯款 ${money(s.net)} 元。\n`:`未達代扣門檻，全額匯款 ${money(s.net)} 元。\n`)+
     `${resident()?`${s.tax?"扣繳憑單":"免扣繳憑單"}會在 ${d.getFullYear()-1910} 年 2 月 10 日前寄給您，報稅時可${s.tax?"抵減稅額":"使用"}。`:""}謝謝！`;
 }
-function copyText(t){
-  const done=()=>toast("已複製，可以直接貼給房東");
-  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,()=>fallback(t,done)); else fallback(t,done);
-}
-function fallback(t,done){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0"; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy"); done();}catch(e){ toast("無法自動複製，請手動選取"); } ta.remove(); }
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove("on"),1800); }
-
 /* remember the last inputs in this browser */
 const KEY="taxtools.rent.v1";
-function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,cyc:cyc(),res:resident(),nhi:$("nhi").checked})); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,cyc:cyc(),res:resident(),nhist:nhiStatus()})); }catch(e){} }
 function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
   Object.assign(S,d.S||{}); $("amt").value=d.amt??"";
   const c=document.querySelector(`input[name=cyc][value="${d.cyc}"]`); if(c) c.checked=true;
-  document.querySelector(`input[name=res][value="${d.res?1:0}"]`).checked=true; $("nhi").checked=d.nhi!==false;
-  if(!d.res||d.nhi===false) $("adv").open=true;
+  document.querySelector(`input[name=res][value="${d.res?1:0}"]`).checked=true;
+  const ns=document.querySelector(`input[name=nhist][value="${d.nhist||"normal"}"]`); if(ns) ns.checked=true;
+  if(!d.res||(d.nhist&&d.nhist!=="normal")) $("adv").open=true;
 }catch(e){} }
 
 document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
 $("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n){ e.target.value=n; } render(); });
-document.querySelectorAll('input[name=cyc],input[name=res],#nhi,#day').forEach(e=>e.addEventListener("change",render));
-document.querySelectorAll('input[name=res]').forEach(e=>e.addEventListener("change",()=>{ $("nhi").checked=resident(); render(); }));
+document.querySelectorAll('input[name=cyc],input[name=res],input[name=nhist],#day').forEach(e=>e.addEventListener("change",render));
+
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
 { const n=new Date(); $("day").value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; }

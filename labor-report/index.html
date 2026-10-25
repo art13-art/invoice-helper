@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>勞報單扣繳計算機｜接案、稿費、兼職要扣多少稅和補充保費</title>
+<meta name="description" content="開勞務報酬單前先算一次：執行業務 9A、稿費演講 9B、兼職薪資 50 各要扣多少所得稅和二代健保補充保費，對方實拿多少，也能從實拿反推報酬，附繳納申報期限和要收集的資料。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F3F5F8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Income-type picker: three cards, each with a code and plain-language examples */
+.types{display:grid;gap:8px}
+.types label{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line-strong);border-radius:12px;cursor:pointer;background:var(--surface)}
+.types input{position:absolute;opacity:0;pointer-events:none}
+.types .code{display:grid;place-items:center;width:44px;height:44px;border-radius:10px;background:var(--sunk);font-weight:700;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.types b{display:block;font-size:16px}
+.types small{display:block;color:var(--muted);font-size:13px;line-height:1.5}
+.types label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.types label:has(input:checked) .code{background:var(--accent);color:var(--on-accent)}
+.types label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.check-list{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+.check-list li{display:grid;grid-template-columns:20px minmax(0,1fr);gap:10px;font-size:15px;line-height:1.5}
+.check-list li::before{content:"";width:16px;height:16px;border:2px solid var(--line-strong);border-radius:4px;margin-top:3px}
+.check-list small{color:var(--muted);display:block;font-size:13px}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具">
+    <a href="/">手開發票</a>
+    <a href="/rent-withholding/">租金扣繳</a>
+    <a href="/labor-report/" aria-current="page">勞報扣繳</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>勞報單扣繳計算機</h1>
+    <p>付錢給接案者、作者、講師或兼職人員，開勞務報酬單前先算一次：要扣多少稅和補充保費、對方實拿多少、公司什麼時候要繳。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>付的是哪一種報酬</h2>
+        <div class="types" role="radiogroup" aria-label="所得類別">
+          <label><input type="radio" name="type" value="9A" checked><span class="code">9A</span><span><b>接案・專業服務</b><small>設計、攝影、顧問、表演、技藝等自己接案的服務</small></span></label>
+          <label><input type="radio" name="type" value="9B"><span class="code">9B</span><span><b>稿費・演講</b><small>寫稿、翻譯、插畫稿費、版稅、演講鐘點費</small></span></label>
+          <label><input type="radio" name="type" value="50"><span class="code">50</span><span><b>兼職・臨時工</b><small>按時數或次數計酬、要聽公司安排的工作</small></span></label>
+        </div>
+        <p class="hint">不確定選哪個？看下方「常見問題」的第一題。</p>
+      </section>
+
+      <section class="sec">
+        <h2><b>2</b>金額</h2>
+        <div class="seg" role="group" aria-label="計算方式">
+          <button type="button" data-k="mode" data-v="gross" aria-pressed="true"><b>我知道報酬</b><small>算要扣多少</small></button>
+          <button type="button" data-k="mode" data-v="net" aria-pressed="false"><b>對方要實拿</b><small>反推報酬</small></button>
+        </div>
+        <div class="field">
+          <label for="amt" id="amtLbl">這次要付的報酬</label>
+          <div class="money"><input id="amt" inputmode="numeric" placeholder="例如 30000" enterkeyhint="done"></div>
+          <p class="hint">門檻都是看「每一次付款」的金額。</p>
+        </div>
+        <div class="field">
+          <label for="day">付款日</label>
+          <input id="day" type="date">
+        </div>
+        <details class="more" id="adv">
+          <summary>對方身分（不確定就不用改）</summary>
+          <div class="inner">
+            <span class="lbl">所得稅</span>
+            <div class="chips" role="radiogroup" aria-label="居住身分">
+              <label><input type="radio" name="res" value="1" checked>住在台灣</label>
+              <label><input type="radio" name="res" value="0">非居住者</label>
+            </div>
+            <p class="hint" id="resHint"></p>
+            <span class="lbl">補充保費（對方的健保身分）</span>
+            <div class="chips" role="radiogroup" aria-label="補充保費身分">
+              <label><input type="radio" name="nhist" value="normal" checked>一般</label>
+              <label id="vulnLbl"><input type="radio" name="nhist" value="vulnerable">特定弱勢身分</label>
+              <label><input type="radio" name="nhist" value="exempt">免扣</label>
+            </div>
+            <p class="hint" id="nhiHint"></p>
+          </div>
+        </details>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="todo" aria-label="接下來要做的事"></section>
+      <section class="card">
+        <h2>勞報單要跟對方要的資料</h2>
+        <ul class="check-list" id="need"></ul>
+        <div class="actions"><button type="button" class="btn" id="askCopy">複製索取資料的訊息</button></div>
+      </section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>9A、9B、50 怎麼分？</summary><p>看工作的性質，不是看金額。自己接案、自己決定怎麼做、交付成果，是執行業務 9A。寫稿、翻譯、版稅、演講是稿費類 9B。要按公司的時間和指示工作、按時數或次數計酬，就是薪資 50（兼職）。同一個人也可能因為不同工作開不同類別。</p></details>
+        <details><summary>為什麼有時候不用扣？</summary><p>住在台灣的人，9A、9B 每次付款超過 20,009 元（扣繳稅額超過 2,000 元）才扣 10%；兼職薪資每次付款達 90,501 元才扣 5%。補充保費則是 9A、9B 單次達 2 萬元、兼職薪資單次達基本工資 29,500 元才扣。沒扣也一樣要申報扣繳憑單。</p></details>
+        <details><summary>把一筆拆成好幾次付，就能不扣嗎？</summary><p>刻意拆開付款來規避門檻，國稅局和健保署可以依實質認定合併計算，補扣並處罰。照實際的付款安排計算就好。</p></details>
+        <details><summary>對方被扣的錢拿得回來嗎？</summary><p>扣繳的所得稅是預繳，對方隔年 5 月報綜所稅時抵減，多扣的會退。稿費、版稅、講演鐘點費一年合計 18 萬元以內免稅，扣掉的通常可以全部退回。補充保費不會退。</p></details>
+        <details><summary>我是個人，付錢請人接案也要扣嗎？</summary><p>不用。代扣義務在公司、行號、機關團體、學校和執行業務者（例如事務所）。一般個人付錢給接案者，不用代扣，也不用開勞報單。</p></details>
+        <details><summary>對方是公司或工作室，有開發票呢？</summary><p>對方開統一發票給你，就是一般的營業交易，照發票付款，不用開勞報單，也不用代扣。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">依所得稅法第 4、88、92 條、各類所得扣繳率標準、薪資所得扣繳辦法及全民健康保險法補充保險費規定計算（115 年適用：9A／9B 居住者 10%、扣繳稅額超過 2,000 元才扣；非居住者 20%，非居住者稿費每次 5,000 元以下免扣；兼職薪資每次達 90,501 元扣 5%；非居住者薪資 18%，全月不超過 44,250 元為 6%；補充保費 2.11%）。僅供參考，實際以國稅局及健保署規定為準。法規數字最後確認：<span id="checked"></span>。</p>
+</div>
+
+<div class="bar-m">
+  <div class="t"><small id="barLbl">對方實拿</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const R_=window.RATES, F=R_.fee, W=R_.salary, NHI=R_.nhi.rate;
+const S={mode:"gross"};
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const type=()=>document.querySelector('input[name=type]:checked').value;
+const resident=()=>document.querySelector('input[name=res]:checked').value==="1";
+const nhiStatus=()=>{ const v=document.querySelector('input[name=nhist]:checked').value; return type()==="50"&&v==="vulnerable"?"normal":v; };
+const amt=()=>{ const v=parseInt(String($("amt").value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
+const TYPE={ "9A":{name:"執行業務報酬",code:"9A",who:"接案者"}, "9B":{name:"稿費・講演鐘點費",code:"9B",who:"作者或講者"}, "50":{name:"兼職薪資",code:"50",who:"兼職人員"} };
+
+/* tax and premium for one payment */
+function taxRateFor(P){
+  const t=type(), res=resident();
+  if(t==="50") return res?(P>=W.nonFixedMin?W.nonFixedRate:0):(P<=W.nonResidentLowMax?W.nonResidentLow:W.nonResidentHigh);
+  if(res) return F.resident;
+  if(t==="9B"&&P<=F.nonResident9BExemptAtOrBelow) return 0;
+  return F.nonResident;
+}
+function split(P){
+  const t=type(), res=resident(), r=taxRateFor(P);
+  let tax=Math.floor(P*r);
+  if(t!=="50"&&res&&tax<=F.exemptTaxAtOrBelow) tax=0;
+  const nhi=nhiPremium(P,t==="50"?"parttime":"fee",nhiStatus());
+  return {P,tax,nhi,net:P-tax-nhi,rate:r};
+}
+const solve=T=>solveGross(T,split,[.05,.06,.1,.18,.2].flatMap(r=>[r,r+NHI]).concat([NHI]));
+
+function payDay(){ const v=$("day").value; return v?new Date(v+"T00:00"):new Date(); }
+const fmtD=d=>`${d.getMonth()+1}/${d.getDate()}`;
+
+function hints(){
+  const t=type(), res=resident();
+  $("resHint").textContent= t==="50"
+    ? "非居住者：當年在台灣住不到 183 天。兼職薪資扣 18%；當月給付總額不超過基本工資 1.5 倍（44,250 元）扣 6%。這裡把這次付款當作當月總額計算。"
+    : `非居住者：當年在台灣住不到 183 天。扣 20%，不論金額大小${t==="9B"?"；但稿費、版稅、講演鐘點費每次 5,000 元以下免扣":""}。`;
+  $("vulnLbl").hidden=t==="50";
+  $("nhiHint").textContent= t==="50"
+    ? "兼職薪資單次達基本工資 29,500 元才扣。免扣：低收入戶、沒有台灣健保投保資格，或在職業工會加保、沒有固定雇主的人（要先提供投保證明）。如果對方本來就在貴公司投保，這筆不算兼職，不用另扣。"
+    : "特定弱勢身分：中低收入戶、中低收入老人、領身心障礙生活補助、特殊境遇家庭、接受生活扶助的弱勢兒少等，單次未達 29,500 元免扣。免扣：低收入戶、沒有台灣健保投保資格，或以執行業務所得自行投保的人（例如自行執業的專業人員、在職業工會投保的自營作業者），要先提供當月投保證明。";
+}
+
+function render(){
+  const t=type(), a=amt(), res=resident(), T=TYPE[t];
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.k]===b.dataset.v));
+  $("amtLbl").textContent=S.mode==="gross"?"這次要付的報酬":`${T.who}要實拿多少`;
+  hints();
+  const s=S.mode==="gross"?split(a):solve(a);
+  const P=s.P, pct=x=>P?Math.max(0,x/P*100):0, over=S.mode==="net"&&a?s.net-a:0;
+  const nhiSt=nhiStatus(), nhiMin=t==="50"?R_.nhi.partTimeMin:(nhiSt==="vulnerable"?R_.nhi.vulnerableMin:R_.nhi.minPerPayment);
+  const ratePct=(s.rate*100).toFixed(0)+"%";
+
+  let why="";
+  if(!a) why=`<p class="note">輸入金額，就會算出對方實拿和公司要繳的金額。</p>`;
+  else if(!s.tax&&!s.nhi) why=`<p class="note">這次付款 ${money(P)} 元沒有達到扣繳門檻，全額付給對方。不過一樣要在明年 1 月申報免扣繳憑單。</p>`;
+  else if(!s.tax&&s.nhi) why=`<p class="note">所得稅沒有達到扣繳門檻，但單次達 ${money(nhiMin)} 元，要扣補充保費。</p>`;
+  let extra="";
+  if(a&&t==="9B"&&res) extra=`<p class="note warm">稿費、版稅、講演鐘點費一年合計 18 萬元以內免稅。對方報稅時，這次扣的稅通常可以全部退回。</p>`;
+  if(a&&t==="50") extra=`<p class="note warm">兼職薪資另外會產生公司自己要負擔的「雇主補充保費」：每月支付的薪資總額超過員工投保金額總額的部分 × 2.11%，在次月底前跟健保署繳納，不從這筆扣。</p>`;
+
+  $("result").innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">${S.mode==="gross"?`${T.who}實拿`:"勞報單金額應該寫"}</span>
+        <div class="big">${money(S.mode==="gross"?s.net:P)}<small>元</small></div></div>
+      <div class="gross">${T.code} ${T.name}<b>NT$ ${money(P)}</b>${S.mode==="gross"?"勞報單金額":`對方實拿 ${money(s.net)}`}</div>
+    </div>
+    ${a?`<div class="bar" aria-hidden="true">
+      <span class="s1" style="flex-basis:${pct(s.net)}%">${pct(s.net)>14?"實拿":""}</span>
+      <span class="s2" style="flex-basis:${pct(s.tax)}%">${pct(s.tax)>7?"稅":""}</span>
+      <span class="s3" style="flex-basis:${pct(s.nhi)}%"></span></div>`:""}
+    <ul class="legend">
+      <li><i style="background:var(--c1)"></i><span class="t">匯給${T.who}<small>${S.mode==="net"&&a?(over>0?`比目標多 ${money(over)} 元，因為稅額尾數捨去`:"剛好等於對方要的金額"):"報酬扣掉下面兩項"}</small></span><span class="v">${money(s.net)}</span></li>
+      <li class="${s.tax?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">代扣所得稅 ${s.rate?ratePct:""}<small>${s.tax?"公司代繳給國稅局":"未達扣繳門檻，免扣"}</small></span><span class="v">${money(s.tax)}</span></li>
+      <li class="${s.nhi?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">代扣補充保費 2.11%<small>${s.nhi?"公司代繳給健保署":nhiSt==="exempt"?"對方屬免扣身分":`單次未達 ${money(nhiMin)} 元，免扣`}</small></span><span class="v">${money(s.nhi)}</span></li>
+    </ul>
+    ${why}${extra}
+    ${a?`<div class="actions"><button type="button" class="btn" id="copy">複製說明給${T.who}</button></div>`:""}`;
+  if(a) $("copy").onclick=()=>copyText(msgFor(s),`已複製，可以直接貼給${T.who}`);
+
+  // timeline
+  const d=payDay(), y=d.getFullYear(), m=d.getMonth();
+  const next10=new Date(y,m+1,10), nextEnd=new Date(y,m+2,0), plus10=new Date(y,m,d.getDate()+10), jan31=new Date(y+1,0,31), feb10=new Date(y+1,1,10);
+  const steps=[[d,"付款",`匯 ${money(s.net)} 元給${T.who}，請對方在勞報單上簽名。`]];
+  if(s.tax) steps.push(res?[next10,"繳納扣繳稅款",`把代扣的 ${money(s.tax)} 元用扣繳稅款繳款書繳到國庫。`]:[plus10,"繳稅並申報（非居住者）",`付款後 10 天內繳納 ${money(s.tax)} 元，並開具扣繳憑單向國稅局申報。`]);
+  if(s.nhi) steps.push([nextEnd,"繳納補充保費",`把代扣的 ${money(s.nhi)} 元繳給健保署。`]);
+  if(a&&res) steps.push([jan31,s.tax?"申報扣繳憑單":"申報免扣繳憑單",`明年 1 月底前向國稅局申報（所得類別 ${T.code}）。${s.tax?"":"沒扣稅也要報。"}`]);
+  if(s.nhi) steps.push([jan31,"申報補充保費明細","明年 1 月底前向健保署申報扣費明細；每次繳費時已一併申報就不用再報。"]);
+  if(a&&res) steps.push([feb10,"把憑單交給對方","明年 2 月 10 日前把扣繳憑單寄給對方，對方報稅要用。"]);
+  $("todo").innerHTML=`<h2>接下來要做的事</h2><ol class="steps">${steps.map(([dt,ti,w],i)=>`<li><span class="d">${fmtD(dt)}<small>${i===0?"付款日":dt.getFullYear()!==y?`${dt.getFullYear()-1911} 年`:"前"}</small></span><span class="w"><b>${ti}</b><span>${w}</span></span></li>`).join("")}</ol>
+    ${steps.length>1?`<div class="actions" style="margin-top:14px"><button type="button" class="btn" id="ics">加入手機行事曆</button></div>`:""}
+    <p class="hint" style="margin-top:10px">期限遇假日順延到下一個上班日。</p>`;
+  if(steps.length>1) $("ics").onclick=()=>downloadICS(steps.slice(1),"勞報扣繳","勞報扣繳期限.ics");
+
+  // documents to collect
+  const need=res
+    ?[["姓名、身分證字號","申報扣繳憑單要用"],["戶籍地址","憑單要寄到這裡"],["匯款帳戶",""],["簽名或蓋章","在勞報單上確認領款金額"],["身分證正反面影本","多數公司內控需要"]]
+    :[["姓名（同護照）、護照號碼或居留證號",""],["國籍和當年在台天數","判斷是不是非居住者"],["國外地址",""],["匯款帳戶",""],["簽名","在勞報單上確認領款金額"]];
+  if(t==="50"&&nhiSt==="exempt") need.push(["職業工會投保證明","主張免扣補充保費時需要"]);
+  if(t!=="50"&&nhiSt!=="normal") need.push(["身分證明或當月投保證明","主張補充保費門檻提高或免扣時需要"]);
+  $("need").innerHTML=need.map(([a,b])=>`<li><span>${a}${b?`<small>${b}</small>`:""}</span></li>`).join("");
+  $("askCopy").onclick=()=>copyText(`您好，為了開立勞務報酬單（${T.code} ${T.name}），麻煩提供以下資料：\n`+need.map(([a],i)=>`${i+1}. ${a}`).join("\n")+`\n這次報酬 ${money(P)} 元${s.tax||s.nhi?`，依法會代扣${s.tax?`所得稅 ${money(s.tax)} 元`:""}${s.tax&&s.nhi?"、":""}${s.nhi?`補充保費 ${money(s.nhi)} 元`:""}，實際匯款 ${money(s.net)} 元`:""}。謝謝！`,"已複製索取資料的訊息");
+
+  $("barLbl").textContent=S.mode==="gross"?`${T.who}實拿`:"勞報單金額";
+  $("barVal").textContent="NT$ "+money(S.mode==="gross"?s.net:P);
+  save();
+}
+
+function msgFor(s){
+  const T=TYPE[type()], d=payDay();
+  return `您好：\n這次${T.name}（${T.code}）${money(s.P)} 元，`+
+    (s.tax||s.nhi?`依法代扣${s.tax?`所得稅 ${money(s.tax)} 元`:""}${s.tax&&s.nhi?"、":""}${s.nhi?`二代健保補充保費 ${money(s.nhi)} 元`:""}，實際匯款 ${money(s.net)} 元。\n`:`未達代扣門檻，全額匯款 ${money(s.net)} 元。\n`)+
+    (resident()?`${s.tax?"扣繳憑單":"免扣繳憑單"}會在 ${d.getFullYear()-1910} 年 2 月 10 日前寄給您，報稅時可${s.tax?"抵減稅額":"使用"}。`:"")+"謝謝！";
+}
+
+const KEY="taxtools.labor.v1";
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,type:type(),res:resident(),nhist:document.querySelector('input[name=nhist]:checked').value})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+  Object.assign(S,d.S||{}); $("amt").value=d.amt??"";
+  const q=(n,v)=>{ const e=document.querySelector(`input[name=${n}][value="${v}"]`); if(e) e.checked=true; };
+  q("type",d.type); q("res",d.res?1:0); q("nhist",d.nhist||"normal");
+  if(!d.res||(d.nhist&&d.nhist!=="normal")) $("adv").open=true;
+}catch(e){} }
+
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
+$("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n) e.target.value=n; render(); });
+document.querySelectorAll('input[name=type],input[name=res],input[name=nhist],#day').forEach(e=>e.addEventListener("change",render));
+document.querySelectorAll('input[name=res]').forEach(e=>e.addEventListener("change",()=>{ if(!resident()){ const x=document.querySelector('input[name=nhist][value="exempt"]'); x.checked=true; } render(); }));
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+{ const n=new Date(); $("day").value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; }
+$("checked").textContent=R_.checked.replace(/-/g,"/");
+load(); if(!$("amt").value) $("amt").value="30,000";
+render();
+</script>
+</body>
+</html>
