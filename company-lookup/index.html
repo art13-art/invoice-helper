@@ -166,6 +166,42 @@ function bindCard(c){
   b.onclick=()=>{ const a=getJ(CK).filter(x=>x.ubn!==c.ubn); a.unshift({name:c.name,ubn:c.ubn}); setJ(CK,a.slice(0,20)); b.textContent="已在常用客戶"; b.disabled=true; toast("已存為常用客戶，手開發票也能直接帶入"); };
 }
 
+// If our server can't reach the registry, try straight from this browser (a Taiwan connection is often let through when an overseas server is not).
+const GC="https://data.gcis.nat.gov.tw/od/data/api/";
+const pk=(o,...k)=>{ for(const x of k){ const v=o&&o[x]; if(v!=null&&typeof v!=="object"&&String(v).trim()) return String(v).trim(); } return ""; };
+const nm=v=>Number(String(v||"").replace(/[^\d]/g,""))||0;
+const rocObj=d=>d&&d.year?String(d.year-1911).padStart(3,"0")+String(d.month).padStart(2,"0")+String(d.day).padStart(2,"0"):"";
+const jget=async(u)=>{ const r=await fetch(u,{signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined}); if(!r.ok) throw 0; const t=(await r.text()).trim(); return t?JSON.parse(t):null; };
+async function directUbn(u){
+  try{
+    const c=((await jget(`${GC}5F64D864-61CB-4D0D-8AD9-492047CC1EA6?$format=json&$filter=Business_Accounting_NO%20eq%20${u}&$skip=0&$top=1`))||[])[0];
+    if(c&&c.Company_Name) return {kind:"公司",ubn:u,name:pk(c,"Company_Name"),status:pk(c,"Company_Status_Desc"),address:pk(c,"Company_Location"),owner:pk(c,"Responsible_Name"),capital:nm(pk(c,"Paid_In_Capital_Amount","Capital_Stock_Amount")),setup:pk(c,"Company_Setup_Date"),authority:pk(c,"Register_Organization_Desc")};
+    const b=((await jget(`${GC}426D5542-5F05-43EB-83F9-F1300F14E1F1?$format=json&$filter=President_No%20eq%20${u}&$skip=0&$top=1`))||[])[0];
+    if(b&&b.Business_Name) return {kind:"商業（行號）",ubn:u,name:pk(b,"Business_Name"),status:pk(b,"Business_Current_Status_Desc","Business_Current_Status"),address:pk(b,"Business_Address"),owner:pk(b,"Responsible_Name"),capital:nm(pk(b,"Business_Register_Funds","Capital_Amount")),setup:pk(b,"Business_Setup_Approve_Date"),authority:pk(b,"Agency_Desc")};
+    return {name:null};
+  }catch(e){}
+  try{
+    const d=((await jget(`https://company.g0v.ronny.tw/api/show/${u}`))||{}).data;
+    if(!d) return {name:null};
+    return {kind:d["公司名稱"]?"公司":"商業（行號）",ubn:u,name:pk(d,"公司名稱","商業名稱","名稱"),status:pk(d,"公司狀況","現況"),address:pk(d,"公司所在地","地址"),owner:pk(d,"代表人姓名","負責人姓名"),capital:nm(pk(d,"實收資本額(元)","資本總額(元)","資本額(元)")),setup:rocObj(d["核准設立日期"]),authority:pk(d,"登記機關")};
+  }catch(e){}
+  return null;
+}
+async function directSearch(q){
+  try{
+    const j=await jget(`https://company.g0v.ronny.tw/api/search?q=${encodeURIComponent(q)}`);
+    return ((j&&j.data)||[]).map(r=>({ubn:pk(r,"統一編號"),name:pk(r,"公司名稱","商業名稱","名稱"),status:pk(r,"公司狀況","現況"),address:pk(r,"公司所在地","地址")})).filter(r=>r.ubn&&r.name).slice(0,20);
+  }catch(e){ return null; }
+}
+async function apiUbn(u){
+  try{ const r=await fetch("/api/company?ubn="+u); if(r.ok||r.status===400) return await r.json(); }catch(e){}
+  return await directUbn(u);
+}
+async function apiSearch(q){
+  try{ const r=await fetch("/api/company?q="+encodeURIComponent(q)); if(r.ok||r.status===400) return await r.json(); }catch(e){}
+  const l=await directSearch(q); return l?{results:l}:null;
+}
+
 let seq=0;
 async function go(){
   const raw=$("q").value.trim(), out=$("out"), my=++seq;
@@ -178,17 +214,19 @@ async function go(){
     if(!r.ok){ out.innerHTML=`<p class="note warm">統編 ${digits} 的檢查碼不符，通常是其中一碼打錯了。請再核對一次（下方有逐位計算）。</p>`; return; }
     out.innerHTML=`<p class="hint">查詢中…</p>`;
     try{
-      const d=await (await fetch("/api/company?ubn="+digits)).json(); if(my!==seq) return;
+      const d=await apiUbn(digits); if(my!==seq) return;
+      if(!d) throw 0;
       if(d&&d.name){ out.innerHTML=card(d); bindCard(d); addRecent(d); }
       else out.innerHTML=d&&d.error?`<p class="note warm">${esc(d.error)}</p>`:`<p class="note">檢查碼正確，但在公司和商業登記裡查不到 ${digits}。可能是機關、學校、團體或執行業務者的統編，請看下方「為什麼查不到？」。</p>`;
-    }catch(e){ if(my===seq) out.innerHTML=`<p class="note warm">目前連不上查詢服務，請稍後再試。統編檢查碼是正確的。</p>`; }
+    }catch(e){ if(my===seq) out.innerHTML=`<p class="note warm">目前連不上經濟部的登記資料，請稍後再試。統編檢查碼是正確的，可以先用。</p>`; }
     return;
   }
   showChk("");
   if(raw.length<2){ out.innerHTML=`<p class="note">公司名稱請至少輸入 2 個字。</p>`; return; }
   out.innerHTML=`<p class="hint">搜尋「${esc(raw)}」中…</p>`;
   try{
-    const d=await (await fetch("/api/company?q="+encodeURIComponent(raw))).json(); if(my!==seq) return;
+    const d=await apiSearch(raw); if(my!==seq) return;
+    if(!d) throw 0;
     const list=d.results||[];
     if(!list.length){ out.innerHTML=d.error?`<p class="note warm">${esc(d.error)}</p>`:`<p class="note">找不到名稱含「${esc(raw)}」、目前核准設立的公司。試試更完整的名稱，或改用統編查詢。</p>`; return; }
     out.innerHTML=`<span class="lbl">找到 ${list.length} 家${list.length>=20?"（只列前 20 家，名稱打完整一點會更準）":""}，點一下看詳細資料</span>
