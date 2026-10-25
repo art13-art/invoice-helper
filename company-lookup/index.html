@@ -80,7 +80,7 @@
 
     <section class="card" id="out" aria-live="polite"></section>
 
-    <section class="card" id="how">
+    <section class="card plain" id="how">
       <h2>統編檢查碼怎麼算</h2>
       <p class="hint" style="margin-bottom:12px">統一編號最後一碼是檢查碼，打錯一個數字通常就會不符。每一位乘上 1、2、1、2、1、2、4、1，把每個乘積的十位數和個位數加起來，總和能被 5 整除就是有效的統編（2023 年起由「被 10 整除」放寬為「被 5 整除」）。第 7 碼是 7 時，乘積 28 的位數和可以算 10，也可以算 1。</p>
       <div id="chk"></div>
@@ -149,10 +149,12 @@ function card(c){
     </dl>
     <div class="actions" style="margin-top:16px">
       <button type="button" class="btn primary" id="cpBoth">複製名稱＋統編</button>
-      <button type="button" class="btn" id="cpName">只複製名稱</button>
-      <button type="button" class="btn" id="cpUbn">只複製統編</button>
-      <a class="btn" style="display:inline-flex;align-items:center;text-decoration:none" href="/invoice-helper/?buyer=${encodeURIComponent(c.name)}&ubn=${c.ubn}">用這家開發票</a>
-      <button type="button" class="btn" id="save">存為常用客戶</button>
+      <a class="btn" style="display:inline-flex;align-items:center;text-decoration:none" href="/invoice-helper/?buyer=${encodeURIComponent(c.name)}&ubn=${c.ubn}">用這家開發票 →</a>
+    </div>
+    <div class="actions" style="gap:0 14px;margin-top:6px">
+      <button type="button" class="btn link" id="cpName">只複製名稱</button>
+      <button type="button" class="btn link" id="cpUbn">只複製統編</button>
+      <button type="button" class="btn link" id="save">＋ 存為常用客戶</button>
     </div>`;
 }
 function bindCard(c){

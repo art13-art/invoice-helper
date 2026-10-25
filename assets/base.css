@@ -59,6 +59,9 @@ input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 .check input{width:20px;height:20px;margin:2px 0 0;accent-color:var(--accent);flex:none}
 .btn{font:inherit;font-size:15px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:8px;padding:0 14px;min-height:var(--tap);cursor:pointer}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.btn.link{border:0;background:transparent;color:var(--accent);padding:0 4px;min-height:40px;font-size:14px;font-weight:500}
+.btn.link:hover{text-decoration:underline}
+.btn.link:disabled{color:var(--muted);text-decoration:none;cursor:default}
 .btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 details.more{border:1px solid var(--line);border-radius:10px;background:var(--sunk)}
 details.more summary{cursor:pointer;list-style:none;padding:12px 14px;font-size:14px;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:8px}
@@ -67,14 +70,17 @@ details.more summary::after{content:"";margin-left:auto;width:8px;height:8px;bor
 details.more[open] summary::after{transform:rotate(-135deg)}
 details.more .inner{padding:0 14px 14px;display:grid;gap:12px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;min-width:0}
+/* Secondary reading (FAQ, explainers) sits on the page without a box so the result card stays the one thing that stands out. */
+.card.plain,.card.faq{background:transparent;border:0;border-radius:0;padding:4px 4px 0}
 .num{font-variant-numeric:tabular-nums}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,12px);opacity:0;pointer-events:none;
   background:var(--fg);color:var(--bg);font-size:14px;padding:8px 16px;border-radius:99px;z-index:30;transition:opacity .2s,transform .2s}
 .toast.on{opacity:1;transform:translate(-50%,0)}
-.site-foot{color:var(--muted);font-size:13px;max-width:60em}
+.site-foot{color:var(--muted);font-size:12.5px;line-height:1.7;max-width:60em;margin:0;padding-top:16px;border-top:1px solid var(--line)}
 @media (max-width:639px){
   .wrap{padding-block:14px 48px;gap:18px}
   .panel{padding:2px 16px 16px;border-radius:12px}
   .card{padding:18px 16px}
+  .card.plain,.card.faq{padding:4px 2px 0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

@@ -200,12 +200,12 @@ function render(){
   else if(!s.tax&&s.nhi) why=`<p class="note">所得稅沒有達到扣繳門檻，但單次達 ${money(nhiMin)} 元，要扣補充保費。</p>`;
   let extra="";
   if(pe){
-    if(a&&!res&&(s.tax||s.nhi)) extra=`<p class="note warm">非居住者被扣繳後就算完稅，這筆不用再自己申報。</p>`;
-    else if(a&&t==="9B") extra=`<p class="note warm">稿費、版稅、講演鐘點費一年合計 ${money(F.royaltyAnnualTaxFree)} 元以內免稅。${s.tax?`這次被扣的 ${money(s.tax)} 元，報稅時通常可以全部退回。`:""}</p>`;
-    else if(a&&t==="9A"&&s.tax) extra=`<p class="note warm">被扣的 ${money(s.tax)} 元是預繳稅款，明年 5 月報稅時會抵減；你的適用稅率低於 10% 的話，多扣的會退回。</p>`;
-    else if(a&&t==="50") extra=`<p class="note warm">兼職薪資報稅時，可以減除薪資所得特別扣除額（${R_.year} 年度每人 ${money(R_.salaryDeduction)} 元，跟正職薪資合併計算）。</p>`;
+    if(a&&!res&&(s.tax||s.nhi)) extra=`<p class="note">非居住者被扣繳後就算完稅，這筆不用再自己申報。</p>`;
+    else if(a&&t==="9B") extra=`<p class="note">稿費、版稅、講演鐘點費一年合計 ${money(F.royaltyAnnualTaxFree)} 元以內免稅。${s.tax?`這次被扣的 ${money(s.tax)} 元，報稅時通常可以全部退回。`:""}</p>`;
+    else if(a&&t==="9A"&&s.tax) extra=`<p class="note">被扣的 ${money(s.tax)} 元是預繳稅款，明年 5 月報稅時會抵減；你的適用稅率低於 10% 的話，多扣的會退回。</p>`;
+    else if(a&&t==="50") extra=`<p class="note">兼職薪資報稅時，可以減除薪資所得特別扣除額（${R_.year} 年度每人 ${money(R_.salaryDeduction)} 元，跟正職薪資合併計算）。</p>`;
   }else{
-    if(a&&t==="9B"&&res) extra=`<p class="note warm">稿費、版稅、講演鐘點費一年合計 18 萬元以內免稅。對方報稅時，這次扣的稅通常可以全部退回。</p>`;
+    if(a&&t==="9B"&&res) extra=`<p class="note">稿費、版稅、講演鐘點費一年合計 18 萬元以內免稅。對方報稅時，這次扣的稅通常可以全部退回。</p>`;
     if(a&&t==="50") extra=`<p class="note warm">兼職薪資另外會產生公司自己要負擔的「雇主補充保費」：每月支付的薪資總額超過員工投保金額總額的部分 × 2.11%，在次月底前跟健保署繳納，不從這筆扣。</p>`;
   }
 

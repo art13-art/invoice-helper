@@ -24,6 +24,7 @@
 .next .days small{font-size:16px;color:var(--muted);font-weight:500;margin-left:4px}
 .next h2{margin:0;font-family:var(--f-head);font-size:clamp(20px,2.6vw,26px);letter-spacing:.04em}
 .next p{margin:0;color:var(--muted)}
+.next .go{justify-self:start;display:inline-flex;align-items:center;min-height:40px;color:var(--accent);font-weight:700;text-decoration:none}
 .month{display:grid;gap:0}
 .month h3{margin:0 0 6px;font-size:14px;color:var(--muted);letter-spacing:.12em;font-weight:700}
 .ev{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;padding:12px 0;border-top:1px solid var(--line)}
@@ -36,15 +37,20 @@
 .ev.past{opacity:.45}
 .ev .t b{display:block;font-size:16px}
 .ev .t p{margin:2px 0 0;color:var(--muted);font-size:14px;line-height:1.6}
-.ev .meta{display:flex;gap:6px 10px;flex-wrap:wrap;margin-top:6px;font-size:13px}
-.tag{display:inline-flex;align-items:center;padding:0 8px;border-radius:99px;background:var(--sunk);color:var(--muted);line-height:22px}
-.tag.shift{background:var(--warm-soft);color:var(--fg)}
-.ev .meta{align-items:center}
-.ev .meta a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:99px;color:var(--accent);font-weight:500;text-decoration:none}
-.ev .meta a:hover{border-color:var(--accent)}
-.ev.monthly .t b{font-weight:500}
+.ev .meta{display:flex;gap:4px 14px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:13px;color:var(--muted)}
+.ev .meta .left{color:var(--accent);font-weight:700}
+.ev .meta a{display:inline-flex;align-items:center;min-height:40px;margin-block:-8px;color:var(--accent);font-weight:500;text-decoration:none}
+.ev .meta a:hover{text-decoration:underline}
+.ev.monthly{padding:8px 0}
+.ev.monthly .d{background:transparent;padding:2px 0}
+.ev.monthly .d b{font-size:17px}
+.ev.monthly.soon .d{background:transparent;color:var(--accent)}
+.ev.monthly.soon .d span{color:var(--muted)}
+.ev.monthly .t b{font-weight:500;font-size:15px}
+.ev.monthly .t p{display:none}
 .timeline{display:grid;gap:22px}
 .sub-actions{display:grid;gap:8px}
+.sub-more{display:flex;gap:4px 18px;flex-wrap:wrap;justify-content:center}
 .sub-actions .btn,.sub-actions a.btn{width:100%;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;text-align:center}
 .count{font-size:13px;color:var(--muted)}
 @media (max-width:639px){ .ev{grid-template-columns:54px minmax(0,1fr);gap:12px} .ev .d b{font-size:20px} }
@@ -79,8 +85,7 @@
         <div class="sub-actions">
           <a class="btn primary" id="subApple" href="#">訂閱到 iPhone 行事曆</a>
           <a class="btn" id="subGoogle" href="#" target="_blank" rel="noopener">加到 Google 日曆</a>
-          <button type="button" class="btn" id="dl">下載行事曆檔（.ics）</button>
-          <button type="button" class="btn" id="cpUrl">複製訂閱網址</button>
+          <div class="sub-more"><button type="button" class="btn link" id="dl">下載 .ics 檔</button><button type="button" class="btn link" id="cpUrl">複製訂閱網址</button></div>
         </div>
         <p class="hint">訂閱會自動更新：期限有變動或新年度公布時，手機上的行事曆會跟著更新，每個期限前 7 天提醒（每月例行的前 2 天）。下載檔案則是一次性的。</p>
       </section>
@@ -147,7 +152,7 @@ function render(){
     $("next").innerHTML=`<span class="lbl">下一個期限</span>
       <div class="when"><span class="days">${days===0?"今天":days}<small>${days===0?"截止":"天後"}</small></span><span class="num">${md(nx.due)}（${WD[D(nx.due).getDay()]}）截止${nx.orig?"，遇假日順延":""}</span></div>
       <h2>${esc(nx.title)}</h2><p>${esc(nx.desc)}</p>
-      ${nx.link?`<div class="actions" style="margin-top:8px"><a class="btn" style="display:inline-flex;align-items:center;text-decoration:none" href="${nx.link}">打開相關工具</a></div>`:""}`;
+      ${nx.link?`<a class="go" href="${nx.link}">打開相關工具 →</a>`:""}`;
   }else $("next").innerHTML=`<span class="lbl">下一個期限</span><h2>目前沒有資料</h2>`;
 
   // group by month
@@ -157,10 +162,10 @@ function render(){
   shown.forEach(it=>{ const d=D(it.due), k=`${d.getFullYear()}-${d.getMonth()}`; (groups[k]=groups[k]||{y:d.getFullYear(),m:d.getMonth()+1,items:[]}).items.push(it); });
   $("list").innerHTML=Object.values(groups).map(g=>`<section class="month"><h3>${g.y-1911} 年 ${g.m} 月</h3>${g.items.map(it=>{
     const d=D(it.due), days=Math.round((d-t)/864e5);
-    const tags=it.roles.filter(x=>r.includes(x)).map(x=>`<span class="tag">${esc(DATA.roles[x])}</span>`).join("");
+    const meta=[it.orig?`<span>原 ${md(it.orig)}，遇假日順延</span>`:"", days<=14?`<span class="left">還有 ${days} 天</span>`:"", it.link&&it.kind!=="monthly"?`<a href="${it.link}">相關工具 →</a>`:""].filter(Boolean).join("");
     return `<div class="ev ${days<=14?"soon":""} ${it.kind}"><div class="d"><b>${d.getMonth()+1}/${d.getDate()}</b><span>週${WD[d.getDay()]}</span></div>
       <div class="t"><b>${esc(it.title)}</b><p>${it.start?`${md(it.start)}～${md(it.due)}・`:""}${esc(it.desc)}</p>
-      <div class="meta">${tags}${it.orig?`<span class="tag shift">原 ${md(it.orig)}，遇假日順延</span>`:""}${days<=14?`<span class="tag shift">還有 ${days} 天</span>`:""}${it.link?`<a href="${it.link}">打開相關工具</a>`:""}</div></div></div>`;
+      ${meta?`<div class="meta">${meta}</div>`:""}</div></div>`;
   }).join("")}</section>`).join("")+(rest?`<button type="button" class="btn" id="more" style="width:100%">顯示之後的 ${rest} 個期限</button>`:(showAll&&upcoming.some(it=>D(it.due)>=horizon)?`<button type="button" class="btn" id="less" style="width:100%">只看未來 3 個月</button>`:""));
   const m=$("more"); if(m) m.onclick=()=>{ showAll=true; render(); };
   const l=$("less"); if(l) l.onclick=()=>{ showAll=false; render(); $("list").scrollIntoView({block:"start"}); };

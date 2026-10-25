@@ -20,10 +20,11 @@
 <style>
 /* Each amount row carries its own copy button; the uppercase card mirrors the 億…元 boxes printed on invoices. */
 .legend .v{display:flex;align-items:center;gap:8px}
-.cp{font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);border-radius:99px;min-height:40px;min-width:52px;padding:0 10px;cursor:pointer}
-.cp:hover{color:var(--accent);border-color:var(--accent)}
+.cp{display:inline-grid;place-items:center;vertical-align:middle;border:0;background:transparent;color:var(--muted);border-radius:8px;width:40px;height:40px;margin:-10px -10px -10px 0;padding:0;cursor:pointer}
+.cp svg{width:17px;height:17px}
+.cp:hover{color:var(--accent);background:var(--accent-soft)}
 .cp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.how{margin:0;padding:12px 14px;border-radius:10px;border:1px dashed var(--line-strong);font-size:14px;line-height:1.7;color:var(--muted);font-variant-numeric:tabular-nums}
+.how{margin:0;padding:12px 14px;border-radius:10px;background:var(--sunk);font-size:14px;line-height:1.7;color:var(--muted);font-variant-numeric:tabular-nums}
 .how b{color:var(--fg)}
 .upper-text{font-size:clamp(20px,3.2vw,26px);font-weight:700;letter-spacing:.06em;line-height:1.5;word-break:break-all;margin:0}
 .digits{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));border:1.5px solid var(--fg);border-radius:6px;overflow:hidden;max-width:640px}
@@ -131,7 +132,7 @@ function upperCard(n){
   const first=ds.findIndex(c=>c!==" ");
   return `<h2>${S.mode==="upper"?"中文大寫":"總計的中文大寫"}</h2>
     <p class="upper-text" id="upperTxt">${cnUpper(n)}</p>
-    <div class="actions" style="margin:12px 0 16px"><button type="button" class="btn" id="cpUpper">複製大寫</button></div>
+    <div class="actions" style="margin:4px 0 12px"><button type="button" class="btn link" id="cpUpper">複製大寫</button></div>
     <span class="lbl">寫在發票「總計新臺幣（中文大寫）」欄時，照這樣填：</span>
     <div class="digits-wrap" style="margin-top:8px"><div class="digits" style="--n:${len}">${u.map((x,i)=>`<div><span>${x}</span><b class="${ds[i]===" "?"x":""}">${ds[i]===" "?(i<first?"╳":""):D[+ds[i]]}</b></div>`).join("")}</div></div>
     <p class="hint" style="margin-top:10px">最高位前面的空格畫 ╳，避免被補字。</p>`;
@@ -157,7 +158,7 @@ function render(){
   const how=S.mode==="incl"
     ? `<b>算法</b>：未稅 = 含稅 ÷ ${(1+c.r).toFixed(c.r*100%1?4:2)} = ${c.raw.toLocaleString("zh-TW",{maximumFractionDigits:2})} → 四捨五入 <b>${money(c.sales)}</b>；稅額 = 含稅 − 未稅 = <b>${money(c.tax)}</b>`
     : `<b>算法</b>：稅額 = 未稅 × ${rt} = ${c.raw.toLocaleString("zh-TW",{maximumFractionDigits:2})} → 四捨五入 <b>${money(c.tax)}</b>；含稅 = 未稅 + 稅額 = <b>${money(c.total)}</b>`;
-  const row=(color,label,sub,v,id)=>`<li><i style="background:${color}"></i><span class="t">${label}<small>${sub}</small></span><span class="v">${money(v)}<button type="button" class="cp" data-v="${v}" aria-label="複製${label}">複製</button></span></li>`;
+  const row=(color,label,sub,v,id)=>`<li><i style="background:${color}"></i><span class="t">${label}<small>${sub}</small></span><span class="v">${money(v)}<button type="button" class="cp" data-v="${v}" aria-label="複製${label}" title="複製"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button></span></li>`;
   R.innerHTML=`
     <div class="r-top">
       <div><span class="lbl">${S.mode==="incl"?"未稅金額（銷售額）":"含稅金額（總計）"}</span><div class="big">${money(big)}<small>元</small></div></div>
@@ -170,7 +171,7 @@ function render(){
       ${row("var(--fg)","含稅（總計）","發票「總計」欄，也是客戶實付",c.total)}
     </ul>
     ${a?`<p class="how">${how}</p>`:`<p class="note">輸入金額，就會拆出未稅、稅額和總計。</p>`}
-    ${a?`<div class="actions"><button type="button" class="btn" id="cpQuote">複製報價說明</button></div>`:""}`;
+    ${a?`<div class="actions"><button type="button" class="btn link" id="cpQuote">複製報價說明</button></div>`:""}`;
   R.querySelectorAll(".cp").forEach(b=>b.onclick=()=>copyText(b.dataset.v,"已複製 "+money(+b.dataset.v)));
   if(a) $("cpQuote").onclick=()=>copyText(`未稅 ${money(c.sales)} 元＋營業稅（${rt}）${money(c.tax)} 元＝含稅 ${money(c.total)} 元（${cnUpper(c.total)}）`,"已複製報價說明");
   $("upperCard").innerHTML=upperCard(c.total);

@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/assets/base.css">
 <link rel="stylesheet" href="/assets/nav.css">
 <style>
-/* Home: a short promise, the next deadline, then tools grouped by who uses them. Each tool tile carries a one-character mark like the app icon. */
+/* Home: promise, next deadline, one grid of every tool, then quick links by who you are. */
 .hero{display:grid;gap:10px;max-width:46em;padding-block:8px 4px}
 .hero h1{font-family:var(--f-head);font-size:clamp(30px,4.6vw,46px);line-height:1.2;margin:0;letter-spacing:.06em;text-wrap:balance}
 .nw{display:inline-block}
@@ -28,23 +28,28 @@
 .deadline .t span{display:block;font-size:13px;color:var(--muted)}
 .deadline .t b{font-size:17px}
 .deadline .go{color:var(--accent);font-weight:700;font-size:14px;white-space:nowrap}
-.group{display:grid;gap:12px}
-.group h2{margin:0;font-size:14px;letter-spacing:.14em;color:var(--muted);font-weight:700}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.tile{display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:start;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-height:96px;transition:border-color .15s,transform .15s}
+.tiles{display:grid;grid-template-columns:1fr;gap:10px}
+@media (min-width:640px){.tiles{grid-template-columns:repeat(2,1fr);gap:12px}}
+@media (min-width:1000px){.tiles{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:639px){.tile{padding:14px}}
+.tile{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px;align-items:start;text-decoration:none;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;transition:border-color .15s,transform .15s}
 .tile:hover{border-color:var(--accent);transform:translateY(-1px)}
 .tile:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.mark{width:48px;height:48px;border-radius:12px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-family:var(--f-head);font-size:24px;font-weight:700;position:relative;overflow:hidden}
-.mark::after{content:"";position:absolute;left:8px;right:8px;bottom:9px;height:3px;background:var(--warm);border-radius:2px}
+.mark{width:44px;height:44px;border-radius:11px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--f-head);font-size:21px;font-weight:700}
 .tile b{display:block;font-size:17px;margin-bottom:2px}
 .tile .d{display:block;color:var(--muted);font-size:14px;line-height:1.55}
-.tile.soon{opacity:.6;pointer-events:none}
-.tile.soon .mark{background:var(--line-strong)}
-.tile.soon b::after{content:"即將推出";font-size:12px;font-weight:500;color:var(--muted);margin-left:8px;padding:1px 8px;border:1px solid var(--line-strong);border-radius:99px}
-.promise{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.promise div{padding:14px 16px;border-radius:12px;background:var(--sunk);border:1px solid var(--line)}
-.promise b{display:block;margin-bottom:2px}
-.promise span{color:var(--muted);font-size:14px}
+.sec-h{margin:0 0 12px;font-size:13px;letter-spacing:.14em;color:var(--muted);font-weight:700}
+.who{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px 28px}
+.who h3{margin:0 0 2px;font-size:15px}
+.who ul{list-style:none;margin:0;padding:0}
+.who a{display:flex;align-items:center;min-height:40px;gap:6px;color:var(--fg);text-decoration:none;font-size:15px;border-bottom:1px solid var(--line)}
+.who a::after{content:"→";margin-left:auto;color:var(--muted);transition:transform .15s}
+.who a:hover{color:var(--accent)}
+.who a:hover::after{color:var(--accent);transform:translateX(2px)}
+.promise{display:flex;flex-wrap:wrap;gap:8px 28px;margin:0;padding:0;list-style:none;color:var(--muted);font-size:14px}
+.promise li{display:flex;gap:8px;align-items:baseline;max-width:30em}
+.promise li::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--accent);transform:translateY(-2px)}
+.promise b{color:var(--fg);font-weight:500;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -61,42 +66,45 @@
 
   <a class="deadline" id="deadline" href="/tax-calendar/" hidden></a>
 
-  <section class="group">
-    <h2>公司・記帳人員</h2>
+  <section>
+    <h2 class="sec-h">全部工具</h2>
     <div class="tiles">
       <a class="tile" href="/invoice-helper/"><span class="mark">票</span><span><b>手開發票小幫手</b><span class="d">三聯式、二聯式怎麼開，自動算稅額和中文大寫，附擬真範例圖。</span></span></a>
-      <a class="tile" href="/labor-report/"><span class="mark">勞</span><span><b>勞報單扣繳計算機</b><span class="d">接案、稿費、兼職要扣多少稅和補充保費，附申報期限和資料清單。</span></span></a>
-      <a class="tile" href="/rent-withholding/"><span class="mark">租</span><span><b>租金扣繳計算機</b><span class="d">公司付房租給個人房東，算出代扣金額、房東實拿和繳納期限。</span></span></a>
+      <a class="tile" href="/rent-withholding/"><span class="mark">租</span><span><b>租金扣繳計算機</b><span class="d">公司付房租給個人房東，要代扣多少、房東實拿多少、何時繳。</span></span></a>
+      <a class="tile" href="/labor-report/"><span class="mark">勞</span><span><b>勞報單扣繳計算機</b><span class="d">接案、稿費、兼職要扣多少稅和補充保費，付錢和領錢的人都能用。</span></span></a>
       <a class="tile" href="/tax-included/"><span class="mark">稅</span><span><b>含稅未稅計算機</b><span class="d">5% 營業稅換算，尾數怎麼算一目了然，附發票用中文大寫。</span></span></a>
       <a class="tile" href="/company-lookup/"><span class="mark">編</span><span><b>統編查詢</b><span class="d">用統編或公司名稱查全名、狀態和地址，一鍵帶進手開發票。</span></span></a>
-      <a class="tile" href="/tax-calendar/#company"><span class="mark">曆</span><span><b>報稅行事曆</b><span class="d">營業稅、扣繳、補充保費、勞健保期限，可訂閱到手機。</span></span></a>
+      <a class="tile" href="/tax-calendar/"><span class="mark">曆</span><span><b>報稅行事曆</b><span class="d">依身分列出每個報稅、繳費期限，可訂閱到手機提醒。</span></span></a>
     </div>
   </section>
 
-  <section class="group">
-    <h2>接案者・上班族</h2>
-    <div class="tiles">
-      <a class="tile" href="/labor-report/#payee"><span class="mark">勞</span><span><b>接案實拿怎麼算</b><span class="d">報價 3 萬實拿多少？想實拿 3 萬要報多少？扣的稅怎麼退？</span></span></a>
-      <a class="tile" href="/tax-calendar/#person"><span class="mark">曆</span><span><b>個人報稅期限</b><span class="d">扣繳憑單什麼時候寄來、5 月綜所稅，訂閱到手機就不會忘。</span></span></a>
-      <span class="tile soon"><span class="mark">綜</span><span><b>綜所稅試算</b><span class="d">用 115 年度的免稅額和扣除額試算，比較列舉和標準扣除。</span></span></span>
+  <section>
+    <h2 class="sec-h">依你的身分</h2>
+    <div class="who">
+      <div><h3>公司・記帳人員</h3><ul>
+        <li><a href="/invoice-helper/">開一張手開發票</a></li>
+        <li><a href="/rent-withholding/#payer">付房租要扣多少</a></li>
+        <li><a href="/tax-calendar/#company">營業稅、扣繳期限</a></li>
+      </ul></div>
+      <div><h3>接案者・上班族</h3><ul>
+        <li><a href="/labor-report/#payee">報價 3 萬實拿多少</a></li>
+        <li><a href="/tax-included/">報價要不要加 5%</a></li>
+        <li><a href="/tax-calendar/#person">扣繳憑單、5 月報稅</a></li>
+      </ul></div>
+      <div><h3>房東・屋主</h3><ul>
+        <li><a href="/rent-withholding/#landlord">租給公司被扣多少</a></li>
+        <li><a href="/tax-calendar/#landlord">房屋稅、地價稅期限</a></li>
+      </ul></div>
     </div>
   </section>
 
-  <section class="group">
-    <h2>房東・屋主</h2>
-    <div class="tiles">
-      <a class="tile" href="/rent-withholding/#landlord"><span class="mark">租</span><span><b>房東實拿多少</b><span class="d">租給公司被扣多少、租金要寫多少，報稅時租賃所得怎麼算。</span></span></a>
-      <a class="tile" href="/tax-calendar/#landlord"><span class="mark">曆</span><span><b>房屋稅、地價稅期限</b><span class="d">5 月房屋稅、11 月地價稅、5 月綜所稅，一次列好。</span></span></a>
-    </div>
-  </section>
+  <ul class="promise" aria-label="我們的原則">
+    <li><span><b>依現行法規</b>・每月對照財政部、健保署公告更新</span></li>
+    <li><span><b>算法寫清楚</b>・告訴你為什麼要扣、為什麼免扣</span></li>
+    <li><span><b>資料留在你手上</b>・輸入內容只存在自己的瀏覽器</span></li>
+  </ul>
 
-  <section class="promise" aria-label="我們的原則">
-    <div><b>依現行法規</b><span class="d">稅率和門檻集中管理，每月對照財政部、健保署公告更新。</span></div>
-    <div><b>算法寫清楚</b><span class="d">不只給答案，也告訴你為什麼要扣、為什麼免扣。</span></div>
-    <div><b>資料留在你手上</b><span class="d">輸入的金額和常用客戶只存在自己的瀏覽器裡；統編查詢只會送出你要查的統編或名稱。</span></div>
-  </section>
-
-  <p class="site-foot">本站為民間提供的免費工具，非政府官方網站。計算結果僅供參考，實際以財政部、國稅局、地方稅務局、健保署及勞保局規定為準。</p>
+  <p class="site-foot">綜所稅試算、勞健保計算即將推出。本站為民間提供的免費工具，非政府官方網站。計算結果僅供參考，實際以財政部、國稅局、地方稅務局、健保署及勞保局規定為準。</p>
 </div>
 
 <script src="/assets/nav.js"></script>

@@ -22,8 +22,9 @@
 .legend .t small{display:block;color:var(--muted);font-size:13px;line-height:1.45}
 .legend .v{font-weight:700;font-variant-numeric:tabular-nums;font-size:18px}
 .legend .zero .v{color:var(--muted);font-weight:500}
-.note{margin:0;padding:12px 14px;border-radius:10px;background:var(--accent-soft);color:var(--fg);font-size:14px;line-height:1.6}
-.note.warm{background:var(--warm-soft)}
+.note{margin:0;padding:2px 0 2px 12px;border-left:3px solid var(--line-strong);color:var(--muted);font-size:14px;line-height:1.65}
+.note b{color:var(--fg)}
+.note.warm{border-left-color:var(--warm);background:var(--warm-soft);color:var(--fg);padding:10px 12px;border-radius:0 8px 8px 0}
 .year{display:flex;gap:8px 18px;flex-wrap:wrap;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .year b{color:var(--fg)}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
