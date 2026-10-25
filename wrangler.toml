@@ -1,0 +1,9 @@
+# Cloudflare Pages project settings. Bindings declared here are applied on every deploy.
+name = "invoice-helper"
+pages_build_output_dir = "."
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "taxtools-ledger"
+database_id = "613dd9cd-9ac0-4540-924e-ec9f50782f8d"

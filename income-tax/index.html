@@ -320,6 +320,12 @@ const loaded=load();
 /* ?oth=…&wh=… arrives from the landlord tool: put the rental income into "other income" */
 { const q=new URLSearchParams(location.search), o=parseInt(q.get("oth"),10), w=parseInt(q.get("wh"),10);
   if(o>0){ document.querySelector('[data-n="oth0"]').value=o.toLocaleString("zh-TW"); if(w>0) document.querySelector('[data-n="wh"]').value=w.toLocaleString("zh-TW"); toast("已帶入租賃所得，再填薪資等其他資料"); try{ history.replaceState(null,"",location.pathname); }catch(e){} }
+  else if(["rent","ins","med","don"].some(k=>q.has(k))){
+    const set=(k,v)=>{ const e=document.querySelector(`[data-n="${k}"]`); e.value=v>0?v.toLocaleString("zh-TW"):""; };
+    ["rent","ins","med","don"].forEach(k=>set(k,parseInt(q.get(k),10)||0));
+    if(["ins","med","don"].some(k=>parseInt(q.get(k),10)>0)) $("adv").open=true;
+    if(!loaded) document.querySelector('[data-n="sal0"]').value="600,000";
+    toast("已帶入帳本裡的房租、保險、醫療和捐款"); try{ history.replaceState(null,"",location.pathname); }catch(e){} }
   else if(!loaded) document.querySelector('[data-n="sal0"]').value="600,000"; }
 render();
 </script>

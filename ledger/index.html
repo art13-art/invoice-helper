@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>報稅帳本｜記帳同時算好營業稅、扣繳和綜所稅扣除額</title>
+<meta name="description" content="給公司、工作室和個人的報稅帳本：記收入支出，自動算每期營業稅（銷項減進項）、整理代扣稅款和補充保費、年底可列舉的保險醫療捐款和房租。用 Google 登入，手機電腦同步。">
+<link rel="canonical" href="https://taxtools.tw/ledger/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Layout: left = account, month summary and tax boxes; right = the list of entries. Editor opens as a sheet. */
+.lg{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:1080px){.lg{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:18px;min-width:0}
+@media (min-width:1081px){.col.left{position:sticky;top:16px}}
+.books{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.month{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.month b{font-size:19px;font-variant-numeric:tabular-nums}
+.month button{font:inherit;font-size:20px;width:44px;height:44px;border-radius:99px;border:1px solid var(--line-strong);background:var(--surface);color:var(--accent);cursor:pointer}
+.sum3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.sum3 div{display:grid;gap:2px}
+.sum3 span{font-size:14px;color:var(--muted)}
+.sum3 b{font-size:21px;font-variant-numeric:tabular-nums;letter-spacing:0}
+.sum3 .in b{color:var(--ok)} .sum3 .out b{color:var(--fg)}
+.cats{display:grid;gap:8px;margin-top:14px}
+.cats div{display:grid;grid-template-columns:5.5em minmax(0,1fr) auto;gap:10px;align-items:center;font-size:15px}
+.cats i{display:block;height:8px;border-radius:99px;background:var(--accent);opacity:.8}
+.cats em{font-style:normal;font-variant-numeric:tabular-nums;color:var(--muted)}
+.box h2{margin:0 0 4px;font-size:17px}
+.box .sub{margin:0 0 12px;color:var(--muted);font-size:15px}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;font-variant-numeric:tabular-nums;font-size:16px}
+.kv span{color:var(--muted)} .kv b.big2{font-size:22px;color:var(--accent)}
+.kv .line{grid-column:1/-1;border-top:1px solid var(--line);margin:2px 0}
+.acct{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.acct img{width:36px;height:36px;border-radius:50%}
+.acct .who{flex:1;min-width:10em;line-height:1.4}
+.acct .who small{display:block;color:var(--muted);font-size:14px}
+.sync{font-size:14px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.sync.off i{background:var(--line-strong)} .sync.err i{background:var(--warn)}
+.day{margin-top:14px}
+.day h3{margin:0 0 4px;font-size:14px;color:var(--muted);font-weight:700;letter-spacing:.06em;display:flex;justify-content:space-between}
+.ent{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;width:100%;text-align:left;font:inherit;color:var(--fg);background:transparent;border:0;border-top:1px solid var(--line);padding:12px 4px;cursor:pointer;min-height:56px}
+.ent:hover{background:var(--sunk)}
+.ent .c{font-weight:500}
+.ent .p{grid-column:1;color:var(--muted);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ent .a{font-weight:700;font-variant-numeric:tabular-nums;font-size:17px;grid-row:1/3;grid-column:2;align-self:center}
+.ent .a.in{color:var(--ok)}
+.ent .t{display:inline-block;font-size:12.5px;padding:0 6px;border-radius:4px;background:var(--sunk);border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:1px}
+.empty-l{padding:28px 4px;text-align:center;color:var(--muted)}
+.list-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.list-h h2{margin:0}
+.search{max-width:220px}
+/* editor sheet */
+dialog.sheet{border:0;padding:0;border-radius:16px;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);background:var(--surface);color:var(--fg);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
+.sheet form{display:grid;gap:14px;padding:18px 20px 20px}
+.sheet .hd{display:flex;justify-content:space-between;align-items:center}
+.sheet .hd h2{margin:0;font-size:19px;font-family:var(--f-head);letter-spacing:.04em}
+.x{font:inherit;font-size:22px;width:44px;height:44px;border:0;background:transparent;color:var(--muted);cursor:pointer;border-radius:99px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sheet .foot{display:flex;gap:10px;justify-content:space-between;align-items:center;position:sticky;bottom:0;background:var(--surface);padding-top:6px}
+.sheet .foot .btn.primary{min-width:8em}
+.chips.tight label{min-height:40px;padding:0 12px}
+.msg{font-size:14px;color:var(--warn);margin:0}
+@media (max-width:639px){
+  dialog.sheet{width:100vw;max-width:100vw;margin:auto 0 0;border-radius:16px 16px 0 0;max-height:92dvh}
+  .sheet form{padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+  .sum3 b{font-size:18px}
+}
+.fab{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;font:inherit;font-weight:700;font-size:17px;border:0;border-radius:99px;padding:0 22px;min-height:54px;background:var(--accent);color:var(--on-accent);box-shadow:0 8px 24px rgba(37,84,166,.35);cursor:pointer}
+@media (max-width:639px){.wrap{padding-bottom:100px}}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>報稅帳本</h1>
+    <p>平常記收入和支出，報稅要用的數字自動整理好：公司和工作室看每期營業稅、代扣稅款；個人看年底能列舉的保險、醫療、捐款和房租。</p>
+  </div>
+
+  <div class="lg">
+    <div class="col left">
+      <section class="card" id="acct" aria-live="polite"></section>
+      <section class="card">
+        <div class="books" id="books"></div>
+        <div class="month" style="margin-top:14px"><button type="button" id="prev" aria-label="上個月">‹</button><b id="mLbl"></b><button type="button" id="next" aria-label="下個月">›</button></div>
+        <div class="sum3" id="sum"></div>
+        <div class="cats" id="cats"></div>
+      </section>
+      <section class="card box" id="taxbox"></section>
+      <section class="card box" id="yearbox"></section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <div class="list-h"><h2 id="listH">這個月的帳</h2><input class="search" id="q" type="search" placeholder="搜尋對象、備註" aria-label="搜尋"></div>
+        <div id="list"></div>
+      </section>
+      <section class="card plain">
+        <div class="actions" style="gap:0 16px">
+          <button type="button" class="btn link" id="csv">匯出今年 CSV</button>
+          <button type="button" class="btn link" id="bak">下載備份檔</button>
+          <button type="button" class="btn link" id="imp">匯入備份檔</button>
+          <input type="file" id="impFile" accept="application/json,.json" hidden>
+        </div>
+        <p class="hint" id="bakHint"></p>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">登入後帳本存在本站的雲端資料庫（Cloudflare），只有登入的你看得到，傳輸全程加密；可以隨時在左上角刪除雲端資料。沒登入時資料只存在這台裝置的瀏覽器。營業稅依加值型及非加值型營業稅法第 15、33、35 條計算（銷項稅額減可扣抵進項稅額，交際應酬用的進項不能扣抵）。僅供參考，實際以國稅局規定為準。</p>
+</div>
+
+<button type="button" class="fab" id="add">＋ 記一筆</button>
+
+<dialog class="sheet" id="ed">
+  <form method="dialog" id="edf" autocomplete="off">
+    <div class="hd"><h2 id="edH">記一筆</h2><button type="button" class="x" id="edX" aria-label="關閉">✕</button></div>
+    <div class="seg" role="group" aria-label="收入或支出">
+      <button type="button" data-t="out" aria-pressed="true"><b>支出</b></button>
+      <button type="button" data-t="in" aria-pressed="false"><b>收入</b></button>
+    </div>
+    <div class="two">
+      <div class="field"><label for="eAmt">金額（含稅）</label><div class="money"><input id="eAmt" inputmode="numeric" placeholder="0" enterkeyhint="next"></div></div>
+      <div class="field"><label for="eDate">日期</label><input id="eDate" type="date"></div>
+    </div>
+    <div class="field"><span class="lbl">分類</span><div class="chips tight" id="eCats" role="radiogroup" aria-label="分類"></div></div>
+    <div class="field"><label for="eParty" id="ePartyL">對象</label><input id="eParty" list="custList" placeholder="店家、客戶或房東" maxlength="60"><datalist id="custList"></datalist></div>
+    <div id="eBiz">
+      <div class="field"><span class="lbl">憑證</span>
+        <div class="chips tight" role="radiogroup" aria-label="憑證">
+          <label><input type="radio" name="doc" value="inv" checked><span id="docInv">發票有打我的統編</span></label>
+          <label><input type="radio" name="doc" value="none"><span id="docNone">收據、沒打統編</span></label>
+        </div>
+      </div>
+      <div id="eInvF" style="display:grid;gap:12px;margin-top:12px">
+        <div class="two">
+          <div class="field"><label for="eInv">發票號碼</label><input id="eInv" placeholder="AB12345678" maxlength="11" autocapitalize="characters"></div>
+          <div class="field"><label for="eUbn" id="eUbnL">對方統編</label><input id="eUbn" inputmode="numeric" placeholder="8 碼" maxlength="8"></div>
+        </div>
+        <div class="field"><label for="eTax">其中營業稅</label><div class="money"><input id="eTax" inputmode="numeric" placeholder="0"></div><p class="hint" id="eTaxH">自動用 5% 從含稅金額拆出來，可以改。</p></div>
+      </div>
+      <div id="eWhF" class="two" style="margin-top:12px">
+        <div class="field"><label for="eWh">代扣所得稅</label><div class="money"><input id="eWh" inputmode="numeric" placeholder="0"></div></div>
+        <div class="field"><label for="eNhi">代扣補充保費</label><div class="money"><input id="eNhi" inputmode="numeric" placeholder="0"></div></div>
+        <p class="hint" style="grid-column:1/-1" id="eWhH"></p>
+      </div>
+    </div>
+    <div class="field"><label for="eNote">備註</label><input id="eNote" maxlength="200" placeholder="選填"></div>
+    <p class="msg" id="eMsg" hidden></p>
+    <div class="foot">
+      <button type="button" class="btn link" id="eDel" style="color:var(--warn)">刪除</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn primary" id="eSave">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="bk">
+  <form method="dialog" id="bkf" autocomplete="off">
+    <div class="hd"><h2 id="bkH">新增帳本</h2><button type="button" class="x" id="bkX" aria-label="關閉">✕</button></div>
+    <div class="seg" role="group" aria-label="帳本類型">
+      <button type="button" data-bk="biz" aria-pressed="true"><b>公司・工作室</b><small>算營業稅、扣繳</small></button>
+      <button type="button" data-bk="me" aria-pressed="false"><b>個人・家庭</b><small>算綜所稅扣除額</small></button>
+    </div>
+    <div class="field"><label for="bkName">帳本名稱</label><input id="bkName" maxlength="30" placeholder="例如：我的工作室"></div>
+    <div class="field" id="bkUbnF"><label for="bkUbn">自己的統編（選填）</label><input id="bkUbn" inputmode="numeric" maxlength="8" placeholder="8 碼"></div>
+    <div class="foot">
+      <button type="button" class="btn link" id="bkDel" style="color:var(--warn)">刪除這本帳</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn primary" id="bkSave">儲存</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js"></script>
+<script>
+const GOOGLE_CLIENT_ID="PENDING.apps.googleusercontent.com";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>Math.round(n||0).toLocaleString("zh-TW");
+const intOf=v=>{ const x=parseInt(String(v||"").replace(/[^\d]/g,""),10); return isFinite(x)&&x>0?x:0; };
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const uid=()=>Date.now().toString(36)+"-"+crypto.getRandomValues(new Uint32Array(2)).join("").slice(0,12);
+const W=[1,2,1,2,1,2,4,1];
+const ubnOk=v=>{ if(!/^\d{8}$/.test(v)) return false; const s=v.split("").reduce((a,d,i)=>{const p=+d*W[i];return a+Math.floor(p/10)+p%10},0); return s%5===0||(v[6]==="7"&&(s+1)%5===0); };
+
+const CATS={
+  biz:{out:["進貨","租金","薪資","勞務報酬","水電網路","交通","交際","文具雜支","廣告","保險","稅捐規費","設備","其他"],in:["銷貨","勞務收入","其他收入"]},
+  me:{out:["餐飲","交通","房租","保險","醫療","捐贈","學費","購物","娛樂","生活","其他"],in:["薪資","接案","租金","利息股利","其他"]},
+};
+const WH_CATS=["租金","薪資","勞務報酬"];
+
+/* ---------- local store (works signed-out; syncs when signed in) ---------- */
+const KEY="taxtools.ledger.v1";
+let DB={items:{},srv:0,dirty:{},owner:null};
+try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(d&&d.items) DB=Object.assign(DB,d); }catch(e){}
+const persist=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){ toast("這台裝置的儲存空間不足，請下載備份或登入雲端"); } };
+const live=kind=>Object.values(DB.items).filter(x=>x.kind===kind&&!x.deleted);
+function put(kind,id,data,deleted=false){ DB.items[id]={id,kind,data:deleted?null:data,updated_at:Date.now(),deleted}; DB.dirty[id]=1; persist(); queueSync(); }
+try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
+
+/* ---------- view state ---------- */
+const now=new Date();
+const V={book:null,y:now.getFullYear(),m:now.getMonth(),q:""};
+try{ const v=JSON.parse(localStorage.getItem(KEY+".view")||"null"); if(v&&v.book) V.book=v.book; }catch(e){}
+const books=()=>live("book").sort((a,b)=>(a.data.order||0)-(b.data.order||0)||a.updated_at-b.updated_at);
+const curBook=()=>{ const bs=books(); return bs.find(b=>b.id===V.book)||bs[0]||null; };
+const entries=bookId=>live("entry").filter(e=>e.data.book===bookId);
+
+/* ---------- account + sync ---------- */
+let USER=null, syncing=false, syncTimer=null, syncState="off", gsiReady=false;
+const api=(p,body)=>fetch(p,{method:body?"POST":"GET",headers:body?{"content-type":"application/json","x-tt":"1"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"});
+function queueSync(){ if(!USER) return; clearTimeout(syncTimer); syncTimer=setTimeout(sync,1200); }
+async function sync(){
+  if(!USER||syncing) return; syncing=true; setSync("busy");
+  try{
+    let more=true;
+    while(more){
+      const ids=Object.keys(DB.dirty).slice(0,400);
+      const changes=ids.map(id=>DB.items[id]).filter(Boolean).map(x=>({id:x.id,kind:x.kind,data:x.data,updated_at:x.updated_at,deleted:x.deleted}));
+      const r=await api("/api/sync",{since:DB.srv,changes});
+      if(r.status===401){ USER=null; renderAcct(); break; }
+      const j=await r.json(); if(!r.ok) throw new Error(j.error||"sync");
+      ids.forEach(id=>{ const sent=changes.find(c=>c.id===id); if(sent&&DB.items[id]&&DB.items[id].updated_at===sent.updated_at) delete DB.dirty[id]; });
+      for(const it of j.items){ const loc=DB.items[it.id]; if(!loc||it.updated_at>=loc.updated_at){ DB.items[it.id]=it; delete DB.dirty[it.id]; } }
+      DB.srv=j.srv; DB.owner=USER.id; persist();
+      more=j.more||Object.keys(DB.dirty).length>0&&ids.length===400;
+    }
+    setSync("ok"); render();
+  }catch(e){ setSync("err"); }
+  syncing=false;
+}
+function setSync(s){ syncState=s; const el=$("syncSt"); if(!el) return;
+  el.className="sync "+(s==="err"?"err":s==="off"?"off":"");
+  el.lastChild.textContent=s==="busy"?"同步中…":s==="err"?"同步失敗，稍後自動重試":s==="ok"?`已同步 ${new Date().toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"})}`:"未同步"; }
+
+function renderAcct(){
+  const A=$("acct");
+  if(USER){
+    A.innerHTML=`<div class="acct">${USER.picture?`<img src="${esc(USER.picture)}" alt="" referrerpolicy="no-referrer">`:""}<span class="who"><b>${esc(USER.name||"已登入")}</b><small>${esc(USER.email||"")}</small></span>
+      <span class="sync" id="syncSt"><i></i><span></span></span></div>
+      <div class="actions" style="gap:0 16px;margin-top:6px"><button type="button" class="btn link" id="out">登出</button><button type="button" class="btn link" id="del" style="color:var(--muted)">刪除雲端資料</button></div>`;
+    setSync(syncState==="off"?"busy":syncState);
+    $("out").onclick=logout; $("del").onclick=delAccount;
+  }else{
+    const ready=!/^PENDING/.test(GOOGLE_CLIENT_ID);
+    A.innerHTML=`<b style="display:block;margin-bottom:4px">存到雲端，手機電腦都能看</b>
+      <p class="hint" style="margin:0 0 12px">${ready?"用 Google 帳號登入，帳本自動同步，換手機也不會不見。沒登入也能用，資料只存在這台裝置。":"雲端同步即將開放。現在資料存在這台裝置的瀏覽器，記得定期下載備份檔。"}</p>
+      <div id="gbtn" style="min-height:44px"></div>`;
+    if(ready) loadGsi();
+  }
+}
+function loadGsi(){
+  const draw=()=>{ try{
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCredential,ux_mode:"popup",auto_select:false,itp_support:true});
+    const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+    google.accounts.id.renderButton($("gbtn"),{theme:dark?"filled_black":"outline",size:"large",shape:"pill",text:"signin_with",locale:"zh-TW",width:Math.min(320,$("gbtn").clientWidth||320)});
+  }catch(e){} };
+  if(gsiReady) return draw();
+  const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.onload=()=>{ gsiReady=true; draw(); };
+  s.onerror=()=>{ $("gbtn").innerHTML=`<p class="msg">Google 登入載入失敗，請檢查網路後重新整理。</p>`; };
+  document.head.appendChild(s);
+}
+async function onCredential(resp){
+  try{
+    const r=await api("/api/auth/google",{credential:resp.credential}); const j=await r.json();
+    if(!r.ok) throw new Error(j.error);
+    // another person's data left on this device: keep it out of the new account
+    if(DB.owner&&DB.owner!==j.user.id){ DB={items:{},srv:0,dirty:{},owner:null}; }
+    const local=Object.keys(DB.dirty).length;
+    USER=j.user; DB.owner=USER.id; persist(); renderAcct(); await sync();
+    toast(local&&!DB.srv?`已登入，這台裝置上的 ${local} 筆資料已上傳`:"已登入，帳本會自動同步");
+  }catch(e){ toast(e.message||"登入失敗，請再試一次"); }
+}
+async function logout(){
+  if(Object.keys(DB.dirty).length) await sync();
+  if(Object.keys(DB.dirty).length&&!confirm("還有資料沒同步到雲端，登出會遺失。仍要登出嗎？")) return;
+  await api("/api/auth/logout",{}); USER=null; DB={items:{},srv:0,dirty:{},owner:null}; persist();
+  try{ google.accounts.id.disableAutoSelect(); }catch(e){}
+  syncState="off"; renderAcct(); render(); toast("已登出，這台裝置上的帳本已清除；再登入就會回來");
+}
+async function delAccount(){
+  if(!confirm("確定要刪除雲端上的所有帳本資料和帳號嗎？刪除後無法復原。建議先下載備份檔。")) return;
+  const r=await api("/api/auth/delete",{}); if(!r.ok) return toast("刪除失敗，請稍後再試");
+  USER=null; DB={items:{},srv:0,dirty:{},owner:null}; persist(); renderAcct(); render(); toast("雲端資料和帳號已刪除");
+}
+
+/* ---------- rendering ---------- */
+function vatPeriod(y,m){ const s=m-(m%2); return {y,s,e:s+1,due:new Date(y,s+2,15)}; }   // months 0-based: Jan–Feb, Mar–Apr …
+function render(){
+  const bs=books(), b=curBook();
+  if(b) V.book=b.id; try{ localStorage.setItem(KEY+".view",JSON.stringify({book:V.book})); }catch(e){}
+  $("books").innerHTML=bs.map(x=>`<label class="chip-b"><input type="radio" name="book" value="${x.id}" ${x.id===V.book?"checked":""}>${esc(x.data.name)}</label>`).join("")+
+    `<button type="button" class="btn link" id="bkAdd">${bs.length?"＋ 帳本":"＋ 建立第一本帳"}</button>${b?`<button type="button" class="btn link" id="bkEdit">設定</button>`:""}`;
+  $("books").classList.add("chips");
+  document.querySelectorAll("input[name=book]").forEach(r=>r.onchange=()=>{ V.book=r.value; render(); });
+  $("bkAdd").onclick=()=>openBook(null); if(b) $("bkEdit").onclick=()=>openBook(b);
+  $("add").hidden=!b;
+  $("mLbl").textContent=`${V.y-1911} 年 ${V.m+1} 月`;
+  if(!b){ $("sum").innerHTML=""; $("cats").innerHTML=""; $("taxbox").hidden=$("yearbox").hidden=true;
+    $("list").innerHTML=`<div class="empty-l"><p style="margin:0 0 12px">先建立一本帳。公司、工作室和個人可以分開記。</p><button type="button" class="btn primary" id="first">建立帳本</button></div>`;
+    $("first").onclick=()=>openBook(null); bakHint(); return; }
+  const kind=b.data.kind, all=entries(b.id);
+  const inMonth=all.filter(e=>{ const [y,m]=e.data.date.split("-").map(Number); return y===V.y&&m-1===V.m; });
+  const sIn=inMonth.filter(e=>e.data.type==="in").reduce((a,e)=>a+e.data.amount,0), sOut=inMonth.filter(e=>e.data.type==="out").reduce((a,e)=>a+e.data.amount,0);
+  $("sum").innerHTML=`<div class="in"><span>收入</span><b>${money(sIn)}</b></div><div class="out"><span>支出</span><b>${money(sOut)}</b></div><div><span>結餘</span><b>${sIn-sOut<0?"−":""}${money(Math.abs(sIn-sOut))}</b></div>`;
+  const byCat={}; inMonth.filter(e=>e.data.type==="out").forEach(e=>byCat[e.data.cat]=(byCat[e.data.cat]||0)+e.data.amount);
+  const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5), mx=top[0]?top[0][1]:1;
+  $("cats").innerHTML=top.map(([c,v])=>`<div><span>${esc(c)}</span><i style="width:${Math.max(4,v/mx*100)}%"></i><em>${money(v)}</em></div>`).join("");
+
+  // tax box
+  const T=$("taxbox"), Y=$("yearbox"); T.hidden=Y.hidden=false;
+  const yearE=all.filter(e=>+e.data.date.slice(0,4)===V.y);
+  if(kind==="biz"){
+    const p=vatPeriod(V.y,V.m);
+    const inP=all.filter(e=>{ const [y,m]=e.data.date.split("-").map(Number); return y===p.y&&m-1>=p.s&&m-1<=p.e; });
+    const outTax=inP.filter(e=>e.data.type==="in"&&e.data.doc==="inv").reduce((a,e)=>a+(e.data.tax||0),0);
+    const inTax=inP.filter(e=>e.data.type==="out"&&e.data.doc==="inv"&&e.data.cat!=="交際").reduce((a,e)=>a+(e.data.tax||0),0);
+    const sales=inP.filter(e=>e.data.type==="in"&&e.data.doc==="inv").reduce((a,e)=>a+e.data.amount-(e.data.tax||0),0);
+    const due=outTax-inTax, days=Math.round((p.due-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);
+    T.innerHTML=`<h2>營業稅（${p.y-1911} 年 ${p.s+1}–${p.e+1} 月）</h2><p class="sub">${p.due.getMonth()+1}/${p.due.getDate()} 前申報繳納${days>=0&&days<=45?`，還有 ${days} 天`:""}（遇假日順延）</p>
+      <div class="kv"><span>銷售額（未稅）</span><b>${money(sales)}</b><span>銷項稅額</span><b>${money(outTax)}</b><span>可扣抵進項稅額</span><b>− ${money(inTax)}</b><i class="line"></i>
+      <span>${due>=0?"應繳營業稅":"留抵稅額（下期再扣）"}</span><b class="big2">${money(Math.abs(due))}</b></div>
+      <p class="hint" style="margin-top:10px">只算有開統一發票的收入，和有打你統編的進貨、費用發票；交際費的進項不能扣抵。</p>`;
+    const wh=yearE.filter(e=>e.data.type==="out"&&(e.data.wh||e.data.nhi));
+    const sw=wh.reduce((a,e)=>a+(e.data.wh||0),0), sn=wh.reduce((a,e)=>a+(e.data.nhi||0),0), payees=new Set(wh.map(e=>e.data.party||"（未填對象）"));
+    Y.innerHTML=`<h2>${V.y-1911} 年代扣紀錄</h2><p class="sub">明年 1 月底前申報扣繳憑單、2 月 10 日前寄給對方</p>
+      <div class="kv"><span>代扣所得稅</span><b>${money(sw)}</b><span>代扣補充保費</span><b>${money(sn)}</b><span>要開憑單的對象</span><b>${wh.length?payees.size+" 位":"0"}</b></div>
+      ${wh.length?`<p class="hint" style="margin-top:10px">${[...payees].slice(0,6).map(esc).join("、")}${payees.size>6?" 等":""}</p>`:`<p class="hint" style="margin-top:10px">記租金、薪資、勞務報酬時填上代扣金額，就會整理在這裡。</p>`}`;
+  }else{
+    const sumCat=c=>yearE.filter(e=>e.data.type==="out"&&e.data.cat===c).reduce((a,e)=>a+e.data.amount,0);
+    const ins=sumCat("保險"), med=sumCat("醫療"), don=sumCat("捐贈"), rent=sumCat("房租");
+    T.innerHTML=`<h2>${V.y-1911} 年可以扣除的支出</h2><p class="sub">${V.y-1910} 年 5 月報稅時用得到</p>
+      <div class="kv"><span>房租（特別扣除，最多 18 萬）</span><b>${money(rent)}</b><span>人身保險費（每人最多 2.4 萬）</span><b>${money(ins)}</b><span>醫藥、生育費</span><b>${money(med)}</b><span>捐贈</span><b>${money(don)}</b></div>
+      <div class="actions" style="margin-top:12px"><a class="btn" style="display:inline-flex;align-items:center;text-decoration:none" href="/income-tax/?rent=${rent}&ins=${ins}&med=${med}&don=${don}">帶進綜所稅試算 →</a></div>
+      <p class="hint" style="margin-top:8px">保險、醫療、捐款要留收據；健保費可以下載健保署的繳費證明。</p>`;
+    const inc=yearE.filter(e=>e.data.type==="in"), byI={}; inc.forEach(e=>byI[e.data.cat]=(byI[e.data.cat]||0)+e.data.amount);
+    Y.innerHTML=`<h2>${V.y-1911} 年收入</h2><div class="kv">${Object.entries(byI).map(([c,v])=>`<span>${esc(c)}</span><b>${money(v)}</b>`).join("")||`<span>還沒有記收入</span><b>0</b>`}</div>`;
+  }
+
+  // list
+  const q=V.q.trim().toLowerCase();
+  const rows=(q?all.filter(e=>[e.data.party,e.data.note,e.data.cat,e.data.inv].join(" ").toLowerCase().includes(q)):inMonth)
+    .sort((a,b)=>b.data.date.localeCompare(a.data.date)||b.updated_at-a.updated_at);
+  $("listH").textContent=q?`搜尋結果（${rows.length} 筆）`:`${V.m+1} 月的帳（${rows.length} 筆）`;
+  const byDay={}; rows.forEach(e=>(byDay[e.data.date]=byDay[e.data.date]||[]).push(e));
+  const WD="日一二三四五六";
+  $("list").innerHTML=rows.length?Object.entries(byDay).map(([d,es])=>{ const dt=new Date(d+"T00:00"), net=es.reduce((a,e)=>a+(e.data.type==="in"?1:-1)*e.data.amount,0);
+    return `<div class="day"><h3><span>${q?`${dt.getFullYear()-1911}/`:""}${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）</span><span>${net>=0?"+":"−"}${money(Math.abs(net))}</span></h3>${es.map(e=>`<button type="button" class="ent" data-id="${e.id}">
+      <span class="c">${esc(e.data.cat)}${e.data.doc==="inv"&&kind==="biz"?`<span class="t">發票</span>`:""}${e.data.wh||e.data.nhi?`<span class="t">代扣</span>`:""}</span>
+      <span class="p">${esc([e.data.party,e.data.note].filter(Boolean).join("・"))||"&nbsp;"}</span>
+      <span class="a ${e.data.type}">${e.data.type==="in"?"+":"−"}${money(e.data.amount)}</span></button>`).join("")}</div>`; }).join("")
+    :`<div class="empty-l">${q?"找不到符合的帳。":`這個月還沒有記帳。<br>按「＋ 記一筆」開始。`}</div>`;
+  $("list").querySelectorAll(".ent").forEach(x=>x.onclick=()=>openEntry(DB.items[x.dataset.id]));
+  bakHint();
+}
+function bakHint(){
+  let t=null; try{ t=+localStorage.getItem(KEY+".bak")||0; }catch(e){}
+  const n=live("entry").length;
+  $("bakHint").textContent=USER?"已登入，帳本存在雲端。備份檔可以留一份在自己的雲端硬碟。":
+    n?`資料只存在這台裝置。${t?`上次備份：${new Date(t).toLocaleDateString("zh-TW")}。`:"還沒有備份過，建議下載一份。"}登入 Google 就會自動存到雲端。`:"";
+}
+
+/* ---------- entry editor ---------- */
+let E=null;
+function openEntry(it){
+  const b=curBook(); if(!b) return;
+  E=it?{id:it.id,...structuredClone(it.data)}:{id:uid(),book:b.id,type:"out",date:ymd(new Date(V.y,V.m,V.y===now.getFullYear()&&V.m===now.getMonth()?now.getDate():1)),cat:"",amount:0,doc:"inv",tax:null,taxEdited:false};
+  $("edH").textContent=it?"修改這筆":"記一筆"; $("eDel").hidden=!it; $("eMsg").hidden=true;
+  $("eAmt").value=E.amount?money(E.amount):""; $("eDate").value=E.date; $("eParty").value=E.party||""; $("eNote").value=E.note||"";
+  $("eInv").value=E.inv||""; $("eUbn").value=E.ubn||""; $("eTax").value=E.tax!=null?money(E.tax):""; $("eWh").value=E.wh?money(E.wh):""; $("eNhi").value=E.nhi?money(E.nhi):"";
+  document.querySelector(`input[name=doc][value="${E.doc||"inv"}"]`).checked=true;
+  let cust=[]; try{ cust=JSON.parse(localStorage.getItem("invhelper.customers")||"[]"); }catch(e){}
+  const parties=[...new Set([...entries(b.id).map(e=>e.data.party).filter(Boolean),...cust.map(c=>c.name)])].slice(0,80);
+  $("custList").innerHTML=parties.map(p=>`<option value="${esc(p)}">`).join("");
+  edRender(); $("ed").showModal(); if(!it) setTimeout(()=>$("eAmt").focus(),50);
+}
+function edRender(){
+  const b=curBook(), biz=b.data.kind==="biz";
+  document.querySelectorAll("#ed [data-t]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.t===E.type));
+  const list=CATS[b.data.kind][E.type]; if(!list.includes(E.cat)) E.cat=list[0];
+  $("eCats").innerHTML=list.map(c=>`<label><input type="radio" name="ecat" value="${c}" ${c===E.cat?"checked":""}>${c}</label>`).join("");
+  $("eCats").querySelectorAll("input").forEach(r=>r.onchange=()=>{ E.cat=r.value; edRender(); });
+  $("eBiz").hidden=!biz;
+  const doc=document.querySelector("input[name=doc]:checked").value; E.doc=doc;
+  $("eInvF").hidden=doc!=="inv";
+  $("eUbnL").textContent=E.type==="in"?"買方統編（選填）":"賣方統編（選填）";
+  $("docInv").textContent=E.type==="in"?"有開統一發票":"發票有打我的統編"; $("docNone").textContent=E.type==="in"?"沒開發票、收據":"收據、沒打統編";
+  if(!E.taxEdited){ const a=intOf($("eAmt").value); const t=a-Math.round(a/1.05); $("eTax").value=a?money(t):""; }
+  $("eTaxH").textContent=E.type==="out"&&E.cat==="交際"?"交際費的進項稅額不能扣抵營業稅。":"自動用 5% 從含稅金額拆出來，可以改。";
+  const wh=biz&&E.type==="out"&&WH_CATS.includes(E.cat); $("eWhF").hidden=!wh;
+  if(wh) $("eWhH").innerHTML=`付給個人要代扣嗎？用 <a href="${E.cat==="租金"?"/rent-withholding/":"/labor-report/"}" target="_blank" rel="noopener">${E.cat==="租金"?"租金扣繳計算機":"勞報單扣繳計算機"}</a> 算。`;
+  $("ePartyL").textContent=E.type==="in"?(biz?"客戶":"來源"):(biz?"廠商、對象":"店家、對象");
+}
+document.querySelectorAll("#ed [data-t]").forEach(x=>x.onclick=()=>{ E.type=x.dataset.t; edRender(); });
+document.querySelectorAll("input[name=doc]").forEach(r=>r.onchange=edRender);
+$("eAmt").addEventListener("input",e=>{ const v=String(e.target.value).replace(/[^\d]/g,"").slice(0,10); e.target.value=v?(+v).toLocaleString("zh-TW"):""; if(!E.taxEdited) edRender(); });
+["eTax","eWh","eNhi"].forEach(id=>$(id).addEventListener("input",e=>{ const v=String(e.target.value).replace(/[^\d]/g,"").slice(0,9); e.target.value=v?(+v).toLocaleString("zh-TW"):""; if(id==="eTax") E.taxEdited=true; }));
+$("eUbn").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+$("eInv").addEventListener("input",e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,10); });
+$("edX").onclick=()=>$("ed").close();
+$("eSave").onclick=()=>{
+  const a=intOf($("eAmt").value), msg=t=>{ $("eMsg").textContent=t; $("eMsg").hidden=false; };
+  if(!a) return msg("請輸入金額。");
+  if(!$("eDate").value) return msg("請選日期。");
+  const b=curBook(), biz=b.data.kind==="biz", doc=biz?E.doc:"none", ubn=$("eUbn").value, inv=$("eInv").value;
+  if(biz&&doc==="inv"&&ubn&&!ubnOk(ubn)) return msg("統編檢查碼不符，請再核對一次。");
+  if(biz&&doc==="inv"&&inv&&!/^[A-Z]{2}\d{8}$/.test(inv)) return msg("發票號碼是 2 個英文字母加 8 碼數字。");
+  const tax=biz&&doc==="inv"?Math.min(a,intOf($("eTax").value)):0;
+  const wh=biz&&E.type==="out"&&WH_CATS.includes(E.cat);
+  const data={book:b.id,type:E.type,date:$("eDate").value,cat:E.cat,amount:a,party:$("eParty").value.trim(),note:$("eNote").value.trim(),
+    doc,inv:doc==="inv"?inv:"",ubn:doc==="inv"?ubn:"",tax,wh:wh?intOf($("eWh").value):0,nhi:wh?intOf($("eNhi").value):0};
+  put("entry",E.id,data); $("ed").close();
+  const [y,m]=data.date.split("-").map(Number); if(y!==V.y||m-1!==V.m){ V.y=y; V.m=m-1; }
+  render(); toast("已儲存");
+};
+$("eDel").onclick=()=>{ if(!confirm("確定刪除這筆嗎？")) return; put("entry",E.id,null,true); $("ed").close(); render(); toast("已刪除"); };
+
+/* ---------- book editor ---------- */
+let BK=null;
+function openBook(b){
+  BK=b?{id:b.id,...b.data}:{id:uid(),kind:"biz",name:"",ubn:"",order:books().length};
+  $("bkH").textContent=b?"帳本設定":"新增帳本"; $("bkDel").hidden=!b;
+  $("bkName").value=BK.name; $("bkUbn").value=BK.ubn||""; bkRender(); $("bk").showModal();
+}
+function bkRender(){ document.querySelectorAll("#bk [data-bk]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.bk===BK.kind)); $("bkUbnF").hidden=BK.kind!=="biz";
+  $("bkName").placeholder=BK.kind==="biz"?"例如：我的工作室":"例如：家用"; }
+document.querySelectorAll("#bk [data-bk]").forEach(x=>x.onclick=()=>{ BK.kind=x.dataset.bk; bkRender(); });
+$("bkX").onclick=()=>$("bk").close();
+$("bkUbn").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+$("bkSave").onclick=()=>{ const name=$("bkName").value.trim()||(BK.kind==="biz"?"公司帳":"個人帳");
+  put("book",BK.id,{kind:BK.kind,name,ubn:BK.kind==="biz"?$("bkUbn").value:"",order:BK.order}); V.book=BK.id; $("bk").close(); render(); };
+$("bkDel").onclick=()=>{ const n=entries(BK.id).length; if(!confirm(`確定刪除「${BK.name}」${n?`和裡面的 ${n} 筆帳`:""}嗎？`)) return;
+  entries(BK.id).forEach(e=>put("entry",e.id,null,true)); put("book",BK.id,null,true); V.book=null; $("bk").close(); render(); toast("帳本已刪除"); };
+
+/* ---------- export / backup ---------- */
+function download(name,text,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
+$("csv").onclick=()=>{ const b=curBook(); if(!b) return;
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const rows=entries(b.id).filter(e=>+e.data.date.slice(0,4)===V.y).sort((a,c)=>a.data.date.localeCompare(c.data.date));
+  const head=["日期","收支","分類","對象","金額（含稅）","營業稅","發票號碼","對方統編","代扣所得稅","代扣補充保費","備註"];
+  const csv="﻿"+[head.map(q).join(","),...rows.map(e=>{ const d=e.data; return [d.date,d.type==="in"?"收入":"支出",d.cat,d.party,d.amount,d.tax||0,d.inv,d.ubn,d.wh||0,d.nhi||0,d.note].map(q).join(","); })].join("\r\n");
+  download(`${b.data.name}-${V.y-1911}年.csv`,csv,"text/csv"); };
+$("bak").onclick=()=>{ const items=Object.values(DB.items).filter(x=>!x.deleted);
+  download(`報稅帳本備份-${ymd(new Date())}.json`,JSON.stringify({app:"taxtools-ledger",v:1,at:Date.now(),items}),"application/json");
+  try{ localStorage.setItem(KEY+".bak",Date.now()); }catch(e){} bakHint(); };
+$("imp").onclick=()=>$("impFile").click();
+$("impFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{ const j=JSON.parse(await f.text()); if(j.app!=="taxtools-ledger"||!Array.isArray(j.items)) throw 0;
+    let n=0; j.items.forEach(x=>{ if(!x||!x.id||!["entry","book"].includes(x.kind)) return; const loc=DB.items[x.id]; if(loc&&loc.updated_at>=x.updated_at) return;
+      DB.items[x.id]={id:x.id,kind:x.kind,data:x.data,updated_at:Math.max(x.updated_at||0,Date.now()),deleted:false}; DB.dirty[x.id]=1; n++; });
+    persist(); queueSync(); render(); toast(n?`已匯入 ${n} 筆`:"備份檔裡的資料都已經在帳本裡了");
+  }catch(err){ toast("這不是報稅帳本的備份檔"); } };
+
+/* ---------- wiring ---------- */
+$("prev").onclick=()=>{ V.m--; if(V.m<0){ V.m=11; V.y--; } render(); };
+$("next").onclick=()=>{ V.m++; if(V.m>11){ V.m=0; V.y++; } render(); };
+$("add").onclick=()=>openEntry(null);
+$("q").addEventListener("input",e=>{ V.q=e.target.value; render(); });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sync(); });
+setInterval(()=>{ if(!document.hidden) sync(); },60000);
+window.addEventListener("online",()=>sync());
+
+renderAcct(); render();
+api("/api/auth/me").then(r=>r.ok?r.json():null).then(j=>{
+  if(!j) return;   // server unreachable: keep working locally
+  if(j.user){ if(DB.owner&&DB.owner!==j.user.id){ DB={items:{},srv:0,dirty:{},owner:null}; persist(); } USER=j.user; renderAcct(); sync(); }
+  else if(DB.owner&&!Object.keys(DB.dirty).length){ /* session ended: the cloud has everything, so clear this device until the next sign-in */ DB={items:{},srv:0,dirty:{},owner:null}; persist(); render(); }
+}).catch(()=>{});
+</script>
+</body>
+</html>
