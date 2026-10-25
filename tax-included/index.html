@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>含稅未稅計算機｜營業稅 5% 換算＋金額中文大寫</title>
+<meta name="description" content="輸入含稅或未稅金額，馬上算出銷售額、5% 營業稅和總計，並轉成發票、支票用的中文大寫。每一步怎麼算都寫清楚，尾數差 1 元也看得懂。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F3F5F8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Each amount row carries its own copy button; the uppercase card mirrors the 億…元 boxes printed on invoices. */
+.legend .v{display:flex;align-items:center;gap:8px}
+.cp{font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);border-radius:99px;min-height:40px;min-width:52px;padding:0 10px;cursor:pointer}
+.cp:hover{color:var(--accent);border-color:var(--accent)}
+.cp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.how{margin:0;padding:12px 14px;border-radius:10px;border:1px dashed var(--line-strong);font-size:14px;line-height:1.7;color:var(--muted);font-variant-numeric:tabular-nums}
+.how b{color:var(--fg)}
+.upper-text{font-size:clamp(20px,3.2vw,26px);font-weight:700;letter-spacing:.06em;line-height:1.5;word-break:break-all;margin:0}
+.digits{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));border:1.5px solid var(--fg);border-radius:6px;overflow:hidden;max-width:640px}
+.digits div{display:grid;border-left:1px solid var(--line-strong);text-align:center}
+.digits div:first-child{border-left:0}
+.digits span{font-size:12px;color:var(--muted);padding:4px 0;border-bottom:1px solid var(--line-strong)}
+.digits b{font-size:clamp(18px,3vw,24px);padding:6px 0;color:var(--accent)}
+.digits b.x{color:var(--line-strong)}
+.digits-wrap{overflow-x:auto}
+.rate-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.rate-row input{max-width:120px}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具">
+    <a href="/">手開發票</a>
+    <a href="/rent-withholding/">租金扣繳</a>
+    <a href="/labor-report/">勞報扣繳</a>
+    <a href="/tax-included/" aria-current="page">含稅換算</a>
+  </nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>含稅未稅計算機</h1>
+    <p>報價、對帳、開發票前算一下：輸入含稅或未稅金額，馬上得到銷售額、營業稅和總計，還有發票和支票用的中文大寫。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>要算什麼</h2>
+        <div class="seg" role="group" aria-label="計算方式">
+          <button type="button" data-k="mode" data-v="incl" aria-pressed="true"><b>我有含稅價</b><small>拆出未稅和稅</small></button>
+          <button type="button" data-k="mode" data-v="excl" aria-pressed="false"><b>我有未稅價</b><small>加上 5% 稅</small></button>
+          <button type="button" data-k="mode" data-v="upper" aria-pressed="false"><b>只轉大寫</b><small>發票・支票</small></button>
+        </div>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>金額</h2>
+        <div class="field">
+          <label for="amt" id="amtLbl">含稅金額</label>
+          <div class="money"><input id="amt" inputmode="numeric" placeholder="例如 10500" enterkeyhint="done"></div>
+        </div>
+        <details class="more" id="adv">
+          <summary>稅率（一般是 5%，不用改）</summary>
+          <div class="inner">
+            <div class="chips" role="radiogroup" aria-label="稅率">
+              <label><input type="radio" name="rate" value="5" checked>5%</label>
+              <label><input type="radio" name="rate" value="c">其他稅率</label>
+            </div>
+            <div class="rate-row" id="customRow" hidden>
+              <input id="custom" inputmode="decimal" aria-label="自訂稅率（%）" placeholder="例如 2"><span>%</span>
+            </div>
+            <p class="hint">一般營業人開統一發票都是 5%。其他稅率例如特種飲食業、外國的加值稅，或是你想試算的情況。</p>
+          </div>
+        </details>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="upperCard"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>含稅換未稅，為什麼要除以 1.05，不是乘 0.95？</summary><p>含稅價是「未稅價 × 1.05」，所以要除回去。乘 0.95 會少算：含稅 10,500 元 × 0.95 = 9,975 元，正確的未稅是 10,500 ÷ 1.05 = 10,000 元。</p></details>
+        <details><summary>尾數為什麼有時候差 1 元？</summary><p>稅額要算到整數元，元以下四捨五入，所以未稅 + 稅額不一定剛好等於「未稅 × 1.05」的小數結果。從含稅價拆的時候，先算出未稅（四捨五入），再用總額減掉未稅得到稅額，總額就一定對得起來。</p></details>
+        <details><summary>好幾個品項，要逐項算稅還是加總後再算？</summary><p>一張發票的營業稅是用整張的銷售額合計來算。逐項算稅再加總，可能會跟用合計算出來的差 1、2 元，開發票時以合計計算為準。</p></details>
+        <details><summary>賣給一般消費者也要另外加 5% 嗎？</summary><p>不行。依營業稅法第 32 條，賣給消費者的定價必須已經內含營業稅，不能另外加收。只有賣給公司行號、開三聯式發票時，才會把銷售額和稅額分開寫。</p></details>
+        <details><summary>中文大寫有什麼要注意的？</summary><p>前面寫「新臺幣」、結尾寫「整」，數字中間的零要寫出來（例如壹萬零伍佰元整），字跟字之間不要留空隙，避免被人補字。支票和手開發票都適用。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">依加值型及非加值型營業稅法第 10 條（稅率 5%）及第 32 條（定價應內含營業稅）計算；稅額元以下四捨五入為實務常見作法。僅供參考，實際以國稅局規定為準。法規數字最後確認：<span id="checked"></span>。</p>
+</div>
+
+<div class="bar-m">
+  <div class="t"><small id="barLbl">未稅</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const R_=window.RATES;
+const S={mode:"incl"};
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const amt=()=>{ const v=parseInt(String($("amt").value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
+function rate(){
+  const v=document.querySelector('input[name=rate]:checked').value;
+  if(v==="5") return R_.vat.rate;
+  const c=parseFloat($("custom").value); return isFinite(c)&&c>=0&&c<100?c/100:R_.vat.rate;
+}
+const pctTxt=r=>(Math.round(r*10000)/100)+"%";
+
+function calc(a){
+  const r=rate();
+  if(S.mode==="incl"){ const sales=Math.round(a/(1+r)); return {sales,tax:a-sales,total:a,r,raw:a/(1+r)}; }
+  const tax=Math.round(a*r); return {sales:a,tax,total:a+tax,r,raw:a*r};
+}
+
+function upperCard(n){
+  const units=["仟","佰","拾","億","仟","佰","拾","萬","仟","佰","拾","元"];
+  const len=Math.max(String(n).length,9), u=units.slice(-len), ds=String(n).padStart(len," ").split("");
+  const D="零壹貳參肆伍陸柒捌玖";
+  const first=ds.findIndex(c=>c!==" ");
+  return `<h2>${S.mode==="upper"?"中文大寫":"總計的中文大寫"}</h2>
+    <p class="upper-text" id="upperTxt">${cnUpper(n)}</p>
+    <div class="actions" style="margin:12px 0 16px"><button type="button" class="btn" id="cpUpper">複製大寫</button></div>
+    <span class="lbl">寫在發票「總計新臺幣（中文大寫）」欄時，照這樣填：</span>
+    <div class="digits-wrap" style="margin-top:8px"><div class="digits" style="--n:${len}">${u.map((x,i)=>`<div><span>${x}</span><b class="${ds[i]===" "?"x":""}">${ds[i]===" "?(i<first?"╳":""):D[+ds[i]]}</b></div>`).join("")}</div></div>
+    <p class="hint" style="margin-top:10px">最高位前面的空格畫 ╳，避免被補字。</p>`;
+}
+
+function render(){
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.k]===b.dataset.v));
+  $("customRow").hidden=document.querySelector('input[name=rate]:checked').value!=="c";
+  const a=amt(), up=S.mode==="upper";
+  $("amtLbl").textContent=up?"要轉大寫的金額":S.mode==="incl"?"含稅金額（總計）":"未稅金額（銷售額）";
+  $("adv").hidden=up;
+  const R=$("result");
+  if(up){
+    R.hidden=true;
+    $("upperCard").innerHTML=upperCard(a);
+    $("cpUpper").onclick=()=>copyText(cnUpper(a),"已複製大寫");
+    $("barLbl").textContent="中文大寫"; $("barVal").textContent=a?cnUpper(a).replace("新臺幣","").replace("元整","元"):"—";
+    save(); return;
+  }
+  R.hidden=false;
+  const c=calc(a), P=c.total, pct=x=>P?x/P*100:0, rt=pctTxt(c.r);
+  const big=S.mode==="incl"?c.sales:c.total;
+  const how=S.mode==="incl"
+    ? `<b>算法</b>：未稅 = 含稅 ÷ ${(1+c.r).toFixed(c.r*100%1?4:2)} = ${c.raw.toLocaleString("zh-TW",{maximumFractionDigits:2})} → 四捨五入 <b>${money(c.sales)}</b>；稅額 = 含稅 − 未稅 = <b>${money(c.tax)}</b>`
+    : `<b>算法</b>：稅額 = 未稅 × ${rt} = ${c.raw.toLocaleString("zh-TW",{maximumFractionDigits:2})} → 四捨五入 <b>${money(c.tax)}</b>；含稅 = 未稅 + 稅額 = <b>${money(c.total)}</b>`;
+  const row=(color,label,sub,v,id)=>`<li><i style="background:${color}"></i><span class="t">${label}<small>${sub}</small></span><span class="v">${money(v)}<button type="button" class="cp" data-v="${v}" aria-label="複製${label}">複製</button></span></li>`;
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">${S.mode==="incl"?"未稅金額（銷售額）":"含稅金額（總計）"}</span><div class="big">${money(big)}<small>元</small></div></div>
+      <div class="gross">${S.mode==="incl"?"含稅":"未稅"}<b>NT$ ${money(a)}</b>稅率 ${rt}</div>
+    </div>
+    ${a?`<div class="bar" aria-hidden="true"><span class="s1" style="flex-basis:${pct(c.sales)}%">${pct(c.sales)>14?"未稅":""}</span><span class="s2" style="flex-basis:${pct(c.tax)}%">${pct(c.tax)>6?"稅":""}</span></div>`:""}
+    <ul class="legend">
+      ${row("var(--c1)","未稅（銷售額）","發票「銷售額合計」欄",c.sales)}
+      ${row("var(--c2)",`營業稅 ${rt}`,"發票「營業稅」欄",c.tax)}
+      ${row("var(--fg)","含稅（總計）","發票「總計」欄，也是客戶實付",c.total)}
+    </ul>
+    ${a?`<p class="how">${how}</p>`:`<p class="note">輸入金額，就會拆出未稅、稅額和總計。</p>`}
+    ${a?`<div class="actions"><button type="button" class="btn" id="cpQuote">複製報價說明</button></div>`:""}`;
+  R.querySelectorAll(".cp").forEach(b=>b.onclick=()=>copyText(b.dataset.v,"已複製 "+money(+b.dataset.v)));
+  if(a) $("cpQuote").onclick=()=>copyText(`未稅 ${money(c.sales)} 元＋營業稅（${rt}）${money(c.tax)} 元＝含稅 ${money(c.total)} 元（${cnUpper(c.total)}）`,"已複製報價說明");
+  $("upperCard").innerHTML=upperCard(c.total);
+  $("cpUpper").onclick=()=>copyText(cnUpper(c.total),"已複製大寫");
+  $("barLbl").textContent=S.mode==="incl"?"未稅":"含稅"; $("barVal").textContent="NT$ "+money(big);
+  save();
+}
+
+const KEY="taxtools.vat.v1";
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,rate:document.querySelector('input[name=rate]:checked').value,custom:$("custom").value})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+  Object.assign(S,d.S||{}); $("amt").value=d.amt??""; $("custom").value=d.custom||"";
+  const r=document.querySelector(`input[name=rate][value="${d.rate}"]`); if(r){ r.checked=true; if(d.rate==="c") $("adv").open=true; }
+}catch(e){} }
+
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
+$("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,"").slice(0,12); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n) e.target.value=n; render(); });
+document.querySelectorAll('input[name=rate],#custom').forEach(e=>e.addEventListener("input",render));
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>(S.mode==="upper"?$("upperCard"):$("result")).scrollIntoView({behavior:"smooth",block:"start"});
+$("checked").textContent=R_.checked.replace(/-/g,"/");
+load(); if(!$("amt").value) $("amt").value="10,500";
+render();
+</script>
+</body>
+</html>

@@ -39,3 +39,20 @@ function solveGross(T,split,rates){
   near.sort((a,b)=>tz(b.P)-tz(a.P)||a.P-b.P);
   return near[0];
 }
+/* 金額轉中文大寫，例如 10500 → 新臺幣壹萬零伍佰元整 */
+function cnUpper(n){
+  n=Math.round(n);
+  if(!n) return "新臺幣零元整";
+  const D="零壹貳參肆伍陸柒捌玖", U=["","拾","佰","仟"], BIG=["","萬","億","兆"];
+  const groups=[]; let x=n; while(x>0){ groups.push(x%10000); x=Math.floor(x/10000); }
+  let s="";
+  for(let g=groups.length-1;g>=0;g--){
+    const part=groups[g];
+    if(!part){ if(s) s+="零"; continue; }
+    if(s&&part<1000) s+="零";
+    const d=String(part).padStart(4,"0"); let ps="";
+    for(let i=0;i<4;i++){ const v=+d[i]; if(v) ps+=D[v]+U[3-i]; else if(ps) ps+="零"; }
+    s+=ps.replace(/零+$/,"")+BIG[g];
+  }
+  return "新臺幣"+s.replace(/零+/g,"零").replace(/零$/,"")+"元整";
+}

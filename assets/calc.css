@@ -12,7 +12,10 @@
 .bar .s2{background:var(--c2);color:#2A1408}
 .bar .s3{background:var(--c3);color:#fff}
 .legend{display:grid;gap:0;margin:0;padding:0;list-style:none}
-.legend li{display:grid;grid-template-columns:14px minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
+.legend li{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;padding:10px 0;border-top:1px solid var(--line)}
+.legend li > i{flex:none}
+.legend .t{flex:1 1 9em}
+.legend .v{margin-left:auto}
 .legend li:first-child{border-top:0}
 .legend i{width:12px;height:12px;border-radius:3px;display:block;transform:translateY(1px)}
 .legend .t{min-width:0}
