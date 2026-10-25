@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="/assets/base.css">
 <link rel="stylesheet" href="/assets/nav.css">
 <link rel="stylesheet" href="/assets/calc.css">
+<style>.role-seg button{min-height:56px}.role-seg button b{font-size:17px}</style>
 </head>
 <body>
 <header class="site-head">
@@ -31,21 +32,27 @@
 <div class="wrap">
   <div class="page-head">
     <h1>租金扣繳計算機</h1>
-    <p>公司付房租給個人房東，要先代扣所得稅和二代健保補充保費。輸入租金，馬上知道房東實拿多少、公司要繳多少、什麼時候繳。</p>
+    <p>付租金的公司和收租的房東都能用。公司付房租給個人房東，要先代扣所得稅和二代健保補充保費；輸入租金，馬上知道實拿多少、要繳多少、什麼時候繳。</p>
   </div>
 
   <div class="grid">
     <form class="panel" id="f" autocomplete="off">
       <section class="sec">
-        <h2><b>1</b>誰付給誰</h2>
+        <div class="seg role-seg" role="group" aria-label="我的角色">
+          <button type="button" data-k="role" data-v="payer" aria-pressed="true"><b>我要付租金</b><small>公司・機關・團體</small></button>
+          <button type="button" data-k="role" data-v="landlord" aria-pressed="false"><b>我是房東</b><small>收租的人</small></button>
+        </div>
+      </section>
+      <section class="sec">
+        <h2><b>1</b><span id="whoH">誰付給誰</span></h2>
         <div class="field">
-          <span class="lbl">付租金的是</span>
+          <span class="lbl" id="payerLbl">付租金的是</span>
           <div class="seg" role="group" aria-label="付租金的是">
             <button type="button" data-k="payer" data-v="org" aria-pressed="true"><b>公司・行號・機關</b><small>含學校、團體、事務所</small></button>
             <button type="button" data-k="payer" data-v="person" aria-pressed="false"><b>個人</b><small>例如自己租屋</small></button>
           </div>
         </div>
-        <div class="field">
+        <div class="field" id="landlordField">
           <span class="lbl">房東是</span>
           <div class="seg" role="group" aria-label="房東是">
             <button type="button" data-k="landlord" data-v="person" aria-pressed="true"><b>個人</b><small>自然人</small></button>
@@ -57,8 +64,8 @@
       <section class="sec">
         <h2><b>2</b>租金</h2>
         <div class="seg" role="group" aria-label="計算方式">
-          <button type="button" data-k="mode" data-v="gross" aria-pressed="true"><b>我知道租金</b><small>算要扣多少</small></button>
-          <button type="button" data-k="mode" data-v="net" aria-pressed="false"><b>房東要實拿</b><small>反推租金</small></button>
+          <button type="button" data-k="mode" data-v="gross" aria-pressed="true"><b>我知道租金</b><small id="m1s">算要扣多少</small></button>
+          <button type="button" data-k="mode" data-v="net" aria-pressed="false"><b id="m2b">房東要實拿</b><small>反推租金</small></button>
         </div>
         <div class="field">
           <label for="amt" id="amtLbl">每月租金（合約上的金額）</label>
@@ -75,24 +82,24 @@
           <p class="hint">要不要扣是看「每次付多少」，一次付好幾個月，單次金額比較容易超過門檻。</p>
         </div>
         <div class="field">
-          <label for="day">這次付款日</label>
+          <label for="day" id="dayLbl">這次付款日</label>
           <input id="day" type="date">
         </div>
         <details class="more" id="adv">
-          <summary>房東身分（不確定就不用改）</summary>
+          <summary id="advSum">房東身分（不確定就不用改）</summary>
           <div class="inner">
             <div class="chips" role="radiogroup" aria-label="房東身分">
               <label><input type="radio" name="res" value="1" checked>住在台灣</label>
               <label><input type="radio" name="res" value="0">非居住者</label>
             </div>
-            <p class="hint">非居住者：當年在台灣住不到 183 天的外籍人士，或戶籍在國內但長住國外的人。扣繳率是 20%，不論金額大小都要扣。</p>
-            <span class="lbl">補充保費（房東的健保身分）</span>
+            <p class="hint" id="resHint">非居住者：當年在台灣住不到 183 天的外籍人士，或戶籍在國內但長住國外的人。扣繳率是 20%，不論金額大小都要扣。</p>
+            <span class="lbl" id="nhiLbl">補充保費（房東的健保身分）</span>
             <div class="chips" role="radiogroup" aria-label="補充保費身分">
               <label><input type="radio" name="nhist" value="normal" checked>一般</label>
               <label><input type="radio" name="nhist" value="vulnerable">特定弱勢身分</label>
               <label><input type="radio" name="nhist" value="exempt">免扣</label>
             </div>
-            <p class="hint">特定弱勢身分：中低收入戶、中低收入老人、領身心障礙生活補助、特殊境遇家庭、接受生活扶助的弱勢兒少等，單次未達基本工資 29,500 元免扣（要先提供證明）。免扣：低收入戶，或沒有台灣健保投保資格（例如戶籍已遷出國外）。</p>
+            <p class="hint" id="nhiHint">特定弱勢身分：中低收入戶、中低收入老人、領身心障礙生活補助、特殊境遇家庭、接受生活扶助的弱勢兒少等，單次未達基本工資 29,500 元免扣（要先提供證明）。免扣：低收入戶，或沒有台灣健保投保資格（例如戶籍已遷出國外）。</p>
           </div>
         </details>
       </section>
@@ -105,6 +112,7 @@
         <h2>常見問題</h2>
         <details><summary>月租不到 2 萬，為什麼還要扣？</summary><p>門檻看的是「每次付款」的金額。例如月租 1.8 萬、一次付一季 5.4 萬，這筆付款就超過門檻，要扣 10% 所得稅和 2.11% 補充保費。改成每月付就不用扣。</p></details>
         <details><summary>房東說不要扣，可以嗎？</summary><p>不行。公司、行號、機關付租金給個人房東，依法就是扣繳義務人，沒扣或沒申報會被補稅並處罰。如果房東在意實拿金額，可以用「房東要實拿」反推合約租金，把扣掉的部分先加進去。</p></details>
+        <details><summary>我是房東，報稅時租金怎麼算？</summary><p>租金收入可以先減掉 43% 的必要損耗及費用（不用拿單據），剩下的 57% 才是租賃所得；能舉證實際費用比較多的話，也可以核實減除。被代扣的稅款可以抵減應納稅額。</p></details>
         <details><summary>房東被扣的錢拿得回來嗎？</summary><p>扣繳的所得稅是預繳，房東隔年 5 月報綜所稅時會抵減應納稅額，多繳的會退。補充保費則不會退。</p></details>
         <details><summary>房東是公司，或我是個人租屋呢？</summary><p>房東是公司行號，由對方開統一發票，公司不用代扣。個人租屋自住，付房租時也不用扣，報稅時可以看看能不能用房屋租金支出特別扣除額。</p></details>
       </section>
@@ -122,7 +130,8 @@
 
 <script>
 const $=id=>document.getElementById(id);
-const S={payer:"org",landlord:"person",mode:"gross"};
+const S={payer:"org",landlord:"person",mode:"gross",role:"payer"};
+const isLL=()=>S.role==="landlord";
 const R_=window.RATES, TAX_RES=R_.rent.resident, TAX_NONRES=R_.rent.nonResident, TAX_FREE=R_.rent.exemptTaxAtOrBelow, NHI=R_.nhi.rate;
 const nhiStatus=()=>document.querySelector("input[name=nhist]:checked").value;
 const money=n=>Math.round(n).toLocaleString("zh-TW");
@@ -147,13 +156,29 @@ const fmtY=d=>`${d.getFullYear()-1911} 年`;
 function payDay(){ const v=$("day").value; return v?new Date(v+"T00:00"):new Date(); }
 
 function render(){
+  const ll=isLL(); if(ll) S.landlord="person";
   const k=cyc(), a=amt(), active=S.payer==="org"&&S.landlord==="person";
-  $("amtLbl").textContent=S.mode==="gross"?(k===1?"每月租金（合約上的金額）":"每月租金（合約上的金額）"):"房東每月要實拿";
+  $("amtLbl").textContent=S.mode==="gross"?"每月租金（合約上的金額）":(ll?"我每月想實拿":"房東每月要實拿");
+  $("whoH").textContent=ll?"租客是誰":"誰付給誰"; $("payerLbl").textContent=ll?"付租金給你的是":"付租金的是";
+  $("landlordField").hidden=ll;
+  $("m1s").textContent=ll?"算實拿多少":"算要扣多少"; $("m2b").textContent=ll?"我想實拿":"房東要實拿";
+  $("dayLbl").textContent=ll?"這次收款日":"這次付款日";
+  $("advSum").textContent=ll?"我的身分（不確定就不用改）":"房東身分（不確定就不用改）";
+  $("nhiLbl").textContent=ll?"補充保費（你的健保身分）":"補充保費（房東的健保身分）";
+  if(!$("resHint").dataset.o){ $("resHint").dataset.o=$("resHint").textContent; $("nhiHint").dataset.o=$("nhiHint").textContent; }
+  ["resHint","nhiHint"].forEach(id=>{ const e=$(id); e.textContent=ll?e.dataset.o.replace(/房東/g,"你"):e.dataset.o; });
   document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.k]===b.dataset.v));
   const R=$("result"), T=$("todo");
 
   if(!active){
     const isPerson=S.payer==="person";
+    if(ll){
+      R.innerHTML=`<div class="empty"><span class="lbl">結果</span><h3>租客是個人，不會被代扣</h3>
+        <p>只有公司、行號、機關團體付租金時才要代扣。租客是個人的話，租金會全額給你。</p>
+        <p class="note">租金收入一樣要在明年 5 月報綜所稅：全年租金減掉 43% 必要費用後，剩下的 57% 是租賃所得。${a?`以每月 ${money(a)} 元計算，一年租賃所得約 ${money(a*12*.57)} 元。`:""}</p></div>`;
+      T.hidden=true; $("barLbl").textContent="你會實拿"; $("barVal").textContent="NT$ "+money(a*cyc());
+      save(); return;
+    }
     R.innerHTML=`<div class="empty"><span class="lbl">結果</span><h3>${isPerson?"個人付房租不用代扣":"房東是公司，不用代扣"}</h3>
       <p>${isPerson?"只有公司、行號、機關團體付租金時才要代扣所得稅和補充保費。個人租屋自住，照合約金額付給房東就好。":"房東是公司行號時，由對方開立統一發票給你，你照發票金額付款，不用代扣所得稅和補充保費。"}</p>
       ${isPerson?`<p class="note">報稅時可以看看能不能用「房屋租金支出特別扣除額」，記得留好租約和付款紀錄。</p>`:`<p class="note">記得跟房東索取發票，公司才能拿來報帳和扣抵進項稅額。</p>`}</div>`;
@@ -170,37 +195,47 @@ function render(){
   const nhiSt=nhiStatus(), res=resident(), nhiMin=nhiSt==="vulnerable"?R_.nhi.vulnerableMin:R_.nhi.minPerPayment;
 
   let why="";
-  if(!a) why=`<p class="note">輸入租金，就會算出房東實拿和公司要繳的金額。</p>`;
-  else if(s.tax===0&&s.nhi===0) why=`<p class="note">這次付款 ${money(P)} 元，沒有超過門檻，不用代扣，全額付給房東。${k===1&&perMonth>=15000?" 如果改成一次付好幾個月，單次金額超過門檻就要扣。":""}</p>`;
+  if(!a) why=`<p class="note">${ll?"輸入租金，就會算出你實拿多少、被扣多少。":"輸入租金，就會算出房東實拿和公司要繳的金額。"}</p>`;
+  else if(s.tax===0&&s.nhi===0) why=`<p class="note">這次付款 ${money(P)} 元，沒有超過門檻，${ll?"不會被代扣，全額入帳。":"不用代扣，全額付給房東。"}${k===1&&perMonth>=15000?" 如果改成一次付好幾個月，單次金額超過門檻就要扣。":""}</p>`;
   else if(s.tax===0&&s.nhi>0) why=`<p class="note">這次付款達 ${money(nhiMin)} 元，要扣補充保費；但所得稅扣繳額沒超過 2,000 元，所以不用扣所得稅。</p>`;
-  else if(k>1&&perMonth<=20000&&res) why=`<p class="note warm">月租沒超過 2 萬，但${CYC_NAME[k]}付一次、單次 ${money(P)} 元超過門檻，所以要扣。改成每月付就不用扣。</p>`;
+  else if(k>1&&perMonth<=20000&&res) why=`<p class="note warm">月租沒超過 2 萬，但${CYC_NAME[k]}付一次、單次 ${money(P)} 元超過門檻，所以要扣。改成每月${ll?"收":"付"}就不用扣。</p>`;
 
   R.innerHTML=`
     <div class="r-top">
-      <div><span class="lbl">${S.mode==="gross"?"房東實拿":"合約租金應該寫"}</span>
+      <div><span class="lbl">${S.mode==="gross"?(ll?"你會實拿":"房東實拿"):"合約租金應該寫"}</span>
         <div class="big" id="bigNum">${S.mode==="gross"?money(s.net):money(k===1?P:Math.ceil(perMonth))}<small>元${S.mode==="gross"?(k===1?"／月":"／每次"):"／月"}</small></div></div>
       <div class="gross">${S.mode==="gross"?"每次付款":"每次付款"}<b>NT$ ${money(P)}</b>${CYC_NAME[k]}${k>1?`（${k} 個月）`:""}</div>
     </div>
     ${a?`<div class="bar" aria-hidden="true">
-      <span class="s1" style="flex-basis:${pct(s.net)}%">${pct(s.net)>14?"房東實拿":""}</span>
+      <span class="s1" style="flex-basis:${pct(s.net)}%">${pct(s.net)>14?(ll?"你實拿":"房東實拿"):""}</span>
       <span class="s2" style="flex-basis:${pct(s.tax)}%">${pct(s.tax)>7?"稅":""}</span>
       <span class="s3" style="flex-basis:${pct(s.nhi)}%"></span>
     </div>`:""}
     <ul class="legend">
-      <li><i style="background:var(--c1)"></i><span class="t">匯給房東<small>${S.mode==="net"&&a?(over>0?`比目標多 ${money(over)} 元，因為稅額尾數捨去`:"剛好等於房東要的金額"):"每次付款扣掉下面兩項"}</small></span><span class="v">${money(s.net)}</span></li>
-      <li class="${s.tax?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">代扣所得稅 ${res?"10%":"20%"}<small>${s.tax?"公司代繳給國稅局":res?"扣繳額沒超過 2,000 元，免扣":"—"}</small></span><span class="v">${money(s.tax)}</span></li>
-      <li class="${s.nhi?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">代扣補充保費 2.11%<small>${s.nhi?"公司代繳給健保署":nhiSt!=="exempt"?`單次未達 ${money(nhiMin)} 元，免扣`:"房東屬免扣身分"}</small></span><span class="v">${money(s.nhi)}</span></li>
+      <li><i style="background:var(--c1)"></i><span class="t">${ll?"你會收到":"匯給房東"}<small>${S.mode==="net"&&a?(over>0?`比目標多 ${money(over)} 元，因為稅額尾數捨去`:ll?"剛好等於你想實拿的金額":"剛好等於房東要的金額"):"每次付款扣掉下面兩項"}</small></span><span class="v">${money(s.net)}</span></li>
+      <li class="${s.tax?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">${ll?"被代扣的所得稅":"代扣所得稅"} ${res?"10%":"20%"}<small>${s.tax?(ll?(res?"租客代繳給國稅局，報稅時可以抵稅":"租客代繳給國稅局，扣完就完稅"):"公司代繳給國稅局"):res?"扣繳額沒超過 2,000 元，免扣":"—"}</small></span><span class="v">${money(s.tax)}</span></li>
+      <li class="${s.nhi?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">${ll?"被代扣的補充保費":"代扣補充保費"} 2.11%<small>${s.nhi?(ll?"租客代繳給健保署，不會退":"公司代繳給健保署"):nhiSt!=="exempt"?`單次未達 ${money(nhiMin)} 元，免扣`:(ll?"你屬免扣身分":"房東屬免扣身分")}</small></span><span class="v">${money(s.nhi)}</span></li>
     </ul>
     ${why}
-    ${a?`<div class="year">一年付 ${12/k} 次：<span>租金 <b>${money(P*12/k)}</b></span><span>房東實拿 <b>${money(s.net*12/k)}</b></span><span>代扣合計 <b>${money((s.tax+s.nhi)*12/k)}</b></span></div>
-    <div class="actions"><button type="button" class="btn" id="copy">複製說明給房東</button></div>`:""}`;
-  if(a) $("copy").onclick=()=>copyText(msgFor(s,k),"已複製，可以直接貼給房東");
+    ${a?`<div class="year">一年${ll?"收":"付"} ${12/k} 次：<span>租金 <b>${money(P*12/k)}</b></span><span>${ll?"你":"房東"}實拿 <b>${money(s.net*12/k)}</b></span><span>代扣合計 <b>${money((s.tax+s.nhi)*12/k)}</b></span></div>
+    ${ll&&res?`<p class="note warm">報稅時的租賃所得約 <b>${money(P*12/k*.57)}</b> 元（全年租金減 43% 必要費用）。被代扣的 ${money(s.tax*12/k)} 元可以抵稅。</p>`:""}
+    ${ll&&!res&&s.tax?`<p class="note warm">非居住者被扣繳後就算完稅，這筆不用再自己申報。</p>`:""}
+    <div class="actions"><button type="button" class="btn" id="copy">${ll?"複製說明給租客":"複製說明給房東"}</button></div>`:""}`;
+  if(a) $("copy").onclick=()=>copyText(ll?quoteFor(s,k):msgFor(s,k),ll?"已複製，可以直接貼給租客":"已複製，可以直接貼給房東");
 
   // timeline
   const d=payDay(), y=d.getFullYear(), m=d.getMonth();
   const next10=new Date(y,m+1,10), nextEnd=new Date(y,m+2,0), plus10=new Date(y,m,d.getDate()+10);
   const jan31=new Date(y+1,0,31), feb10=new Date(y+1,1,10);
-  const steps=[[d,"付款給房東",`匯 ${money(s.net)} 元，並保留付款紀錄。`]];
+  let steps;
+  if(ll){
+    steps=[[d,"收租",`確認收到 ${money(s.net)} 元。`]];
+    if(res&&a){
+      steps.push([feb10,s.tax?"收到扣繳憑單":"收到免扣繳憑單","明年 2 月 10 日前應該會收到。沒收到可以跟租客要，報稅時也能用自然人憑證或健保卡下載所得資料。"]);
+      steps.push([new Date(y+1,4,31),"申報綜所稅",`明年 5 月報稅：租金減 43% 必要費用後列入所得${s.tax?"，被扣的稅可以抵減":""}。`]);
+    }
+  }else{
+  steps=[[d,"付款給房東",`匯 ${money(s.net)} 元，並保留付款紀錄。`]];
   if(s.tax) steps.push(res?[next10,"繳納扣繳稅款",`把代扣的 ${money(s.tax)} 元用扣繳稅款繳款書繳到國庫（銀行、郵局或線上）。`]
                          :[plus10,"繳稅並申報（非居住者）",`付款後 10 天內繳納 ${money(s.tax)} 元，並開具扣繳憑單向國稅局申報。`]);
   if(s.nhi) steps.push([nextEnd,"繳納補充保費",`把代扣的 ${money(s.nhi)} 元繳給健保署，用健保署的補充保費繳款單或線上繳納。`]);
@@ -208,17 +243,23 @@ function render(){
   if(!s.tax&&res&&a) steps.push([jan31,"申報免扣繳憑單",`沒扣稅也要在明年 1 月底前申報免扣繳憑單，一樣要填房屋稅籍編號。`]);
   if(s.nhi) steps.push([jan31,"申報補充保費明細",`明年 1 月底前向健保署申報扣費明細；每次繳費時已一併申報就不用再報。`]);
   if(res&&a) steps.push([feb10,"把憑單交給房東",`明年 2 月 10 日前把扣繳憑單（或免扣繳憑單）寄給房東，房東報稅要用。`]);
+  }
   T.innerHTML=`<h2>接下來要做的事</h2><ol class="steps">${steps.map(([dt,t,w])=>`<li><span class="d">${fmtD(dt)}<small>${dt.getFullYear()!==y?fmtY(dt):"前"}</small></span><span class="w"><b>${t}</b><span>${w}</span></span></li>`).join("")}</ol>
-    <div class="actions" style="margin-top:14px"><button type="button" class="btn" id="ics">加入手機行事曆</button></div>
+    ${steps.length>1?`<div class="actions" style="margin-top:14px"><button type="button" class="btn" id="ics">加入手機行事曆</button></div>`:""}
     <p class="hint" style="margin-top:10px">期限遇假日順延到下一個上班日。加入行事曆後，每個期限前 3 天會提醒你。</p>`;
-  $("ics").onclick=()=>downloadICS(steps.slice(1),"租金扣繳","租金扣繳期限.ics");
-  T.querySelectorAll(".steps li:first-child .d small").forEach(e=>e.textContent="付款日");
+  if(steps.length>1) $("ics").onclick=()=>downloadICS(steps.slice(1),ll?"房東報稅":"租金扣繳",ll?"房東報稅提醒.ics":"租金扣繳期限.ics");
+  T.querySelectorAll(".steps li:first-child .d small").forEach(e=>e.textContent=ll?"收款日":"付款日");
 
-  $("barLbl").textContent=S.mode==="gross"?"房東實拿":"每次付款應付";
+  $("barLbl").textContent=S.mode==="gross"?(ll?"你會實拿":"房東實拿"):"每次付款應付";
   $("barVal").textContent="NT$ "+money(S.mode==="gross"?s.net:P);
   save();
 }
 
+function quoteFor(s,k){
+  return `您好，租金${CYC_NAME[k]}${k>1?`（共 ${k} 個月）`:""} ${money(s.P)} 元（合約金額）。`+
+    (s.tax||s.nhi?`依規定由貴公司代扣${s.tax?`所得稅 ${money(s.tax)} 元`:""}${s.tax&&s.nhi?"、":""}${s.nhi?`二代健保補充保費 ${money(s.nhi)} 元`:""}，實際匯款 ${money(s.net)} 元。`:`未達代扣門檻，請全額匯款 ${money(s.net)} 元。`)+
+    (resident()&&s.tax?"扣繳憑單請於明年 2 月 10 日前寄給我，謝謝！":"謝謝！");
+}
 function msgFor(s,k){
   const d=payDay();
   return `房東您好：\n本次租金（${CYC_NAME[k]}${k>1?`，共 ${k} 個月`:""}）${money(s.P)} 元，`+
@@ -236,7 +277,7 @@ function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(
   if(!d.res||(d.nhist&&d.nhist!=="normal")) $("adv").open=true;
 }catch(e){} }
 
-document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; if(b.dataset.k==="role"){ try{ history.replaceState(null,"","#"+S.role); }catch(e){} } render(); });
 $("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n){ e.target.value=n; } render(); });
 document.querySelectorAll('input[name=cyc],input[name=res],input[name=nhist],#day').forEach(e=>e.addEventListener("change",render));
 
@@ -244,7 +285,7 @@ $("f").addEventListener("submit",e=>e.preventDefault());
 $("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
 { const n=new Date(); $("day").value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; }
 $("checked").textContent=R_.checked.replace(/-/g,"/");
-load(); if(!$("amt").value) $("amt").value="30,000";
+load(); if(/^#(payer|landlord)$/.test(location.hash)) S.role=location.hash.slice(1); if(!$("amt").value) $("amt").value="30,000";
 render();
 </script>
 </body>

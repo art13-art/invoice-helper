@@ -3,7 +3,8 @@
 window.RATES = {
   checked: "2026-10-25",
   year: 115,
-  basicWage: 29500,                                      // 基本工資（115/1/1 起）
+  basicWage: 29500,                                     // 基本工資（115/1/1 起）
+  salaryDeduction: 227000,                               // 115 年度薪資所得特別扣除額（財政部 114/11/27 公告）
   vat: { rate: 0.05 },                                   // 加值型營業稅 5%
   rent: {                                                // 各類所得扣繳率標準：租賃所得
     resident: 0.10, nonResident: 0.20,
