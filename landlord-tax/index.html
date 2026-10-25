@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>房東租金報稅計算機｜租賃所得怎麼算、要多繳多少稅（115 年度）</title>
+<meta name="description" content="房東報綜所稅：租金減 43% 必要費用、押金設算利息、公益出租人和社會住宅包租代管每屋每月 1.5 萬免稅，一次算出要申報的租賃所得和大約要多繳的稅，可以直接帶進綜所稅試算。">
+<link rel="canonical" href="https://taxtools.tw/landlord-tax/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* One block per rental unit; result shows the income to report and the extra tax at each bracket. */
+.unit{display:grid;gap:12px;padding:16px 0;border-top:1px solid var(--line)}
+.unit:first-child{border-top:0;padding-top:4px}
+.unit-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.unit-h b{font-size:16px}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.money.sm > input:not([type=radio]):not([type=checkbox]){font-size:18px;min-height:48px}
+.seg.type button{min-height:52px}
+.rates{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:16px}
+.rates th,.rates td{padding:9px 0;border-top:1px solid var(--line);text-align:right}
+.rates th{text-align:left;font-weight:500}
+.rates thead th,.rates thead td{border-top:0;color:var(--muted);font-size:14px;font-weight:500;padding-top:0}
+.rates td{padding-left:12px}
+.rates tr.on th,.rates tr.on td{color:var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>房東租金報稅</h1>
+    <p>個人房東每年 5 月報綜所稅時，租金要算進租賃所得。填入租金和押金，算出要申報多少、大約要多繳多少稅；有參加公益出租人或社會住宅包租代管的，免稅額也會一起算。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>出租的房子</h2>
+        <div id="units"></div>
+        <button type="button" class="btn link" id="addU" style="justify-self:start">＋ 再加一間</button>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>你的綜所稅稅率</h2>
+        <div class="chips" role="radiogroup" aria-label="適用稅率">
+          <label><input type="radio" name="rate" value="0.05" checked>5%</label>
+          <label><input type="radio" name="rate" value="0.12">12%</label>
+          <label><input type="radio" name="rate" value="0.2">20%</label>
+          <label><input type="radio" name="rate" value="0.3">30%</label>
+          <label><input type="radio" name="rate" value="0.4">40%</label>
+        </div>
+        <p class="hint">看去年的綜所稅繳款書或核定通知書上的「適用稅率」。不確定的話，可以用 <a href="/income-tax/">綜所稅試算</a> 算完整的。</p>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="how" aria-label="計算過程"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>租金收入一定要報嗎？</summary><p>要。個人出租房屋的租金屬於租賃所得，要併入綜合所得總額申報。租客是公司時，國稅局會有扣繳或免扣繳憑單；租客是個人時，國稅局也可能從租約、房屋稅籍或租金補貼資料查到。</p></details>
+        <details><summary>43% 必要費用要附單據嗎？</summary><p>不用。直接用租金收入的 43% 當費用，剩下 57% 就是租賃所得。如果實際的修繕費、地價稅、房屋稅、保險費、房貸利息和折舊加起來更多，可以改用「核實認定」，但要留好單據。</p></details>
+        <details><summary>押金也要算稅？</summary><p>要。押金依當年 1 月 1 日郵局一年期定期儲金固定利率（目前 1.725%）設算租金收入。例如押金 6 萬元、租滿一年，要多算 1,035 元的租金收入。</p></details>
+        <details><summary>公益出租人、包租代管有什麼好處？</summary><p>每一間房子每月租金 1.5 萬元以內免稅。公益出租人超過的部分一樣減 43% 費用；社會住宅包租代管超過的部分可以減 60%。房屋稅、地價稅也能申請適用優惠稅率，要向地方稅務局申請。</p></details>
+        <details><summary>被租客公司扣的 10% 怎麼辦？</summary><p>那是預繳稅款，報稅時會從應納稅額扣掉，多的會退。把扣繳憑單上的扣繳稅額填進「被扣繳的稅」欄位就好。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">依所得稅法第 14 條第 1 項第 5 類（租賃所得）、財政部核定之租賃所得必要損耗及費用標準（43%）、住宅法第 15、16 條（社會住宅包租代管、公益出租人每屋每月租金 1.5 萬元免稅，包租代管超過部分減除 60%）計算；押金設算利率 1.725%。僅供參考，實際以國稅局核定為準。法規數字最後確認：<span id="checked"></span>。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small>要申報的租賃所得</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const R_=window.RATES, L=R_.lease;
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const TYPES={normal:["一般出租","自己找租客"],public:["公益出租人","租給領租金補貼的人"],social:["包租代管","社會住宅方案"]};
+let U=[];
+const blank=()=>({rent:"",months:"12",deposit:"",type:"normal",exp:"43",actual:"",wh:""});
+const n=v=>{ const x=parseInt(String(v||"").replace(/[^\d]/g,""),10); return isFinite(x)&&x>0?x:0; };
+
+function unitHTML(u,i){
+  return `<div class="unit" data-i="${i}">
+    <div class="unit-h"><b>${U.length>1?`第 ${i+1} 間`:"這間房子"}</b>${U.length>1?`<button type="button" class="btn link" data-del="${i}">移除</button>`:""}</div>
+    <div class="seg type" role="group" aria-label="出租方式">${Object.entries(TYPES).map(([k,[t,s]])=>`<button type="button" data-f="type" data-v="${k}" aria-pressed="${u.type===k}"><b>${t}</b><small>${s}</small></button>`).join("")}</div>
+    <div class="pair">
+      <div class="field"><label>每月租金</label><div class="money sm"><input data-f="rent" inputmode="numeric" placeholder="例如 20000" value="${u.rent}"></div></div>
+      <div class="field"><label>今年租了幾個月</label><input data-f="months" inputmode="numeric" value="${u.months}"></div>
+    </div>
+    <div class="pair">
+      <div class="field"><label>押金</label><div class="money sm"><input data-f="deposit" inputmode="numeric" placeholder="0" value="${u.deposit}"></div></div>
+      <div class="field"><label>被扣繳的稅</label><div class="money sm"><input data-f="wh" inputmode="numeric" placeholder="0" value="${u.wh}"></div></div>
+    </div>
+    <div class="field">
+      <span class="lbl">費用怎麼算</span>
+      <div class="chips" role="radiogroup" aria-label="費用計算方式">
+        <label><input type="radio" name="exp${i}" data-f="exp" value="43" ${u.exp==="43"?"checked":""}>直接減 ${u.type==="social"?"60%":"43%"}（不用單據）</label>
+        <label><input type="radio" name="exp${i}" data-f="exp" value="act" ${u.exp==="act"?"checked":""}>核實認定</label>
+      </div>
+      ${u.exp==="act"?`<div class="money sm"><input data-f="actual" inputmode="numeric" placeholder="全年實際費用" value="${u.actual}"></div><p class="hint">修繕費、地價稅、房屋稅、保險費、房貸利息、折舊等，要有單據。</p>`:""}
+    </div>
+  </div>`;
+}
+
+function calcUnit(u){
+  const rent=n(u.rent), mo=Math.min(12,Math.max(0,n(u.months)||0)), dep=n(u.deposit);
+  const rentIn=rent*mo, depIn=Math.round(dep*L.depositRate*mo/12), income=rentIn+depIn;
+  let free=0, exp=0, expRate=u.type==="social"?L.socialExpenseRate:L.expenseRate;
+  if(u.type!=="normal") free=Math.min(income,(u.type==="social"?L.socialMonthlyFree:L.publicMonthlyFree)*mo);
+  const rest=income-free;
+  if(u.exp==="act") exp=Math.min(rest,n(u.actual)); else exp=Math.round(rest*expRate);
+  return {rent,mo,dep,rentIn,depIn,income,free,exp,expRate,net:Math.max(0,rest-exp),wh:n(u.wh),type:u.type,act:u.exp==="act"};
+}
+
+function draw(){ $("units").innerHTML=U.map(unitHTML).join(""); bind(); }
+function bind(){
+  document.querySelectorAll("#units .unit").forEach(el=>{ const i=+el.dataset.i;
+    el.querySelectorAll("button[data-f]").forEach(b=>b.onclick=()=>{ U[i][b.dataset.f]=b.dataset.v; draw(); render(); });
+    el.querySelectorAll("input[data-f]:not([type=radio])").forEach(inp=>inp.addEventListener("input",()=>{
+      const f=inp.dataset.f; let v=inp.value.replace(/[^\d]/g,"");
+      if(f==="months") v=v.slice(0,2); else v=v.slice(0,9);
+      const show=f==="months"?v:(v?(+v).toLocaleString("zh-TW"):"");
+      if(inp.value!==show) inp.value=show; U[i][f]=show; render(); }));
+    el.querySelectorAll("input[type=radio][data-f]").forEach(r=>r.onchange=()=>{ U[i].exp=r.value; draw(); render(); });
+    const d=el.querySelector("[data-del]"); if(d) d.onclick=()=>{ U.splice(i,1); draw(); render(); };
+  });
+}
+
+function render(){
+  const cs=U.map(calcUnit), tot=k=>cs.reduce((a,c)=>a+c[k],0);
+  const net=tot("net"), income=tot("income"), wh=tot("wh"), rate=+document.querySelector("input[name=rate]:checked").value;
+  const extra=Math.round(net*rate), due=extra-wh;
+  const R=$("result");
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">要申報的租賃所得</span><div class="big">${money(net)}<small>元</small></div></div>
+      <div class="gross">全年租金收入<b>NT$ ${money(income)}</b>${cs.length>1?`${cs.length} 間合計`:""}</div>
+    </div>
+    ${income?`<div class="bar" aria-hidden="true">
+      <span class="s1" style="flex-basis:${net/income*100}%">${net/income>.2?"租賃所得":""}</span>
+      <span class="s2" style="flex-basis:${tot("exp")/income*100}%">${tot("exp")/income>.15?"費用":""}</span>
+      <span class="s3" style="flex-basis:${tot("free")/income*100}%">${tot("free")/income>.15?"免稅":""}</span></div>`:""}
+    <ul class="legend">
+      <li><i style="background:var(--c1)"></i><span class="t">租賃所得<small>要填進綜所稅的金額</small></span><span class="v">${money(net)}</span></li>
+      <li class="${tot("exp")?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">必要費用<small>${cs.some(c=>c.act)?"含核實認定的費用":"一般 43%、包租代管 60%"}</small></span><span class="v">${money(tot("exp"))}</span></li>
+      <li class="${tot("free")?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">免稅額<small>${tot("free")?"公益出租人／包租代管每月 1.5 萬內免稅":"一般出租沒有免稅額"}</small></span><span class="v">${money(tot("free"))}</span></li>
+    </ul>
+    ${!income?`<p class="note">輸入每月租金，就會算出要申報的租賃所得。</p>`:`
+    <div class="year"><span>稅率 ${Math.round(rate*100)}% 大約要多繳 <b>${money(extra)}</b></span>${wh?`<span>已被扣繳 <b>${money(wh)}</b></span><span>${due<0?"可退":"還要補"} <b>${money(Math.abs(due))}</b></span>`:""}</div>
+    <div class="actions"><a class="btn primary" style="display:inline-flex;align-items:center;text-decoration:none" href="/income-tax/?oth=${net}${wh?`&wh=${wh}`:""}">帶進綜所稅試算 →</a></div>`}`;
+
+  const H=$("how"); H.hidden=!income;
+  const RATES=[.05,.12,.2,.3,.4];
+  H.innerHTML=`<h2>怎麼算的</h2>
+    ${cs.map((c,i)=>c.income?`<p style="margin:0 0 6px">${cs.length>1?`<b>第 ${i+1} 間</b>・`:""}${TYPES[c.type][0]}</p>
+    <ul class="legend" style="margin-bottom:14px">
+      <li><span class="t">租金 ${money(c.rent)} × ${c.mo} 個月</span><span class="v">${money(c.rentIn)}</span></li>
+      ${c.dep?`<li><span class="t">押金設算租金<small>${money(c.dep)} × ${(L.depositRate*100).toFixed(3)}% × ${c.mo}/12</small></span><span class="v">${money(c.depIn)}</span></li>`:""}
+      ${c.free?`<li><span class="t">減：免稅額<small>每月 1.5 萬 × ${c.mo} 個月</small></span><span class="v">− ${money(c.free)}</span></li>`:""}
+      <li><span class="t">減：必要費用<small>${c.act?"核實認定":`${c.free?"超過免稅額的部分":"收入"} × ${Math.round(c.expRate*100)}%`}</small></span><span class="v">− ${money(c.exp)}</span></li>
+      <li><span class="t"><b>租賃所得</b></span><span class="v">${money(c.net)}</span></li>
+    </ul>`:"").join("")}
+    <h2 style="margin-top:8px">不同稅率大約要多繳</h2>
+    <table class="rates"><thead><tr><th>適用稅率</th><td>多繳的稅</td>${wh?"<td>扣掉已扣繳</td>":""}</tr></thead><tbody>
+    ${RATES.map(r=>`<tr class="${r===rate?"on":""}"><th>${Math.round(r*100)}%</th><td>${money(net*r)}</td>${wh?`<td>${net*r-wh<0?"退 ":""}${money(Math.abs(net*r-wh))}</td>`:""}</tr>`).join("")}
+    </tbody></table>
+    <p class="hint" style="margin-top:10px">租賃所得加進去後，總所得可能跨到下一級稅率，實際以綜所稅試算為準。</p>`;
+
+  $("barVal").textContent="NT$ "+money(net);
+  save();
+}
+
+const KEY="taxtools.landlord.v1";
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({U,rate:document.querySelector("input[name=rate]:checked").value})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d||!Array.isArray(d.U)||!d.U.length) return false;
+  U=d.U.map(u=>({...blank(),...u})); const r=document.querySelector(`input[name=rate][value="${d.rate}"]`); if(r) r.checked=true; return true; }catch(e){ return false; } }
+
+$("addU").onclick=()=>{ if(U.length>=8) return toast("最多 8 間"); U.push(blank()); draw(); render(); const last=[...document.querySelectorAll('#units [data-f="rent"]')].pop(); if(last) last.focus(); };
+document.querySelectorAll("input[name=rate]").forEach(r=>r.onchange=render);
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+$("checked").textContent=R_.checked.replace(/-/g,"/");
+if(!load()) U=[{...blank(),rent:"20,000",deposit:"40,000"}];
+draw(); render();
+</script>
+</body>
+</html>

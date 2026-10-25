@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>綜所稅試算｜115 年度（116 年 5 月報稅）要繳多少、退多少</title>
+<meta name="description" content="用 115 年度最新免稅額 10.1 萬、標準扣除額 13.6 萬、薪資特別扣除額 22.7 萬試算綜所稅。自動比較標準與列舉扣除、夫妻三種計稅方式、股利兩種課稅方式，算出應補或應退稅額。租屋族可用房屋租金支出特別扣除額 18 萬。">
+<link rel="canonical" href="https://taxtools.tw/income-tax/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Two-column money fields for self / spouse; counters for dependants; a worked-out calculation table. */
+.pair{display:grid;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr));gap:10px}
+.pair .who{font-size:14px;color:var(--muted);font-weight:500}
+.money.sm > input:not([type=radio]):not([type=checkbox]){font-size:18px;min-height:48px}
+.count-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line)}
+.count-row:first-of-type{border-top:0}
+.count-row .t{min-width:0}
+.count-row .t small{display:block;color:var(--muted);font-size:14px;line-height:1.45}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line-strong);border-radius:99px;flex:none}
+.stepper button{font:inherit;font-size:20px;line-height:1;width:44px;height:44px;border:0;background:transparent;color:var(--accent);cursor:pointer;border-radius:99px}
+.stepper button:disabled{color:var(--line-strong);cursor:default}
+.stepper output{min-width:1.6em;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.calc-t{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:16px}
+.calc-t th,.calc-t td{padding:8px 0;border-top:1px solid var(--line);vertical-align:baseline}
+.calc-t th{text-align:left;font-weight:500}
+.calc-t th small{display:block;color:var(--muted);font-size:14px;font-weight:400}
+.calc-t td{text-align:right;padding-left:12px;white-space:nowrap}
+.calc-t tr.sub th,.calc-t tr.sub td{color:var(--muted);font-size:15px;padding-block:4px;border-top:0}
+.calc-t tr.sub th{padding-left:14px}
+.calc-t tr.tot th,.calc-t tr.tot td{font-weight:700;border-top:2px solid var(--line-strong)}
+.methods{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.methods li{display:flex;gap:10px;align-items:baseline;justify-content:space-between;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+.methods li.best{border-color:var(--accent);background:var(--accent-soft)}
+.methods li b{font-variant-numeric:tabular-nums}
+.methods li small{display:block;color:var(--muted);font-size:14px}
+.methods .tag{font-size:13px;font-weight:700;color:var(--accent);margin-left:6px}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>綜所稅試算</h1>
+    <p>115 年度的所得，116 年 5 月申報。填入薪資和家裡的狀況，自動幫你挑最省的扣除方式和計稅方式，算出要補繳還是可以退稅。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>誰一起報</h2>
+        <div class="seg" role="group" aria-label="申報方式">
+          <button type="button" data-k="mar" data-v="0" aria-pressed="true"><b>單身</b><small>自己報</small></button>
+          <button type="button" data-k="mar" data-v="1" aria-pressed="false"><b>有配偶</b><small>夫妻合併申報</small></button>
+        </div>
+        <div class="chips" role="group" aria-label="年滿 70 歲">
+          <label><input type="checkbox" id="old0">本人年滿 70 歲</label>
+          <label id="old1L"><input type="checkbox" id="old1">配偶年滿 70 歲</label>
+        </div>
+      </section>
+
+      <section class="sec">
+        <h2><b>2</b>一年的所得</h2>
+        <div class="field">
+          <span class="lbl">薪資收入（扣繳憑單上的「給付總額」）</span>
+          <div class="pair pp" id="salPair">
+            <div class="field"><span class="who">本人</span><div class="money sm"><input data-n="sal0" inputmode="numeric" placeholder="0"></div></div>
+            <div class="field sp"><span class="who">配偶</span><div class="money sm"><input data-n="sal1" inputmode="numeric" placeholder="0"></div></div>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lbl">其他所得（接案、稿費、租賃等，已減掉費用的金額）</span>
+          <div class="pair pp">
+            <div class="field"><span class="who">本人</span><div class="money sm"><input data-n="oth0" inputmode="numeric" placeholder="0"></div></div>
+            <div class="field sp"><span class="who">配偶</span><div class="money sm"><input data-n="oth1" inputmode="numeric" placeholder="0"></div></div>
+          </div>
+          <p class="hint">接案（9A）通常可以減 20%～30% 的費用；稿費一年 18 萬內免稅；房租收入減 43%。房東可以先用 <a href="/landlord-tax/">房東租金報稅</a> 算好再填。</p>
+        </div>
+        <div class="pair" style="--cols:2">
+          <div class="field"><label>存款利息</label><div class="money sm"><input data-n="int" inputmode="numeric" placeholder="0"></div></div>
+          <div class="field"><label>股利</label><div class="money sm"><input data-n="div" inputmode="numeric" placeholder="0"></div></div>
+        </div>
+        <p class="hint">全家的存款利息一年 27 萬內可以全額扣除。股利會自動比較「合併計稅（8.5% 可抵稅）」和「分開計稅（28%）」。</p>
+      </section>
+
+      <section class="sec">
+        <h2><b>3</b>扶養的家人</h2>
+        <div id="counts"></div>
+      </section>
+
+      <section class="sec">
+        <h2><b>4</b>房租和其他支出</h2>
+        <div class="field">
+          <label>一年付的房租（自己住、在台灣境內）</label>
+          <div class="money sm"><input data-n="rent" inputmode="numeric" placeholder="0"></div>
+          <p class="hint">最多可以扣 18 萬元。要有租約和付款紀錄，而且家裡的人在同一個縣市沒有自有房屋。</p>
+        </div>
+        <details class="more" id="adv">
+          <summary>列舉扣除項目（有大筆捐款、醫療、房貸再填）</summary>
+          <div class="inner">
+            <div class="field"><label>捐贈（政府、公益團體）</label><div class="money sm"><input data-n="don" inputmode="numeric" placeholder="0"></div></div>
+            <div class="field"><label>人身保險費（不含健保）</label><div class="money sm"><input data-n="ins" inputmode="numeric" placeholder="0"></div><p class="hint">每人每年最多 2.4 萬元。</p></div>
+            <div class="field"><label>健保費（全家一年自付）</label><div class="money sm"><input data-n="nhi" inputmode="numeric" placeholder="0"></div><p class="hint">健保費沒有上限，全額可以扣。可以先用 <a href="/labor-health/">勞健保計算機</a> 算每月自付金額。</p></div>
+            <div class="field"><label>醫藥、生育費</label><div class="money sm"><input data-n="med" inputmode="numeric" placeholder="0"></div></div>
+            <div class="field"><label>自住房屋貸款利息</label><div class="money sm"><input data-n="mort" inputmode="numeric" placeholder="0"></div><p class="hint">最多 30 萬元，要先減掉儲蓄投資特別扣除額。有扣房貸利息就不能再扣房租。</p></div>
+          </div>
+        </details>
+      </section>
+
+      <section class="sec">
+        <h2><b>5</b>已經被扣的稅</h2>
+        <div class="field">
+          <label>扣繳憑單上的「扣繳稅額」合計</label>
+          <div class="money sm"><input data-n="wh" inputmode="numeric" placeholder="0"></div>
+          <p class="hint">薪資、接案、房租被預扣的所得稅，全家加起來。報稅時會從應納稅額扣掉，多扣的會退。</p>
+        </div>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="how" aria-label="計算過程"></section>
+      <section class="card" id="cmp" aria-label="計稅方式比較"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>年收入多少以下不用繳稅？</summary><p>115 年度單身上班族年薪 46.4 萬元以下免稅（免稅額 10.1 萬＋標準扣除額 13.6 萬＋薪資特別扣除額 22.7 萬）；如果租屋自住，再加房租扣除最多 18 萬，年薪 64.4 萬以下免稅。</p></details>
+        <details><summary>標準扣除和列舉扣除差在哪？</summary><p>標準扣除額不用任何單據，單身 13.6 萬、夫妻 27.2 萬。列舉扣除要拿捐款、保險、醫療、房貸利息等單據，加起來比標準扣除額多才划算。這裡會自動幫你選比較多的那一個。</p></details>
+        <details><summary>房租支出怎麼扣？</summary><p>從 113 年度起，房屋租金支出改成「特別扣除額」，每戶最多 18 萬元，而且可以和標準扣除額一起用。但適用稅率 20% 以上、選股利分開計稅、或基本所得額超過 750 萬元的家庭不能扣；有扣自住房貸利息也不能再扣房租。</p></details>
+        <details><summary>夫妻要合併還是分開算？</summary><p>夫妻一定要合併申報，但計稅可以選「全部合併」、「薪資分開計算」或「各類所得分開計算」三種。這裡三種都會算，告訴你哪一種最省；報稅軟體也會自動幫你選。</p></details>
+        <details><summary>基本生活費差額是什麼？</summary><p>每人每年基本生活費（114 年度是 21.3 萬元）乘以全家人數，如果比免稅額、標準或列舉扣除額、儲蓄投資、身障、教育學費、幼兒學前和長照特別扣除額的合計還多，多出來的差額可以再扣。115 年度金額財政部還沒公告，這裡暫時用 21.3 萬元計算。</p></details>
+        <details><summary>算出來和報稅軟體不一樣？</summary><p>這是簡化試算：沒有包含財產交易所得、退職所得、薪資費用核實減除、投資抵減、基本稅額（最低稅負制）等情況。實際以財政部報稅軟體或國稅局核定為準。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">依所得稅法第 5、15、17 條及財政部公告 115 年度免稅額 10.1 萬元（70 歲以上 15.15 萬）、標準扣除額 13.6 萬元、薪資及身心障礙特別扣除額 22.7 萬元、課稅級距 61 萬／138 萬／277 萬／519 萬元計算；房屋租金支出特別扣除額 18 萬元、幼兒學前特別扣除額第 1 名 15 萬元、第 2 名起 22.5 萬元、長期照顧特別扣除額 18 萬元。基本生活費暫用 114 年度 21.3 萬元。僅供參考，實際以國稅局核定為準。法規數字最後確認：<span id="checked"></span>。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small id="barLbl">應納稅額</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const R_=window.RATES, T=R_.pit;
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const S={mar:"0"};
+const COUNTS=[
+  ["kid6","未滿 6 歲的子女","每人另有幼兒學前特別扣除額：第 1 名 15 萬，第 2 名起 22.5 萬"],
+  ["dep","其他扶養親屬","滿 6 歲的子女、未滿 70 歲的父母、兄弟姊妹等"],
+  ["dep70","年滿 70 歲的扶養親屬","免稅額 15.15 萬元"],
+  ["dis","身心障礙者（含本人、配偶）","每人 22.7 萬元特別扣除額"],
+  ["ltc","需要長期照顧的人（含本人、配偶）","每人 18 萬元特別扣除額，要符合長照資格"],
+  ["uni","讀大專院校的子女","每人學費最多扣 2.5 萬元"],
+];
+const C={}; COUNTS.forEach(([k])=>C[k]=0);
+const num=k=>{ const e=document.querySelector(`[data-n="${k}"]`); const v=parseInt(String(e?.value||"").replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
+
+function taxOf(net){ if(net<=0) return {tax:0,rate:0,diff:0}; const b=T.brackets.find(([top])=>net<=top); return {tax:Math.round(net*b[1]-b[2]),rate:b[1],diff:b[2]}; }
+
+/* One computation for a given method (all / salary-separate / all-separate) and dividend option (combined / separate) */
+function run(method,divSep){
+  const mar=S.mar==="1";
+  const sal=[num("sal0"),mar?num("sal1"):0], oth=[num("oth0"),mar?num("oth1"):0];
+  const intr=num("int"), div=num("div");
+  const old=[$("old0").checked,mar&&$("old1").checked];
+  const persons=1+(mar?1:0)+C.kid6+C.dep+C.dep70+C.uni;
+  const exOf=i=>old[i]?T.exemption70:T.exemption;
+  const exDeps=(C.kid6+C.dep+C.uni)*T.exemption+C.dep70*T.exemption70;
+  const salDed=i=>Math.min(sal[i],T.salary);
+  const savings=Math.min(intr,T.savings);
+  // general deduction: larger of standard / itemized
+  const std=mar?T.standardMarried:T.standard;
+  const insCap=Math.min(num("ins"),T.insurancePerPerson*persons);
+  const mort=Math.max(0,Math.min(num("mort"),T.mortgageInterest)-savings);
+  const item=num("don")+insCap+num("nhi")+num("med")+mort;
+  const useItem=item>std, general=useItem?item:std;
+  const rentAllowed=!(useItem&&mort>0);
+  const disab=C.dis*T.disability, tuition=Math.min(C.uni,persons)*T.tuition;
+  const pre=C.kid6?T.preschool[0]+Math.max(0,C.kid6-1)*T.preschool[1]:0;
+  const ltc=C.ltc*T.longTermCare, rent=rentAllowed?Math.min(num("rent"),T.rent):0;
+
+  // spouse taxed on its own (methods b, c)
+  let spNet=0, spSal=0, spOth=0, spEx=0;
+  if(mar&&method!=="all"){ spSal=sal[1]; spOth=method==="each"?oth[1]:0; spEx=exOf(1); spNet=Math.max(0,spSal-salDed(1)+spOth-spEx); }
+  const spTax=taxOf(spNet);
+
+  const income=sal[0]+(mar&&method==="all"?sal[1]:0)+oth[0]+(mar&&method!=="each"?oth[1]:0)+intr+(divSep?0:div);
+  const ex=exOf(0)+(mar&&method==="all"?exOf(1):0)+exDeps;
+  const sDed=salDed(0)+(mar&&method==="all"?salDed(1):0);
+  const exAll=exOf(0)+(mar?exOf(1):0)+exDeps;
+  const basic=Math.max(0,T.basicLiving*persons-(exAll+general+savings+disab+tuition+pre+ltc));
+  const rich=(net)=>divSep||taxOf(net).rate>=0.2||spTax.rate>=0.2;
+  let special=sDed+savings+disab+tuition+pre+ltc+rent;
+  let net=Math.max(0,income-ex-general-special-basic), dropped=false;
+  // wealth exclusion: preschool, long-term care and rent deductions are not allowed at 20%+ or with separate dividends
+  if((pre||ltc||rent)&&rich(net)){
+    const basic2=Math.max(0,T.basicLiving*persons-(exAll+general+savings+disab+tuition));
+    special-= (pre+ltc+rent); net=Math.max(0,income-ex-general-special-basic2); dropped=true;
+    return finish({basic:basic2,pre:0,ltc:0,rent:0});
+  }
+  return finish({basic,pre,ltc,rent});
+
+  function finish(o){
+    const main=taxOf(net);
+    const divTax=divSep?Math.round(div*T.dividendSeparateRate):0;
+    const credit=divSep?0:Math.min(Math.round(div*T.dividendCreditRate),T.dividendCreditCap);
+    const total=main.tax+spTax.tax+divTax;
+    const due=total-credit-num("wh");
+    return {method,divSep,mar,income,ex,general,useItem,std,item,sDed,savings,disab,tuition,...o,net,main,spNet,spTax,spSal,spOth,spEx,divTax,credit,total,due,persons,dropped,div,rentAsked:num("rent"),rentAllowed};
+  }
+}
+
+const METHOD_NAME={all:"全部合併計稅",sal:"薪資分開計稅",each:"各類所得分開計稅"};
+function render(){
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.k]===b.dataset.v));
+  const mar=S.mar==="1";
+  document.querySelectorAll(".pair.pp").forEach(p=>p.style.setProperty("--cols",mar?2:1));
+  document.querySelectorAll(".pair .sp").forEach(e=>e.hidden=!mar);
+  document.querySelectorAll(".pair.pp .who").forEach(e=>e.hidden=!mar);
+  $("old1L").hidden=!mar;
+  document.querySelectorAll("#counts .stepper").forEach(s=>{ const k=s.dataset.k; s.querySelector("output").textContent=C[k]; s.querySelector(".m").disabled=!C[k]; });
+
+  const opts=[]; (mar?["all","sal","each"]:["all"]).forEach(m=>[false,true].forEach(d=>{ if(d&&!num("div")) return; opts.push(run(m,d)); }));
+  const best=opts.reduce((a,b)=>b.total-b.credit<a.total-a.credit?b:a);
+  const x=best, has=x.income||x.spSal||x.spOth||x.divTax;
+  const R=$("result");
+  const refund=x.due<0, noWh=!num("wh")&&!x.credit;
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">${!has||noWh?"應納稅額":x.due===0?"不用補也不用退":refund?"可以退稅":"要補繳"}</span>
+        <div class="big">${money(Math.abs(x.due))}<small>元</small></div></div>
+      <div class="gross">應納稅額<b>NT$ ${money(x.total)}</b>${x.credit||num("wh")?`已扣繳 ${money(num("wh"))}${x.credit?`・股利抵減 ${money(x.credit)}`:""}`:`適用稅率 ${Math.round(Math.max(x.main.rate,x.spTax.rate)*100)}%`}</div>
+    </div>
+    ${!has?`<p class="note">先填薪資或其他所得，就會算出要繳多少稅。</p>`:x.total===0?`<p class="note">所得淨額是 0，這一年不用繳綜所稅。${num("wh")?`被預扣的 ${money(num("wh"))} 元會全部退給你。`:""}</p>`:""}
+    ${has&&noWh&&x.total?`<p class="note">有被預扣稅的話，在第 5 步填入扣繳稅額，就會算出要補多少或退多少。</p>`:""}
+    ${has?`<div class="year"><span>適用稅率 <b>${Math.round(x.main.rate*100)}%</b>${x.spNet?`（配偶 <b>${Math.round(x.spTax.rate*100)}%</b>）`:""}</span><span>扣除方式 <b>${x.useItem?"列舉":"標準"}</b></span>${mar?`<span>計稅方式 <b>${METHOD_NAME[x.method]}</b></span>`:""}${x.div?`<span>股利 <b>${x.divSep?"分開計稅 28%":"合併計稅"}</b></span>`:""}</div>`:""}
+    ${x.dropped?`<p class="note warm">適用稅率 20% 以上${x.divSep?"或股利選擇分開計稅":""}，依規定不能扣幼兒學前、長期照顧和房屋租金支出特別扣除額，這裡已經排除。</p>`:""}
+    ${x.rentAsked&&!x.rentAllowed?`<p class="note">列舉扣除了自住房貸利息，就不能再扣房租；這裡已經自動比較，列舉比較划算。</p>`:""}
+    ${has?`<div class="actions"><button type="button" class="btn" id="copy">複製試算結果</button></div>`:""}`;
+  if(has) $("copy").onclick=()=>copyText(summary(x),"已複製試算結果");
+
+  const H=$("how"); H.hidden=!has;
+  const row=(t,v,s,cls="")=>`<tr class="${cls}"><th>${t}${s?`<small>${s}</small>`:""}</th><td>${v}</td></tr>`;
+  const m=v=>v?money(v):"0", neg=v=>v?"− "+money(v):"0";
+  H.innerHTML=`<h2>怎麼算的</h2><table class="calc-t"><tbody>
+    ${row("綜合所得總額",m(x.income),x.mar&&x.method!=="all"?"不含分開計算的配偶所得":"薪資＋其他所得＋利息"+(x.divSep?"":"＋股利"))}
+    ${row("免稅額",neg(x.ex),`${x.persons} 人`)}
+    ${row(x.useItem?"列舉扣除額":"標準扣除額",neg(x.general),x.useItem?`比標準扣除額 ${money(x.std)} 多`:x.item?`列舉只有 ${money(x.item)}，用標準比較多`:"")}
+    ${row("特別扣除額",neg(x.sDed+x.savings+x.disab+x.tuition+x.pre+x.ltc+x.rent),"")}
+    ${x.sDed?row("薪資",money(x.sDed),"","sub"):""}${x.savings?row("儲蓄投資（利息）",money(x.savings),"","sub"):""}${x.disab?row("身心障礙",money(x.disab),"","sub"):""}${x.tuition?row("教育學費",money(x.tuition),"","sub"):""}${x.pre?row("幼兒學前",money(x.pre),"","sub"):""}${x.ltc?row("長期照顧",money(x.ltc),"","sub"):""}${x.rent?row("房屋租金支出",money(x.rent),"","sub"):""}
+    ${x.basic?row("基本生活費差額",neg(x.basic),`${money(T.basicLiving)} × ${x.persons} 人，超過免稅額與扣除額的部分`):""}
+    ${row("綜合所得淨額",m(x.net),"","tot")}
+    ${row("應納稅額",m(x.main.tax),x.net?`${money(x.net)} × ${Math.round(x.main.rate*100)}%${x.main.diff?` − 累進差額 ${money(x.main.diff)}`:""}`:"")}
+    ${x.spNet||x.spTax.tax||(x.mar&&x.method!=="all"&&(x.spSal||x.spOth))?row("配偶分開計算的稅額",m(x.spTax.tax),`(${money(x.spSal+x.spOth)} − 薪資扣除 − 免稅額) × ${Math.round(x.spTax.rate*100)}%`):""}
+    ${x.divTax?row("股利分開計稅",m(x.divTax),`${money(x.div)} × 28%`):""}
+    ${x.credit?row("股利可抵減稅額",neg(x.credit),"股利 × 8.5%，每戶最多 8 萬元"):""}
+    ${num("wh")?row("已扣繳稅額",neg(num("wh")),""):""}
+    ${row(x.due<0?"應退稅額":"應補稅額",money(Math.abs(x.due)),"","tot")}
+  </tbody></table>`;
+
+  const K=$("cmp"); K.hidden=opts.length<2||!has;
+  if(opts.length>1){
+    const sorted=[...opts].sort((a,b)=>(a.total-a.credit)-(b.total-b.credit));
+    K.innerHTML=`<h2>${mar?"三種計稅方式比較":"股利兩種課稅方式比較"}</h2><ul class="methods">${sorted.map(o=>`<li class="${o===best?"best":""}"><span>${mar?METHOD_NAME[o.method]:""}${o.div?`${mar?"・":""}股利${o.divSep?"分開 28%":"合併"}`:""}${o===best?`<span class="tag">最省</span>`:""}<small>稅額 ${money(o.total)}${o.credit?`，抵減 ${money(o.credit)}`:""}</small></span><b>${money(o.total-o.credit)}</b></li>`).join("")}</ul>
+      <p class="hint" style="margin-top:10px">右邊是扣掉股利抵減後實際要負擔的稅。報稅軟體也會自動選最省的方式。</p>`;
+  }
+
+  $("barLbl").textContent=!has||noWh?"應納稅額":refund?"可以退稅":x.due===0?"不用補也不用退":"要補繳";
+  $("barVal").textContent="NT$ "+money(Math.abs(x.due));
+  save();
+}
+
+function summary(x){
+  return `${R_.year} 年度綜所稅試算（${x.mar?"夫妻合併申報、"+METHOD_NAME[x.method]:"單身"}）\n`+
+   `綜合所得總額 ${money(x.income)}、免稅額 ${money(x.ex)}、${x.useItem?"列舉":"標準"}扣除額 ${money(x.general)}、特別扣除額 ${money(x.sDed+x.savings+x.disab+x.tuition+x.pre+x.ltc+x.rent)}${x.basic?`、基本生活費差額 ${money(x.basic)}`:""}\n`+
+   `所得淨額 ${money(x.net)}，適用稅率 ${Math.round(x.main.rate*100)}%，應納稅額 ${money(x.total)} 元。\n`+
+   `${x.due<0?`可退稅 ${money(-x.due)}`:x.due===0?"不用補也不用退":`要補繳 ${money(x.due)}`} 元。（簡化試算，實際以報稅軟體為準）`;
+}
+
+/* counters */
+$("counts").innerHTML=COUNTS.map(([k,t,s])=>`<div class="count-row"><span class="t">${t}<small>${s}</small></span>
+  <span class="stepper" data-k="${k}"><button type="button" class="m" aria-label="減少${t}">−</button><output aria-live="polite">0</output><button type="button" class="p" aria-label="增加${t}">＋</button></span></div>`).join("");
+document.querySelectorAll("#counts .stepper").forEach(s=>{ const k=s.dataset.k;
+  s.querySelector(".m").onclick=()=>{ C[k]=Math.max(0,C[k]-1); render(); };
+  s.querySelector(".p").onclick=()=>{ C[k]=Math.min(9,C[k]+1); render(); }; });
+
+const KEY="taxtools.pit.v1";
+function save(){ try{ const d={S,C,old0:$("old0").checked,old1:$("old1").checked,n:{}}; document.querySelectorAll("[data-n]").forEach(e=>d.n[e.dataset.n]=e.value); localStorage.setItem(KEY,JSON.stringify(d)); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return false;
+  Object.assign(S,d.S||{}); Object.assign(C,d.C||{}); $("old0").checked=!!d.old0; $("old1").checked=!!d.old1;
+  document.querySelectorAll("[data-n]").forEach(e=>{ if(d.n&&d.n[e.dataset.n]!=null) e.value=d.n[e.dataset.n]; });
+  if(["don","ins","nhi","med","mort"].some(num)) $("adv").open=true; return true;
+}catch(e){ return false; } }
+
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
+document.querySelectorAll("[data-n]").forEach(e=>e.addEventListener("input",()=>{ const raw=e.value.replace(/[^\d]/g,"").slice(0,10); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.value!==n) e.value=n; render(); }));
+document.querySelectorAll("#old0,#old1").forEach(e=>e.addEventListener("change",render));
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+$("checked").textContent=R_.checked.replace(/-/g,"/");
+const loaded=load();
+/* ?oth=…&wh=… arrives from the landlord tool: put the rental income into "other income" */
+{ const q=new URLSearchParams(location.search), o=parseInt(q.get("oth"),10), w=parseInt(q.get("wh"),10);
+  if(o>0){ document.querySelector('[data-n="oth0"]').value=o.toLocaleString("zh-TW"); if(w>0) document.querySelector('[data-n="wh"]').value=w.toLocaleString("zh-TW"); toast("已帶入租賃所得，再填薪資等其他資料"); try{ history.replaceState(null,"",location.pathname); }catch(e){} }
+  else if(!loaded) document.querySelector('[data-n="sal0"]').value="600,000"; }
+render();
+</script>
+</body>
+</html>

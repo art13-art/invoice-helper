@@ -85,3 +85,5 @@ details.more .inner{padding:0 14px 14px;display:grid;gap:12px}
   .card.plain,.card.faq{padding:4px 2px 0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* Inline links inside helper text get a taller hit area without changing the line height. */
+.hint a,.faq p a{display:inline-block;padding-block:12px;margin-block:-12px;color:var(--accent);font-weight:500}

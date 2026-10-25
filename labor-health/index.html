@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>勞健保計算機｜月薪扣多少勞保健保、老闆要付多少（115 年）</title>
+<meta name="description" content="輸入月薪，馬上算出員工自付的勞保、健保、勞退自提，以及老闆負擔的勞保、就保、職災、勞退 6%、健保和每月人事成本。依 115 年投保級距與費率計算，含眷屬、部分工時、65 歲以上。">
+<link rel="canonical" href="https://taxtools.tw/labor-health/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+.role-seg button{min-height:56px}.role-seg button b{font-size:17px}
+/* Cost table: who pays what, one row per insurance, employee and employer side by side. */
+.tbl{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:16px}
+.tbl th,.tbl td{padding:10px 0;border-top:1px solid var(--line);text-align:right;vertical-align:baseline}
+.tbl th{font-weight:500;text-align:left}
+.tbl th small{display:block;color:var(--muted);font-size:14px;font-weight:400}
+.tbl thead th,.tbl thead td{border-top:0;color:var(--muted);font-size:14px;font-weight:500;padding-top:0}
+.tbl td{padding-left:12px;white-space:nowrap;width:6em}
+.tbl tfoot th,.tbl tfoot td{font-weight:700;border-top:2px solid var(--line-strong)}
+.tbl .z{color:var(--muted)}
+.grades{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:15px;color:var(--muted)}
+.grades b{color:var(--fg);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>勞健保計算機</h1>
+    <p>輸入月薪，馬上知道員工每月被扣多少勞保、健保，老闆要另外負擔多少，以及一個人每月的實際人事成本。依 115 年投保級距和費率計算。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <div class="seg role-seg" role="group" aria-label="我的角色">
+          <button type="button" data-k="role" data-v="worker" aria-pressed="true"><b>我是員工</b><small>看實領多少</small></button>
+          <button type="button" data-k="role" data-v="boss" aria-pressed="false"><b>我是老闆</b><small>看人事成本</small></button>
+        </div>
+      </section>
+      <section class="sec">
+        <h2><b>1</b>薪資</h2>
+        <div class="field">
+          <label for="amt">每月薪資（本薪加上每月固定的津貼、伙食費）</label>
+          <div class="money"><input id="amt" inputmode="numeric" placeholder="例如 36000" enterkeyhint="done"></div>
+        </div>
+        <div class="chips" role="radiogroup" aria-label="工作型態">
+          <label><input type="radio" name="pt" value="0" checked>全職</label>
+          <label><input type="radio" name="pt" value="1">部分工時</label>
+        </div>
+        <p class="hint" id="ptHint">全職月薪不能低於基本工資 29,500 元，投保級距最低就是 29,500。</p>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>健保眷屬</h2>
+        <div class="chips" role="radiogroup" aria-label="健保眷屬人數">
+          <label><input type="radio" name="dep" value="0" checked>沒有</label>
+          <label><input type="radio" name="dep" value="1">1 人</label>
+          <label><input type="radio" name="dep" value="2">2 人</label>
+          <label><input type="radio" name="dep" value="3">3 人以上</label>
+        </div>
+        <p class="hint">跟著你保健保的配偶、子女、父母。眷屬保費最多算 3 人，第 4 人起免繳。</p>
+      </section>
+      <section class="sec">
+        <h2><b>3</b>勞退自提</h2>
+        <div class="chips" role="radiogroup" aria-label="勞退自提">
+          <label><input type="radio" name="vol" value="0" checked>不自提</label>
+          <label><input type="radio" name="vol" value="0.03">3%</label>
+          <label><input type="radio" name="vol" value="0.06">6%</label>
+        </div>
+        <p class="hint">自提的錢存進自己的勞退個人專戶，而且當年度不用算進薪資所得，可以少繳一點所得稅。</p>
+        <details class="more" id="adv">
+          <summary>其他情況（不確定就不用改）</summary>
+          <div class="inner">
+            <span class="lbl">員工身分</span>
+            <div class="chips" role="radiogroup" aria-label="員工身分">
+              <label><input type="radio" name="st" value="normal" checked>一般</label>
+              <label><input type="radio" name="st" value="senior">65 歲以上或已領勞保老年給付</label>
+            </div>
+            <p class="hint">65 歲以上，或已經領過勞保老年給付的人，不能再保勞保普通事故和就業保險，只保職災保險；勞退 6% 一樣要提繳。</p>
+            <div class="field">
+              <label for="occ">職災保險行業別費率（%）</label>
+              <input id="occ" inputmode="decimal" value="0.14">
+              <p class="hint">依公司行業別不同，0.05%～0.89%，預設是全行業平均 0.14%；另外會再加上下班災害費率 0.07%。可以在勞保局寄來的保費繳款單或「職業災害保險適用行業別及費率表」查到。</p>
+            </div>
+          </div>
+        </details>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="cost" aria-label="誰付多少"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>投保級距是什麼？為什麼不是照月薪算？</summary><p>勞保、健保不是直接用月薪乘費率，而是先把月薪對到「投保薪資分級表」上的級距（等於或剛好高於月薪的那一級），再用級距金額計算。所以月薪 36,000 元會用 36,300 元的級距算。</p></details>
+        <details><summary>月薪很高，保費會一直增加嗎？</summary><p>不會。勞保和就業保險最高算到 45,800 元，職災保險到 72,800 元，勞退到 150,000 元，健保到 313,000 元。超過上限的部分不用再多繳。</p></details>
+        <details><summary>老闆的健保為什麼比員工多那麼多？</summary><p>員工只負擔 30%，老闆負擔 60%，政府 10%。而且老闆那一份是按「平均眷口數」計算（本人加 0.56 人），不管員工實際有幾個眷屬，所以通常是員工本人那份的 3 倍多。</p></details>
+        <details><summary>勞退 6% 會從薪水扣嗎？</summary><p>不會。勞退 6% 是老闆另外提繳到員工的勞退個人專戶，不能從薪水扣。只有員工自己選擇自提的部分（最多 6%）才會從薪水扣。</p></details>
+        <details><summary>獎金、加班費要多扣補充保費嗎？</summary><p>同一年領的獎金累計超過當月健保投保金額 4 倍的部分，要扣 2.11% 補充保費；加班費不算進月投保薪資。老闆每月另外要依「薪資總額減員工投保金額總額」繳 2.11% 雇主補充保費，這張表沒有列入。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <p class="site-foot">依勞工保險條例、就業保險法、勞工職業災害保險及保護法、勞工退休金條例、全民健康保險法，以及勞動部、衛福部公告之 115 年 1 月 1 日起投保薪資分級表計算（勞保普通事故 11.5%、就保 1%、上下班災害 0.07%、健保 5.17%、平均眷口數 0.56）。月中加保或退保會按日計算，這裡以整月計。僅供參考，實際以勞保局、健保署繳款單為準。法規數字最後確認：<span id="checked"></span>。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small id="barLbl">每月實領</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const R_=window.RATES, I=R_.insurance;
+const S={role:"worker"};
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
+const amt=()=>{ const v=parseInt(String($("amt").value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
+const r=x=>Math.round(x);
+/* smallest grade at or above the wage, capped at the table top */
+const grade=(list,w,max)=>{ const g=list.find(x=>x>=w)??list[list.length-1]; return Math.min(g,max??g); };
+
+function calc(w){
+  const pt=val("pt")==="1", senior=val("st")==="senior", dep=+val("dep"), vol=+val("vol");
+  const occRate=Math.max(0,Math.min(5,parseFloat($("occ").value)||0))/100;
+  const liList=pt?I.liGrades:I.liGrades.filter(x=>x>=R_.basicWage);
+  const all=[...new Set([...I.liGrades,...I.nhiGrades])].sort((a,b)=>a-b);
+  const occList=(pt?all:all.filter(x=>x>=R_.basicWage));
+  const pList=[...I.pensionLow,...I.nhiGrades.filter(x=>x<=I.pensionMax)];
+  const gLI=w?grade(liList,w,I.li.max):0;
+  const gOcc=w?grade(occList,w,I.occ.max):0;
+  const gP=w?grade(pt?pList:pList.filter(x=>x>=R_.basicWage),w,I.pensionMax):0;
+  const gN=w?grade(I.nhiGrades,w):0;
+  const L=I.li, N=I.nhi;
+  const e={}, b={};
+  e.li = senior?0:r(gLI*L.ordinary*L.worker)+r(gLI*L.employment*L.worker);
+  b.li = senior?0:r(gLI*L.ordinary*L.employer)+r(gLI*L.employment*L.employer);
+  e.occ=0; b.occ=r(gOcc*(occRate+I.occ.commute));
+  b.arr=senior?0:r(gLI*I.arrears);
+  const nhiSelf=r(gN*N.rate*N.worker);
+  e.nhi=nhiSelf*(1+Math.min(dep,N.maxDependents));
+  b.nhi=r(gN*N.rate*N.employer*(1+N.avgDependents));
+  e.pen=r(gP*vol); b.pen=r(gP*I.pension);
+  const eT=e.li+e.nhi+e.pen, bT=b.li+b.occ+b.arr+b.nhi+b.pen;
+  return {w,pt,senior,dep,vol,occRate,gLI,gOcc,gP,gN,nhiSelf,e,b,eT,bT,take:w-eT,cost:w+bT};
+}
+
+function render(){
+  document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",S[x.dataset.k]===x.dataset.v));
+  const w=amt(), c=calc(w), boss=S.role==="boss";
+  $("ptHint").textContent=c.pt?"部分工時依實際薪資對應級距，勞保最低 11,100 元；健保最低仍是 29,500 元。":"全職月薪不能低於基本工資 29,500 元，投保級距最低就是 29,500。";
+  const low=!c.pt&&w&&w<R_.basicWage;
+  const R=$("result"), C=$("cost");
+  const P=boss?c.cost:w, pct=x=>P?Math.max(0,x/P*100):0;
+  const ins=c.e.li+c.e.nhi;
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">${boss?"每月人事成本":"每月實領"}</span>
+        <div class="big">${money(boss?c.cost:c.take)}<small>元</small></div></div>
+      <div class="gross">月薪<b>NT$ ${money(w)}</b>${boss?`員工實領 ${money(c.take)}`:`老闆另付 ${money(c.bT)}`}</div>
+    </div>
+    ${w?(boss?`<div class="bar" aria-hidden="true">
+        <span class="s1" style="flex-basis:${pct(w)}%">${pct(w)>20?"月薪":""}</span>
+        <span class="s2" style="flex-basis:${pct(c.b.li+c.b.occ+c.b.arr+c.b.nhi)}%">${pct(c.b.li+c.b.occ+c.b.arr+c.b.nhi)>8?"保費":""}</span>
+        <span class="s3" style="flex-basis:${pct(c.b.pen)}%"></span></div>`
+      :`<div class="bar" aria-hidden="true">
+        <span class="s1" style="flex-basis:${pct(c.take)}%">${pct(c.take)>20?"實領":""}</span>
+        <span class="s2" style="flex-basis:${pct(ins)}%">${pct(ins)>6?"保費":""}</span>
+        <span class="s3" style="flex-basis:${pct(c.e.pen)}%"></span></div>`):""}
+    <ul class="legend">
+    ${boss?`
+      <li><i style="background:var(--c1)"></i><span class="t">月薪<small>付給員工的薪資（員工自付保費從這裡扣）</small></span><span class="v">${money(w)}</span></li>
+      <li><i style="background:var(--c2)"></i><span class="t">老闆負擔的保費<small>勞保、就保、職災、墊償基金、健保</small></span><span class="v">${money(c.b.li+c.b.occ+c.b.arr+c.b.nhi)}</span></li>
+      <li><i style="background:var(--c3)"></i><span class="t">勞退提繳 6%<small>存進員工的勞退個人專戶</small></span><span class="v">${money(c.b.pen)}</span></li>`
+    :`
+      <li><i style="background:var(--c1)"></i><span class="t">實領<small>月薪扣掉右邊這幾項</small></span><span class="v">${money(c.take)}</span></li>
+      <li class="${c.e.li?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">勞保＋就保<small>${c.senior?"65 歲以上或已領老年給付，不用繳":`投保薪資 ${money(c.gLI)} × 12.5% × 20%`}</small></span><span class="v">${money(c.e.li)}</span></li>
+      <li><i style="background:var(--c2);opacity:.6"></i><span class="t">健保<small>投保金額 ${money(c.gN)} × 5.17% × 30%${c.dep?` × ${1+Math.min(c.dep,3)} 人（本人＋眷屬 ${Math.min(c.dep,3)}）`:""}</small></span><span class="v">${money(c.e.nhi)}</span></li>
+      <li class="${c.e.pen?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">勞退自提${c.vol?` ${c.vol*100}%`:""}<small>${c.vol?"存進你自己的勞退專戶，不是被拿走":"沒有自提"}</small></span><span class="v">${money(c.e.pen)}</span></li>`}
+    </ul>
+    ${!w?`<p class="note">輸入月薪，就會算出${boss?"每月人事成本":"每月實領"}。</p>`:""}
+    ${low?`<p class="note warm">全職員工月薪不能低於基本工資 ${money(R_.basicWage)} 元。如果是部分工時，請改選「部分工時」。</p>`:""}
+    ${w?`<div class="grades"><span>勞保級距 <b>${c.senior?"—":money(c.gLI)}</b></span><span>健保級距 <b>${money(c.gN)}</b></span><span>勞退級距 <b>${money(c.gP)}</b></span><span>職災級距 <b>${money(c.gOcc)}</b></span></div>
+    <div class="year">一年：<span>員工自付 <b>${money(c.eT*12)}</b></span><span>老闆負擔 <b>${money(c.bT*12)}</b></span><span>人事成本 <b>${money(c.cost*12)}</b></span></div>
+    ${!boss&&c.e.pen?`<p class="note">自提的 ${money(c.e.pen*12)} 元一年不用計入薪資所得；稅率 5% 的人約少繳 ${money(c.e.pen*12*.05)} 元，12% 約少繳 ${money(c.e.pen*12*.12)} 元。</p>`:""}
+    <div class="actions"><button type="button" class="btn" id="copy">複製保費明細</button></div>`:""}`;
+  if(w) $("copy").onclick=()=>copyText(summary(c),"已複製保費明細");
+
+  const row=(t,s,ev,bv)=>`<tr><th>${t}${s?`<small>${s}</small>`:""}</th><td class="${ev?"":"z"}">${ev?money(ev):"—"}</td><td class="${bv?"":"z"}">${bv?money(bv):"—"}</td></tr>`;
+  C.hidden=!w;
+  C.innerHTML=`<h2>誰付多少（每月）</h2>
+    <table class="tbl"><thead><tr><th></th><td>員工</td><td>老闆</td></tr></thead><tbody>
+    ${row("勞保普通事故","11.5%",c.senior?0:r(c.gLI*I.li.ordinary*I.li.worker),c.senior?0:r(c.gLI*I.li.ordinary*I.li.employer))}
+    ${row("就業保險","1%",c.senior?0:r(c.gLI*I.li.employment*I.li.worker),c.senior?0:r(c.gLI*I.li.employment*I.li.employer))}
+    ${row("職災保險",`${(c.occRate*100).toFixed(2).replace(/\.?0+$/,"")}%＋上下班 0.07%，老闆全額`,0,c.b.occ)}
+    ${row("工資墊償基金","0.025%，老闆全額",0,c.b.arr)}
+    ${row("健保",`員工 30%、老闆 60%（按 1.56 人計）`,c.e.nhi,c.b.nhi)}
+    ${row("勞退",`老闆 6%${c.vol?`、員工自提 ${c.vol*100}%`:""}`,c.e.pen,c.b.pen)}
+    </tbody><tfoot><tr><th>合計</th><td>${money(c.eT)}</td><td>${money(c.bT)}</td></tr></tfoot></table>
+    <p class="hint" style="margin-top:10px">勞保費每月底前繳上個月的；健保費也是。老闆每月會收到勞保局和健保署寄來的繳款單，可以設定自動扣款。</p>`;
+
+  $("barLbl").textContent=boss?"每月人事成本":"每月實領";
+  $("barVal").textContent="NT$ "+money(boss?c.cost:c.take);
+  save();
+}
+
+function summary(c){
+  return `月薪 ${money(c.w)} 元（勞保級距 ${c.senior?"—":money(c.gLI)}、健保級距 ${money(c.gN)}）\n`+
+    `員工自付：勞保＋就保 ${money(c.e.li)}、健保 ${money(c.e.nhi)}${c.e.pen?`、勞退自提 ${money(c.e.pen)}`:""}，合計 ${money(c.eT)} 元，實領 ${money(c.take)} 元。\n`+
+    `老闆負擔：勞保＋就保 ${money(c.b.li)}、職災 ${money(c.b.occ)}、墊償 ${money(c.b.arr)}、健保 ${money(c.b.nhi)}、勞退 6% ${money(c.b.pen)}，合計 ${money(c.bT)} 元。\n`+
+    `每月人事成本 ${money(c.cost)} 元。（依 ${R_.year} 年費率試算）`;
+}
+
+const KEY="taxtools.laborhealth.v1";
+const RADIOS=["pt","dep","vol","st"];
+function save(){ try{ const d={S,amt:$("amt").value,occ:$("occ").value}; RADIOS.forEach(n=>d[n]=val(n)); localStorage.setItem(KEY,JSON.stringify(d)); }catch(e){} }
+function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+  Object.assign(S,d.S||{}); $("amt").value=d.amt??""; if(d.occ) $("occ").value=d.occ;
+  RADIOS.forEach(n=>{ const x=document.querySelector(`input[name=${n}][value="${d[n]}"]`); if(x) x.checked=true; });
+  if(d.st==="senior"||(d.occ&&d.occ!=="0.14")) $("adv").open=true;
+}catch(e){} }
+
+document.querySelectorAll(".seg button").forEach(x=>x.onclick=()=>{ S[x.dataset.k]=x.dataset.v; try{ history.replaceState(null,"","#"+S.role); }catch(e){} render(); });
+$("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,"").slice(0,8); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n) e.target.value=n; render(); });
+document.querySelectorAll('input[type=radio]').forEach(x=>x.addEventListener("change",render));
+$("occ").addEventListener("input",render);
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+$("checked").textContent=R_.checked.replace(/-/g,"/");
+load(); if(/^#(worker|boss)$/.test(location.hash)) S.role=location.hash.slice(1); if(!$("amt").value) $("amt").value="36,000";
+render();
+</script>
+</body>
+</html>

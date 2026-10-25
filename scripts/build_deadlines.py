@@ -44,7 +44,7 @@ for y in (2026, 2027):
             "上個月代扣的補充保費，以及公司自己的雇主補充保費，在月底前繳給健保署。",
             link="/labor-report/", kind="monthly")
         add("ins", month_end(y, m), f"繳納 {prev} 月勞保、健保、勞退", ["company"],
-            "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。", kind="monthly")
+            "勞保局和健保署寄來的上個月保費繳款單，月底前繳納（多數公司設定自動扣款）。", link="/labor-health/#boss", kind="monthly")
     yr = y  # yearly items in calendar year y
     add("whfile", dt.date(yr, 1, 31), f"申報 {yr - 1912} 年度扣繳憑單", ["company"],
         "上一年度付給個人的薪資、租金、勞報等，向國稅局申報扣繳憑單或免扣繳憑單。1 月有連續 3 天以上國定假日時延長到 2 月 5 日，以財政部公告為準。",
@@ -58,11 +58,11 @@ for y in (2026, 2027):
     add("plate", dt.date(yr, 4, 30), "繳納使用牌照稅", ["car"],
         "自用汽機車一年繳一次（150cc 以下機車免稅）；營業用車分 4 月、10 月兩期。", start=dt.date(yr, 4, 1))
     add("pit", dt.date(yr, 5, 31), f"申報 {yr - 1912} 年度綜合所得稅", ["person", "landlord", "company"],
-        "個人報上一年度的所得，薪資、租金、勞報、股利都要列入；被扣繳的稅可以抵減，多扣的會退。", start=dt.date(yr, 5, 1))
+        "個人報上一年度的所得，薪資、租金、勞報、股利都要列入；被扣繳的稅可以抵減，多扣的會退。", start=dt.date(yr, 5, 1), link="/income-tax/")
     add("cit", dt.date(yr, 5, 31), f"申報 {yr - 1912} 年度營利事業所得稅", ["company"],
         "會計年度採曆年制的公司，申報上一年度營利事業所得稅和未分配盈餘。", start=dt.date(yr, 5, 1))
     add("house", dt.date(yr, 5, 31), "繳納房屋稅", ["landlord"],
-        "地方稅務局寄發稅單，繳納上一年度 7 月到今年 6 月的房屋稅。自住和出租的稅率不同。", start=dt.date(yr, 5, 1))
+        "地方稅務局寄發稅單，繳納上一年度 7 月到今年 6 月的房屋稅。自住和出租的稅率不同。", start=dt.date(yr, 5, 1), link="/landlord-tax/")
     add("citpre", dt.date(yr, 9, 30), "營利事業所得稅暫繳申報", ["company"],
         "按上年度應納稅額的一半暫繳。獨資、合夥、小規模營利事業、上年度沒有應納稅額，或暫繳稅額 2,000 元以下的免辦。", start=dt.date(yr, 9, 1))
     add("plate2", dt.date(yr, 10, 31), "營業用車牌照稅（第二期）", ["car"],
