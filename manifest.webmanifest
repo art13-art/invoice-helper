@@ -3,7 +3,7 @@
   "short_name": "稅務小工具",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F3F5F8",
+  "background_color": "#F5F3EE",
   "theme_color": "#2B5FB4",
   "lang": "zh-Hant-TW",
   "icons": [
