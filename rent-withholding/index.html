@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/rates.js"></script>
 <link rel="stylesheet" href="/assets/base.css">
 <link rel="stylesheet" href="/assets/nav.css">
 <style>
@@ -97,7 +98,7 @@
         <div class="field">
           <span class="lbl">付租金的是</span>
           <div class="seg" role="group" aria-label="付租金的是">
-            <button type="button" data-k="payer" data-v="org" aria-pressed="true"><b>公司・行號・機關</b><small>要代扣</small></button>
+            <button type="button" data-k="payer" data-v="org" aria-pressed="true"><b>公司・行號・機關</b><small>含學校、團體、事務所</small></button>
             <button type="button" data-k="payer" data-v="person" aria-pressed="false"><b>個人</b><small>例如自己租屋</small></button>
           </div>
         </div>
@@ -161,7 +162,7 @@
     </div>
   </div>
 
-  <p class="site-foot">依所得稅法第 88、92 條、各類所得扣繳率標準（租賃所得居住者 10%、每次應扣繳稅額不超過 2,000 元免扣繳；非居住者 20%）及全民健康保險法補充保險費規定（費率 2.11%、單次給付達 2 萬元起扣、上限 1,000 萬元）計算。僅供參考，實際以國稅局及健保署規定為準。</p>
+  <p class="site-foot">依所得稅法第 88、92 條、各類所得扣繳率標準（租賃所得居住者 10%、每次應扣繳稅額不超過 2,000 元免扣繳；非居住者 20%）及全民健康保險法補充保險費規定（費率 2.11%、單次給付達 2 萬元起扣、上限 1,000 萬元）計算。僅供參考，實際以國稅局及健保署規定為準。法規數字最後確認：<span id="checked"></span>。</p>
 </div>
 
 <div class="bar-m" id="barM">
@@ -173,7 +174,7 @@
 <script>
 const $=id=>document.getElementById(id);
 const S={payer:"org",landlord:"person",mode:"gross"};
-const TAX_RES=.10, TAX_NONRES=.20, TAX_FREE=2000, NHI=.0211, NHI_MIN=20000, NHI_CAP=1e7;
+const R_=window.RATES, TAX_RES=R_.rent.resident, TAX_NONRES=R_.rent.nonResident, TAX_FREE=R_.rent.exemptTaxAtOrBelow, NHI=R_.nhi.rate, NHI_MIN=R_.nhi.minPerPayment, NHI_CAP=R_.nhi.capPerPayment;
 const money=n=>Math.round(n).toLocaleString("zh-TW");
 const cyc=()=>+document.querySelector('input[name=cyc]:checked').value;
 const resident=()=>document.querySelector('input[name=res]:checked').value==="1";
@@ -266,12 +267,14 @@ function render(){
   if(s.tax) steps.push(res?[next10,"繳納扣繳稅款",`把代扣的 ${money(s.tax)} 元用扣繳稅款繳款書繳到國庫（銀行、郵局或線上）。`]
                          :[plus10,"繳稅並申報（非居住者）",`付款後 10 天內繳納 ${money(s.tax)} 元，並開具扣繳憑單向國稅局申報。`]);
   if(s.nhi) steps.push([nextEnd,"繳納補充保費",`把代扣的 ${money(s.nhi)} 元繳給健保署，用健保署的補充保費繳款單或線上繳納。`]);
-  if(s.tax&&res) steps.push([jan31,"申報扣繳憑單",`明年 1 月底前向國稅局申報這一年的租賃所得扣繳憑單（所得類別 51）。`]);
-  if(!s.tax&&res&&a) steps.push([jan31,"申報免扣繳憑單",`沒扣稅也要在明年 1 月底前申報免扣繳憑單，讓國稅局知道這筆租金。`]);
+  if(s.tax&&res) steps.push([jan31,"申報扣繳憑單",`明年 1 月底前向國稅局申報這一年的租賃所得扣繳憑單（所得類別 51），要填房屋稅籍編號，可以先跟房東要房屋稅單。`]);
+  if(!s.tax&&res&&a) steps.push([jan31,"申報免扣繳憑單",`沒扣稅也要在明年 1 月底前申報免扣繳憑單，一樣要填房屋稅籍編號。`]);
   if(s.nhi) steps.push([jan31,"申報補充保費明細",`明年 1 月底前向健保署申報扣費明細；每次繳費時已一併申報就不用再報。`]);
   if(res&&a) steps.push([feb10,"把憑單交給房東",`明年 2 月 10 日前把扣繳憑單（或免扣繳憑單）寄給房東，房東報稅要用。`]);
   T.innerHTML=`<h2>接下來要做的事</h2><ol class="steps">${steps.map(([dt,t,w])=>`<li><span class="d">${fmtD(dt)}<small>${dt.getFullYear()!==y?fmtY(dt):"前"}</small></span><span class="w"><b>${t}</b><span>${w}</span></span></li>`).join("")}</ol>
-    <p class="hint" style="margin-top:12px">期限遇假日順延到下一個上班日。</p>`;
+    <div class="actions" style="margin-top:14px"><button type="button" class="btn" id="ics">加入手機行事曆</button></div>
+    <p class="hint" style="margin-top:10px">期限遇假日順延到下一個上班日。加入行事曆後，每個期限前 3 天會提醒你。</p>`;
+  $("ics").onclick=()=>downloadICS(steps.slice(1));
   T.querySelectorAll(".steps li:first-child .d small").forEach(e=>e.textContent="付款日");
 
   $("barLbl").textContent=S.mode==="gross"?"房東實拿":"每次付款應付";
@@ -279,6 +282,19 @@ function render(){
   save();
 }
 
+function downloadICS(items){
+  const pad=n=>String(n).padStart(2,"0"), ymd=d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+  const now=new Date(), stamp=`${ymd(now)}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+  const esc=t=>t.replace(/[\\,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+  const ev=items.map(([d,t,w],i)=>{ const e=new Date(d); e.setDate(e.getDate()+1);
+    return ["BEGIN:VEVENT",`UID:rent-${ymd(d)}-${i}-${now.getTime()}@taxtools.tw`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${ymd(d)}`,`DTEND;VALUE=DATE:${ymd(e)}`,
+      `SUMMARY:${esc("租金扣繳："+t)}`,`DESCRIPTION:${esc(w+" （租金扣繳計算機 taxtools.tw）")}`,
+      "BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${esc(t)}`,"TRIGGER:-P3D","END:VALARM","END:VEVENT"].join("\r\n"); });
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//taxtools.tw//rent//ZH","CALSCALE:GREGORIAN",...ev,"END:VCALENDAR"].join("\r\n");
+  const blob=new Blob([ics],{type:"text/calendar;charset=utf-8"}), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download="租金扣繳期限.ics"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast("已產生行事曆檔，打開就能加入");
+}
 function msgFor(s,k){
   const d=payDay();
   return `房東您好：\n本次租金（${CYC_NAME[k]}${k>1?`，共 ${k} 個月`:""}）${money(s.P)} 元，`+
@@ -309,6 +325,7 @@ document.querySelectorAll('input[name=res]').forEach(e=>e.addEventListener("chan
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
 { const n=new Date(); $("day").value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; }
+$("checked").textContent=R_.checked.replace(/-/g,"/");
 load(); if(!$("amt").value) $("amt").value="30,000";
 render();
 </script>
