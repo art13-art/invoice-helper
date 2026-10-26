@@ -1,0 +1,215 @@
+// 類別管理：在記帳 APP 裡新增、改名、排序、刪除類別。
+// 只會修改「類別設定」A 欄和「分類規則」的類別／狀態欄，不會改動「總帳」或各主體分頁裡已經記的帳。
+const CATEGORY_PROTECTED_ = ['每月訂閱制'];          // 每月訂閱功能固定使用，不能改名或刪除
+const CATEGORY_ALIAS_KEY_ = 'CATEGORY_RENAMES';       // 改名紀錄：讓內建關鍵字（例如「午餐」→ 餐飲）也對到新名稱
+const CATEGORY_MAX_LEN_ = 20;
+
+function catSheet_(ss){
+  var s=ss.getSheetByName(CATEGORY_SHEET);
+  if(!s)throw new Error('找不到「類別設定」分頁。');
+  return s;
+}
+// 目前的類別（A 欄第 2 列起，略過空白），以及 A 欄原本用到第幾列
+function catRead_(ss){
+  var s=catSheet_(ss),last=s.getLastRow();
+  var raw=last>1?s.getRange(2,1,last-1,1).getDisplayValues().map(function(r){return String(r[0]).trim()}):[];
+  var list=[];raw.forEach(function(v){if(v&&list.indexOf(v)<0)list.push(v)});
+  return {sheet:s,list:list,height:raw.length};
+}
+// 只寫回 A 欄；原本較長時，多出來的格子清空，不動其他欄
+function catWrite_(info,list){
+  var h=Math.max(info.height,list.length);
+  if(!h)return;
+  var values=[];for(var i=0;i<h;i++)values.push([i<list.length?list[i]:'']);
+  info.sheet.getRange(2,1,h,1).setValues(values);
+}
+function catName_(v,label){
+  var name=historyText_(String(v==null?'':v),label||'類別名稱',100).replace(/\s+/g,' ');
+  if(!name)throw new Error('請輸入類別名稱。');
+  if(name.length>CATEGORY_MAX_LEN_)throw new Error('類別名稱最多 '+CATEGORY_MAX_LEN_+' 個字。');
+  if(name==='待確認')throw new Error('「待確認」是系統保留的名稱。');
+  if(/[<>]/.test(name))throw new Error('類別名稱不能有 < 或 >。');
+  return name;
+}
+function catAliases_(){
+  try{return JSON.parse(PropertiesService.getScriptProperties().getProperty(CATEGORY_ALIAS_KEY_)||'{}')}catch(e){return {}}
+}
+// 內建規則判斷出的舊名稱，換成改名後的新名稱
+function categoryAlias_(category){
+  if(!category||category==='待確認')return category;
+  var map=catAliases_(),seen={};
+  while(map[category]&&!seen[category]){seen[category]=1;category=map[category]}
+  return category;
+}
+function catCounts_(ss,list){
+  var counts={},s=ss.getSheetByName(LEDGER_SHEET);
+  list.forEach(function(c){counts[c]=0});
+  if(s&&s.getLastRow()>1)s.getRange(2,7,s.getLastRow()-1,7).getDisplayValues().forEach(function(r){
+    if(r[6]==='已作廢')return;
+    if(counts.hasOwnProperty(r[0]))counts[r[0]]++;
+  });
+  return counts;
+}
+function catResult_(ss,list,message){
+  return {ok:true,categories:list,protectedCategories:CATEGORY_PROTECTED_,counts:catCounts_(ss,list),message:message||''};
+}
+function catLocked_(fn){
+  var lock=LockService.getScriptLock();lock.waitLock(10000);
+  try{
+    var ss=SpreadsheetApp.openById(ALLOWED_SPREADSHEET_ID);
+    var result=fn(ss);
+    SpreadsheetApp.flush();
+    return result;
+  }finally{lock.releaseLock()}
+}
+
+function getCategoryManager(){
+  var ss=SpreadsheetApp.openById(ALLOWED_SPREADSHEET_ID);
+  return catResult_(ss,catRead_(ss).list);
+}
+function addCategory(name){
+  return catLocked_(function(ss){
+    name=catName_(name);
+    var info=catRead_(ss);
+    if(info.list.indexOf(name)>=0)return catResult_(ss,info.list,'「'+name+'」已經在選單裡。');
+    var list=info.list.concat([name]);
+    catWrite_(info,list);
+    return catResult_(ss,list,'已新增「'+name+'」，下次可以直接選。');
+  });
+}
+function renameCategory(oldName,newName){
+  return catLocked_(function(ss){
+    oldName=String(oldName||'').trim();newName=catName_(newName,'新名稱');
+    if(CATEGORY_PROTECTED_.indexOf(oldName)>=0)throw new Error('「'+oldName+'」是每月訂閱功能使用的類別，不能改名。');
+    var info=catRead_(ss),i=info.list.indexOf(oldName);
+    if(i<0)throw new Error('找不到「'+oldName+'」，請重新整理。');
+    if(oldName===newName)return catResult_(ss,info.list,'名稱沒有變更。');
+    if(info.list.indexOf(newName)>=0)throw new Error('已經有「'+newName+'」這個類別。');
+    var list=info.list.slice();list[i]=newName;
+    catWrite_(info,list);
+    // 學過的關鍵字規則一起改到新名稱
+    var rules=ss.getSheetByName(RULE_SHEET),changed=0;
+    if(rules&&rules.getLastRow()>1){
+      var col=rules.getRange(2,3,rules.getLastRow()-1,1),vals=col.getDisplayValues();
+      vals=vals.map(function(r){if(r[0]===oldName){changed++;return [newName]}return [r[0]]});
+      if(changed)col.setValues(vals);
+    }
+    var map=catAliases_();map[oldName]=newName;delete map[newName];
+    PropertiesService.getScriptProperties().setProperty(CATEGORY_ALIAS_KEY_,JSON.stringify(map));
+    return catResult_(ss,list,'已把「'+oldName+'」改名為「'+newName+'」。之後記帳會用新名稱；已經記的帳保留原本的名稱。');
+  });
+}
+function moveCategory(name,direction){
+  return catLocked_(function(ss){
+    var info=catRead_(ss),i=info.list.indexOf(String(name||''));
+    if(i<0)throw new Error('找不到這個類別，請重新整理。');
+    var j=direction==='up'?i-1:i+1;
+    if(j<0||j>=info.list.length)return catResult_(ss,info.list);
+    var list=info.list.slice(),t=list[i];list[i]=list[j];list[j]=t;
+    catWrite_(info,list);
+    return catResult_(ss,list);
+  });
+}
+function deleteCategory(name){
+  return catLocked_(function(ss){
+    name=String(name||'').trim();
+    if(CATEGORY_PROTECTED_.indexOf(name)>=0)throw new Error('「'+name+'」是每月訂閱功能使用的類別，不能刪除。');
+    var info=catRead_(ss),i=info.list.indexOf(name);
+    if(i<0)throw new Error('找不到「'+name+'」，請重新整理。');
+    if(info.list.length<=1)throw new Error('至少要保留一個類別。');
+    var list=info.list.slice();list.splice(i,1);
+    catWrite_(info,list);
+    // 指到這個類別的學習規則先停用（保留在表上，之後可以手動改回）
+    var rules=ss.getSheetByName(RULE_SHEET),off=0;
+    if(rules&&rules.getLastRow()>1){
+      var range=rules.getRange(2,3,rules.getLastRow()-1,3),vals=range.getDisplayValues();
+      var status=vals.map(function(r){if(r[0]===name&&r[2]!=='停用'){off++;return ['停用']}return [r[2]]});
+      if(off)rules.getRange(2,5,vals.length,1).setValues(status);
+    }
+    return catResult_(ss,list,'已從選單移除「'+name+'」。已經記的帳保留原本的類別'+(off?'；'+off+' 條自動分類規則已停用':'')+'。');
+  });
+}
+
+// 記帳畫面上的「＋ 新增類別」和「管理類別」
+function categoryManagerHtml_(){
+  return '<style>'
+  +'.cat-tools{display:flex;gap:18px;flex-wrap:wrap;margin-top:2px}'
+  +'.cat-tools button{min-height:40px;padding:6px 0;border:0;background:none;font:inherit;font-size:15px;font-weight:700;color:#111;text-decoration:underline;cursor:pointer}'
+  +'.cat-add{display:none;gap:8px;margin-top:6px}.cat-add.on{display:flex}'
+  +'.cat-add input{flex:1;min-width:0;font-size:18px;padding:10px 12px}'
+  +'.cat-add button{flex:none;min-height:48px;padding:0 16px;border-radius:12px;border:2px solid #111;background:#111;color:#fff;font:inherit;font-size:17px;font-weight:700}'
+  +'.cat-add button.ghost{background:#fff;color:#111;border-color:#d4d4d8}'
+  +'#catDialog{width:calc(100% - 24px);max-width:490px;max-height:90dvh;overflow:auto;border:0;border-radius:18px;padding:18px;color:#111}'
+  +'#catDialog::backdrop{background:rgba(0,0,0,.45)}#catDialog h2{margin:0 0 6px;font-size:22px}'
+  +'.cat-note{font-size:14px;color:#555;line-height:1.55;margin:0 0 10px}'
+  +'.cat-row{display:grid;grid-template-columns:minmax(0,1fr) 44px 44px 44px 44px;gap:6px;align-items:center;padding:7px 0;border-top:1px solid #eee}'
+  +'.cat-row .n{font-size:17px;font-weight:700;overflow-wrap:anywhere}.cat-row .n small{display:block;font-size:13px;font-weight:400;color:#666}'
+  +'.cat-row button{width:44px;height:44px;border:1px solid #ccc;border-radius:10px;background:#fff;color:#111;font:inherit;font-size:16px;cursor:pointer}'
+  +'.cat-row button:disabled{opacity:.3;cursor:default}.cat-row button.del{color:#b42318}.cat-row button.del.arm{background:#b42318;color:#fff;border-color:#b42318;font-size:14px}'
+  +'.cat-row.edit{grid-template-columns:minmax(0,1fr) 60px 60px}.cat-row.edit input{font-size:17px;padding:8px 10px}.cat-row.edit button{width:60px}.cat-row button.ok{background:#111;color:#fff;border-color:#111}'
+  +'#catMsg{font-size:15px;line-height:1.5;margin:8px 0;white-space:pre-wrap}#catMsg.err{color:#b42318}'
+  +'.cat-foot{display:flex;gap:8px;margin-top:12px}.cat-foot button{flex:1;min-height:48px;border-radius:12px;border:1px solid #bbb;background:#fff;font:inherit;font-size:17px}'
+  +'</style>'
+  +'<dialog id="catDialog" aria-labelledby="catHeading"><h2 id="catHeading">管理類別</h2>'
+  +'<p class="cat-note">改名、調整順序或刪除。只會改變之後的選單；已經記的帳保留原本的類別，總帳不會被改動。🔒 是每月訂閱使用的類別。</p>'
+  +'<div id="catMsg" role="status" aria-live="polite"></div><div id="catList"></div>'
+  +'<div class="cat-add on" style="margin-top:12px"><input id="catDlgNew" maxlength="20" placeholder="新增類別名稱"><button type="button" id="catDlgAdd">新增</button></div>'
+  +'<div class="cat-foot"><button type="button" id="catDlgClose">完成</button></div></dialog>'
+  +'<script>(function(){'
+  +'var cats=[],prot=[],counts={},busy=false;'
+  +'function el(id){return document.getElementById(id)}'
+  +'function opt(sel,v,label){var o=document.createElement("option");o.value=v;o.textContent=label||v;sel.appendChild(o)}'
+  // 更新畫面上所有類別選單，保留目前的選擇
+  +'function syncSelects(selectName){'
+  +' var s=el("entryCategory");if(s){var cur=selectName||s.value;s.replaceChildren();opt(s,"待確認","待確認（可自行選擇分類）");cats.forEach(function(c){opt(s,c)});if(cur&&cats.indexOf(cur)<0&&cur!=="待確認")opt(s,cur);s.value=cur||"待確認"}'
+  +' var l=el("learnCategory");if(l){var lc=l.value;l.replaceChildren();opt(l,"","請選擇類別");cats.forEach(function(c){opt(l,c)});l.value=cats.indexOf(lc)>=0?lc:""}'
+  +' if(window.refreshRecentEntries)window.refreshRecentEntries();'
+  +'}'
+  +'function apply(r,selectName){cats=r.categories||[];prot=r.protectedCategories||[];counts=r.counts||{};syncSelects(selectName);renderList()}'
+  +'function msg(t,err){var m=el("catMsg");m.textContent=t||"";m.className=err?"err":""}'
+  +'function call(fn,args,done){if(busy)return;busy=true;lock(true);'
+  +' var run=google.script.run.withSuccessHandler(function(r){busy=false;lock(false);done(r)}).withFailureHandler(function(e){busy=false;lock(false);var t=e&&e.message?e.message:"連線失敗，請再試一次。";msg(t,true);var h=el("catAddMsg");if(h)h.textContent=t});'
+  +' run[fn].apply(run,args)}'
+  +'function lock(v){document.querySelectorAll("#catDialog button,#catDialog input,#catAddBox button,#catAddBox input").forEach(function(n){n.disabled=v})}'
+  +'var editing="",confirmDel="";'
+  +'function renderList(){var box=el("catList");if(!box)return;box.replaceChildren();'
+  +' cats.forEach(function(c,i){var p=prot.indexOf(c)>=0,row=document.createElement("div");row.className="cat-row";'
+  +'  function b(label,aria,dis,fn,cls){var x=document.createElement("button");x.type="button";x.textContent=label;x.setAttribute("aria-label",aria+"「"+c+"」");x.disabled=dis;if(cls)x.className=cls;x.addEventListener("click",fn);row.appendChild(x);return x}'
+  +'  if(editing===c){'
+  +'   row.className="cat-row edit";var inp=document.createElement("input");inp.value=c;inp.maxLength=20;inp.setAttribute("aria-label","新名稱");row.appendChild(inp);'
+  +'   var save=function(){var v=inp.value.trim();if(!v||v===c){editing="";renderList();return}call("renameCategory",[c,v],function(r){editing="";var s=el("entryCategory");apply(r,s&&s.value===c?v:undefined);msg(r.message)})};'
+  +'   inp.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();save()}if(e.key==="Escape"){editing="";renderList()}});'
+  +'   b("存","儲存新名稱",false,save,"ok");b("取消","取消改名",false,function(){editing="";renderList()});'
+  +'   box.appendChild(row);setTimeout(function(){inp.focus();inp.select()},0);return}'
+  +'  var n=document.createElement("div");n.className="n";n.textContent=(p?"🔒 ":"")+c;var sm=document.createElement("small");'
+  +'  sm.textContent=confirmDel===c?(counts[c]?"已經記的 "+counts[c]+" 筆不會被刪除":"再按一次 ✕ 確認刪除"):(counts[c]?counts[c]+" 筆帳":"還沒有帳");n.appendChild(sm);row.appendChild(n);'
+  +'  b("↑","往上移",i===0,function(){confirmDel="";call("moveCategory",[c,"up"],function(r){apply(r);msg("")})});'
+  +'  b("↓","往下移",i===cats.length-1,function(){confirmDel="";call("moveCategory",[c,"down"],function(r){apply(r);msg("")})});'
+  +'  b("✎","改名",p,function(){editing=c;confirmDel="";renderList()});'
+  +'  var d=b(confirmDel===c?"確認":"✕","刪除",p,function(){if(confirmDel!==c){confirmDel=c;renderList();msg("再按一次「確認」就會從選單刪除「"+c+"」。");return}confirmDel="";call("deleteCategory",[c],function(r){apply(r);msg(r.message)})},"del");'
+  +'  if(confirmDel===c)d.classList.add("arm");'
+  +'  box.appendChild(row)})}'
+  // 「⑤ 分類」下方的兩個按鈕和新增輸入框
+  +'var anchor=el("retryCategory");if(!anchor)return;'
+  +'var tools=document.createElement("div");tools.className="cat-tools";tools.innerHTML=\'<button type="button" id="catAddOpen">＋ 新增類別</button><button type="button" id="catManage">管理類別</button>\';'
+  +'var add=document.createElement("div");add.className="cat-add";add.id="catAddBox";add.innerHTML=\'<input id="catAddName" maxlength="20" placeholder="新類別名稱，例如：寵物"><button type="button" id="catAddOk">加入</button><button type="button" class="ghost" id="catAddCancel">取消</button>\';'
+  +'var hint=document.createElement("div");hint.id="catAddMsg";hint.setAttribute("role","status");hint.style.cssText="font-size:14px;color:#b42318;margin-top:4px";'
+  +'anchor.after(tools);tools.after(add);add.after(hint);'
+  +'function doAdd(name,fromDialog){name=(name||"").trim();if(!name){(fromDialog?el("catDlgNew"):el("catAddName")).focus();return}'
+  +' call("addCategory",[name],function(r){var target=fromDialog?undefined:name;apply(r,target);'
+  +'  if(!fromDialog){add.classList.remove("on");el("catAddName").value="";hint.textContent="";'
+  +'   if(window.categorySequence!==undefined){categoryManual=true;categoryPending=false;categoryFailed=false;categoryReady=true;categorySequence++;clearTimeout(categoryTimer)}'
+  +'   el("categoryHint").textContent="已新增並選擇「"+name+"」，下次可以直接選。"}'
+  +'  else{el("catDlgNew").value="";msg(r.message)}})}'
+  +'el("catAddOpen").addEventListener("click",function(){add.classList.toggle("on");hint.textContent="";if(add.classList.contains("on"))el("catAddName").focus()});'
+  +'el("catAddCancel").addEventListener("click",function(){add.classList.remove("on");hint.textContent=""});'
+  +'el("catAddOk").addEventListener("click",function(){doAdd(el("catAddName").value,false)});'
+  +'el("catAddName").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();doAdd(el("catAddName").value,false)}});'
+  +'el("catDlgAdd").addEventListener("click",function(){doAdd(el("catDlgNew").value,true)});'
+  +'el("catDlgNew").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();doAdd(el("catDlgNew").value,true)}});'
+  +'el("catDlgClose").addEventListener("click",function(){editing="";confirmDel="";el("catDialog").close()});'
+  +'el("catManage").addEventListener("click",function(){msg("讀取中…");el("catList").replaceChildren();el("catDialog").showModal();call("getCategoryManager",[],function(r){apply(r);msg("")})});'
+  // 打開頁面時，先把「第一次出現」的類別選單換成最新清單
+  +'google.script.run.withSuccessHandler(function(r){cats=r.categories||[];prot=r.protectedCategories||[];counts=r.counts||{};var l=el("learnCategory");if(l){var lc=l.value;l.replaceChildren();opt(l,"","請選擇類別");cats.forEach(function(c){opt(l,c)});l.value=lc}}).getCategoryManager();'
+  +'})();</script>';
+}
