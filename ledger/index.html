@@ -107,6 +107,14 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
 .mem select{font:inherit;font-size:15px;min-height:40px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);padding:0 8px}
 .invite{display:grid;gap:8px;padding:12px;border-radius:10px;border:1px dashed var(--line-strong)}
 .invite code{word-break:break-all;font-size:14px;background:var(--sunk);padding:8px;border-radius:6px}
+.chip-add{font:inherit;font-size:15px;min-height:40px;padding:0 14px;border-radius:99px;border:1px dashed var(--accent);background:transparent;color:var(--accent);cursor:pointer}
+.cat-new{display:flex;gap:8px;margin-top:8px;align-items:center}
+.cat-new input{flex:1;min-width:0}
+.cg-row{display:grid;grid-template-columns:minmax(0,1fr) auto 40px 40px 40px;gap:6px;align-items:center;padding:4px 0}
+.cg-n{font-size:13px;color:var(--muted);white-space:nowrap;min-width:3em;text-align:right}
+.cg-b{font:inherit;width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.cg-b:disabled{opacity:.3;cursor:default}
+.cg-b.del{color:var(--warn)}
 .fab{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;font:inherit;font-weight:700;font-size:17px;border:0;border-radius:99px;padding:0 22px;min-height:54px;background:var(--accent);color:var(--on-accent);box-shadow:0 8px 24px rgba(37,84,166,.35);cursor:pointer}
 @media (max-width:639px){.wrap{padding-bottom:100px}}
 </style>
@@ -187,7 +195,8 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
       <div class="field"><label for="eAmt">金額（含稅）</label><div class="money"><input id="eAmt" inputmode="numeric" placeholder="0" enterkeyhint="next"></div></div>
       <div class="field"><label for="eDate">日期</label><input id="eDate" type="date"></div>
     </div>
-    <div class="field"><span class="lbl">分類</span><div class="chips tight" id="eCats" role="radiogroup" aria-label="分類"></div></div>
+    <div class="field"><span class="lbl">分類</span><div class="chips tight" id="eCats" role="radiogroup" aria-label="分類"></div>
+      <div class="cat-new" id="catNew" hidden><input id="catNewIn" maxlength="12" placeholder="新類別名稱，例如：寵物" enterkeyhint="done"><button type="button" class="btn primary" id="catNewOk">加入</button><button type="button" class="btn link" id="catNewX">取消</button></div></div>
     <div class="field"><label for="eParty" id="ePartyL">對象</label><input id="eParty" list="custList" placeholder="店家、客戶或房東" maxlength="60"><datalist id="custList"></datalist></div>
     <div id="eBiz">
       <div class="field"><span class="lbl">憑證</span>
@@ -248,6 +257,21 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
   </form>
 </dialog>
 
+<dialog class="sheet" id="cg">
+  <form method="dialog" autocomplete="off">
+    <div class="hd"><h2 id="cgH">管理類別</h2><button type="button" class="x" id="cgX" aria-label="關閉">✕</button></div>
+    <div class="seg" role="group" aria-label="支出或收入類別"><button type="button" data-cg="out" aria-pressed="true"><b>支出類別</b></button><button type="button" data-cg="in" aria-pressed="false"><b>收入類別</b></button></div>
+    <div id="cgList"></div>
+    <div class="cat-new"><input id="cgNew" maxlength="12" placeholder="新增類別" enterkeyhint="done"><button type="button" class="btn" id="cgAdd">新增</button></div>
+    <p class="hint" style="margin:0">改名時，已經記的帳會一起改成新名稱。刪除類別不會刪掉帳，舊的帳會保留原本的類別。🔒 是報稅計算會用到的類別，可以調整順序，不能改名或刪除。</p>
+    <div class="foot">
+      <button type="button" class="btn link" id="cgReset" style="color:var(--muted)">恢復預設</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn primary" id="cgSave">儲存</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog class="sheet" id="co">
   <form method="dialog" autocomplete="off">
     <div class="hd"><h2 id="coH">公司帳</h2><button type="button" class="x" id="coX" aria-label="關閉">✕</button></div>
@@ -286,6 +310,11 @@ const CATS={
 };
 const WH_CATS=["租金","薪資","勞務報酬"];
 const PAYS=["現金","信用卡","轉帳","行動支付"];
+// categories the tax boxes rely on: they can be reordered but not renamed or deleted
+const KEEP={biz:["交際","租金","薪資","勞務報酬"],me:["房租","保險","醫療","捐贈"]};
+const catList=(b,type)=>(b.data.cats&&b.data.cats[type])||CATS[b.data.kind][type];
+const canCats=()=>!isCo()||canEdit();
+function saveCats(b,type,list){ const cats={...(b.data.cats||{}),[type]:list}; put("book",b.id,{...b.data,cats}); }
 
 /* ---------- local store: one bucket per space (personal, each company). Signed-out data lives in "local". ---------- */
 const AUTH=window.TT_AUTH;
@@ -581,12 +610,16 @@ $("eCmDone").onclick=()=>{ comments(E.id).filter(c=>!c.data.resolved).forEach(c=
 function edRender(){
   const b=curBook(), biz=b.data.kind==="biz";
   document.querySelectorAll("#ed [data-t]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.t===E.type));
-  const base=CATS[b.data.kind][E.type], extra=[...new Set(entries(b.id).filter(e=>e.data.type===E.type).map(e=>e.data.cat))].filter(c=>c&&!base.includes(c));
-  const list=[...base,...extra]; if(!list.includes(E.cat)) E.cat=base[0];
+  const base=catList(b,E.type);
+  if(!E.cat||(!base.includes(E.cat)&&!DB.items[E.id])) E.cat=base[0];
+  const list=base.includes(E.cat)?base:[...base,E.cat];   // an old entry keeps a category that was since removed
   $("ePay").innerHTML=PAYS.map(p=>`<label><input type="radio" name="epay" value="${p}" ${p===E.pay?"checked":""}>${p}</label>`).join("");
   $("ePay").querySelectorAll("input").forEach(r=>r.onchange=()=>{ E.pay=r.value; });
-  $("eCats").innerHTML=list.map(c=>`<label><input type="radio" name="ecat" value="${c}" ${c===E.cat?"checked":""}>${c}</label>`).join("");
+  $("eCats").innerHTML=list.map(c=>`<label><input type="radio" name="ecat" value="${esc(c)}" ${c===E.cat?"checked":""}>${esc(c)}</label>`).join("")+
+    (canCats()&&!E.ro?`<button type="button" class="chip-add" id="catAdd">＋ 新增</button><button type="button" class="btn link" id="catMng">管理</button>`:"");
   $("eCats").querySelectorAll("input").forEach(r=>r.onchange=()=>{ E.cat=r.value; edRender(); });
+  const ca=$("catAdd"); if(ca) ca.onclick=()=>{ $("catNew").hidden=false; $("catNewIn").value=""; $("catNewIn").focus(); };
+  const cm=$("catMng"); if(cm) cm.onclick=()=>openCats(E.type);
   $("eBiz").hidden=!biz;
   const doc=document.querySelector("input[name=doc]:checked").value; E.doc=doc;
   $("eInvF").hidden=doc!=="inv";
@@ -650,6 +683,58 @@ $("bkSave").onclick=()=>{ const name=$("bkName").value.trim()||(BK.kind==="biz"?
   put("book",BK.id,{kind:BK.kind,name,ubn:BK.kind==="biz"?$("bkUbn").value:"",order:BK.order}); V.book=BK.id; $("bk").close(); render(); };
 $("bkDel").onclick=()=>{ const n=entries(BK.id).length; if(!confirm(`確定刪除「${BK.name}」${n?`和裡面的 ${n} 筆帳`:""}嗎？`)) return;
   entries(BK.id).forEach(e=>put("entry",e.id,null,true)); put("book",BK.id,null,true); V.book=null; $("bk").close(); render(); toast("帳本已刪除"); };
+
+/* ---------- categories: add from the editor, manage (rename, reorder, delete) in a sheet ---------- */
+function addCat(name,type){
+  const b=curBook(); name=String(name||"").replace(/[<>"]/g,"").trim().slice(0,12); if(!name) return null;
+  const list=catList(b,type);
+  if(!list.includes(name)) saveCats(b,type,[...list,name]);
+  return name;
+}
+$("catNewOk").onclick=()=>{ const n=addCat($("catNewIn").value,E.type); if(!n) return $("catNewIn").focus(); E.cat=n; $("catNew").hidden=true; edRender(); toast(`已新增「${n}」，下次可以直接選`); };
+$("catNewIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("catNewOk").click(); } });
+$("catNewX").onclick=()=>{ $("catNew").hidden=true; };
+
+let CG=null;
+function openCats(type){
+  const b=curBook(); if(!b) return;
+  CG={type,lists:{out:catList(b,"out").map(n=>({n,o:n})),in:catList(b,"in").map(n=>({n,o:n}))},dropped:{out:[],in:[]}};
+  cgRender(); $("cg").showModal();
+}
+function cgRender(){
+  const b=curBook(), keep=KEEP[b.data.kind], L=CG.lists[CG.type];
+  document.querySelectorAll("#cg [data-cg]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.cg===CG.type));
+  const used=n=>entries(b.id).filter(e=>e.data.type===CG.type&&e.data.cat===n).length;
+  $("cgList").innerHTML=L.map((c,i)=>{ const locked=keep.includes(c.o), u=used(c.o);
+    return `<div class="cg-row"><input value="${esc(c.n)}" data-i="${i}" maxlength="12" ${locked?"disabled":""} aria-label="類別名稱">
+      <span class="cg-n">${locked?"🔒 ":""}${u?u+" 筆":""}</span>
+      <button type="button" class="cg-b" data-up="${i}" ${i?"":"disabled"} aria-label="往上">↑</button><button type="button" class="cg-b" data-dn="${i}" ${i<L.length-1?"":"disabled"} aria-label="往下">↓</button>
+      <button type="button" class="cg-b del" data-rm="${i}" ${locked?"disabled":""} aria-label="刪除">✕</button></div>`; }).join("");
+  $("cgList").querySelectorAll("input").forEach(x=>x.oninput=()=>{ L[+x.dataset.i].n=x.value.replace(/[<>"]/g,"").slice(0,12); });
+  $("cgList").querySelectorAll("[data-up]").forEach(x=>x.onclick=()=>{ const i=+x.dataset.up; [L[i-1],L[i]]=[L[i],L[i-1]]; cgRender(); });
+  $("cgList").querySelectorAll("[data-dn]").forEach(x=>x.onclick=()=>{ const i=+x.dataset.dn; [L[i+1],L[i]]=[L[i],L[i+1]]; cgRender(); });
+  $("cgList").querySelectorAll("[data-rm]").forEach(x=>x.onclick=()=>{ const i=+x.dataset.rm, u=used(L[i].o);
+    if(u&&!confirm(`「${L[i].o}」已經有 ${u} 筆帳。刪除類別後，這些帳會保留原本的類別名稱。確定刪除？`)) return; L.splice(i,1); cgRender(); });
+}
+document.querySelectorAll("#cg [data-cg]").forEach(x=>x.onclick=()=>{ CG.type=x.dataset.cg; cgRender(); });
+$("cgAdd").onclick=()=>{ const n=$("cgNew").value.replace(/[<>"]/g,"").trim().slice(0,12); if(!n) return; const L=CG.lists[CG.type];
+  if(L.some(c=>c.n===n)) return toast("已經有這個類別"); L.push({n,o:n}); $("cgNew").value=""; cgRender(); };
+$("cgNew").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("cgAdd").click(); } });
+$("cgX").onclick=()=>$("cg").close();
+$("cgReset").onclick=()=>{ if(!confirm("恢復成預設的類別？自己新增的類別會從選單拿掉（已經記的帳不受影響）。")) return;
+  const b=curBook(); CG.lists={out:CATS[b.data.kind].out.map(n=>({n,o:n})),in:CATS[b.data.kind].in.map(n=>({n,o:n}))}; cgRender(); };
+$("cgSave").onclick=()=>{
+  const b=curBook(); const cats={}; let renamed=0;
+  for(const t of ["out","in"]){
+    const L=CG.lists[t].map(c=>({o:c.o,n:c.n.trim()||c.o}));
+    const names=L.map(c=>c.n); if(new Set(names).size!==names.length) return toast("有兩個類別名稱一樣，請改一下");
+    cats[t]=names;
+    for(const c of L) if(c.n!==c.o) entries(b.id).filter(e=>e.data.type===t&&e.data.cat===c.o).forEach(e=>{ put("entry",e.id,{...e.data,cat:c.n}); renamed++; });
+  }
+  put("book",b.id,{...b.data,cats});
+  $("cg").close(); if($("ed").open){ if(!cats[E.type].includes(E.cat)&&!DB.items[E.id]) E.cat=cats[E.type][0]; edRender(); }
+  render(); toast(renamed?`已儲存，${renamed} 筆帳的類別一起改名`:"類別已儲存");
+};
 
 /* ---------- company settings, members, invites ---------- */
 let CO=null;
@@ -757,6 +842,7 @@ function importCSV(text){
     if(!bookId){ const id=uid(); put("book",id,{kind:"biz",name:"匯入的帳",ubn:"",order:0}); bookId=id; bookByName["匯入的帳"]=id; newBooks++; }
     const kind=DB.items[bookId].data.kind, type=/收/.test(get(r,"type"))?"in":"out";
     let cat=get(r,"cat"); if(!cat||cat==="待確認") cat="其他"; if(kind==="me"&&cat==="租金"&&type==="out") cat="房租";
+    cat=cat.slice(0,12); { const bk=DB.items[bookId], lst=catList(bk,type); if(!lst.includes(cat)) saveCats(bk,type,[...lst,cat]); }
     const pay0=get(r,"pay"), pay=PAYS.find(p=>pay0.includes(p.slice(0,2)))||(pay0.includes("轉帳")?"轉帳":"");
     const srcId=get(r,"id").replace(/[^\w-]/g,"");
     const id=srcId?("imp-"+srcId).slice(0,64):uid();
