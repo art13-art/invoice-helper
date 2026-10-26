@@ -1,4 +1,10 @@
-/tmp-gas/*
+/tmp-gas/*.gs
   Access-Control-Allow-Origin: *
   Content-Type: text/plain; charset=utf-8
+  Cache-Control: no-store
+/tmp-gas/*.js
+  Access-Control-Allow-Origin: *
+  Content-Type: text/plain; charset=utf-8
+  Cache-Control: no-store
+/tmp-gas/view.html
   Cache-Control: no-store
