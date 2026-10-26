@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS line_history (                                       
   id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, ts INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS line_history_chat ON line_history(chat_id, id);
 CREATE TABLE IF NOT EXISTS line_msgs (                                                   -- 群組訊息紀錄（做總結用，保留 30 天）
-  id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, user_id TEXT, name TEXT, text TEXT NOT NULL, ts INTEGER NOT NULL);
+  id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT NOT NULL, user_id TEXT, name TEXT, text TEXT NOT NULL, ts INTEGER NOT NULL, media TEXT);
 CREATE INDEX IF NOT EXISTS line_msgs_chat ON line_msgs(chat_id, ts);
 CREATE TABLE IF NOT EXISTS line_members (                                                -- 群組成員名稱、是否拒絕被記錄
   chat_id TEXT NOT NULL, user_id TEXT NOT NULL, name TEXT, optout INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL,
@@ -19,3 +19,8 @@ CREATE TABLE IF NOT EXISTS line_reminders (
   mention_id TEXT, mention_name TEXT, todo_id TEXT, created INTEGER NOT NULL, created_by TEXT, status TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS line_reminders_due ON line_reminders(status, due);
 CREATE TABLE IF NOT EXISTS line_events (id TEXT PRIMARY KEY, ts INTEGER NOT NULL);       -- 避免 LINE 重送時重複處理
+CREATE TABLE IF NOT EXISTS line_pending (                                                -- 等人按「確認」才寫入的帳
+  id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, user_id TEXT, kind TEXT NOT NULL, payload TEXT NOT NULL, summary TEXT NOT NULL,
+  created INTEGER NOT NULL, status TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS line_books (                                                  -- 廠商群組綁定的雲端記帳表
+  chat_id TEXT PRIMARY KEY, sheet_id TEXT NOT NULL, url TEXT, name TEXT, tab TEXT, headers TEXT, created_by TEXT, created INTEGER NOT NULL);
