@@ -46,16 +46,16 @@ async function handle(env, ev, origin) {
       return reply(JOIN_NOTICE);
     }
     case "leave": return forgetChat(db, chatId);
-    case "memberJoined": return reply(`歡迎加入！我是小助理，有事 @我 就好。我會記住群組討論 ${KEEP_DAYS} 天，不想被記錄跟我說「不要記錄我」。`);
+    case "memberJoined": return reply(`歡迎！我是小助理，有事 @我 就好。群組討論我會記 ${KEEP_DAYS} 天，不想被記錄跟我說「不要記錄我」。`);
     case "memberLeft":
       for (const m of ev.left?.members || []) await db.prepare("DELETE FROM line_members WHERE chat_id=? AND user_id=?").bind(chatId, m.userId).run();
       return;
-    case "follow": return reply("你好，我是小助理！" + HELP_USER.replace("有事直接跟我說就好", "\n有事直接跟我說就好"));
+    case "follow": return reply("嗨，我是小助理。" + HELP_USER);
     case "unfollow": return;
     case "postback": {
       const d = String(ev.postback?.data || "");
-      if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("✓ 已清除這個群組的所有紀錄、待辦和提醒。"); }
-      if (d === "keep") return reply("好，紀錄保留。");
+      if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
+      if (d === "keep") return reply("好，不清。");
       const m = d.match(/^(ok|no):(\w+)$/);
       if (m) {
         const nm = group ? (await member(db, line, chatId, userId)).name : "你";
@@ -76,7 +76,7 @@ async function handle(env, ev, origin) {
       return;   // 群組裡的貼圖、照片不回應
     }
     if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, null, "（傳了一張照片）", msg.id);
-    return reply(msg.type === "sticker" ? "😊 有需要直接打字問我就好。" : "這種訊息我還看不懂，可以用文字問我。");
+    return reply(msg.type === "sticker" ? "👍" : "這個我還看不懂，打字跟我說吧。");
   }
 
   const raw = msg.text || "";
@@ -102,14 +102,14 @@ async function handle(env, ev, origin) {
   if (group && /^(請)?(不要|別|停止)(再)?(記錄|紀錄)我(的訊息)?$/.test(c)) {
     await db.prepare("UPDATE line_members SET optout=1 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
     await db.prepare("DELETE FROM line_msgs WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
-    return reply(`好的，${who.name} 之後的訊息不會被記錄，之前的紀錄也已刪除。想恢復跟我說「恢復記錄」。`);
+    return reply(`好，${who.name}，之後不會記錄你的訊息，之前的也刪了。要恢復跟我說一聲。`);
   }
   if (group && /^(恢復|重新)(記錄|紀錄)(我)?$/.test(c)) {
     await db.prepare("UPDATE line_members SET optout=0 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
-    return reply(`好的，${who.name} 的訊息會再開始記錄。`);
+    return reply(`好，${who.name}，你的訊息會再開始記錄。`);
   }
-  if (group && /^(清除|刪除|清空)(群組|這裡的|所有)?(聊天)?(紀錄|記錄)$/.test(c)) return reply("確定要清除這個群組的所有聊天紀錄、待辦和提醒嗎？", [postback("✓ 確定清除", "wipe:" + chatId, "確定清除"), postback("✕ 保留", "keep", "保留")]);
-  if (c === "不用") return reply("好的。");
+  if (group && /^(清除|刪除|清空)(群組|這裡的|所有)?(聊天)?(紀錄|記錄)$/.test(c)) return reply("要清掉這個群組的聊天紀錄、待辦和提醒嗎？清了就救不回來。", [postback("清除", "wipe:" + chatId, "清除"), postback("不要", "keep", "不要")]);
+  if (c === "不用") return reply("好。");
   // ---- 記帳確認（打字也可以）----
   if (/^(確認|取消)(記帳)?$/.test(c)) {
     const p = await db.prepare("SELECT id FROM line_pending WHERE chat_id=? AND user_id=? AND status='open' ORDER BY created DESC LIMIT 1").bind(chatId, userId).first();
@@ -124,7 +124,7 @@ async function handle(env, ev, origin) {
     if (list.includes(userId)) return reply("你已經是管理員了。");
     if (list.length) return reply("已經有管理員了；需要的話請現有管理員私訊我「新增管理員」，再把代碼轉給你。");
     await kv.set(db, "admins", JSON.stringify([userId]));
-    return reply("✓ 你是管理員了。\n・本月費用用到 90% 時我會通知你一次\n・每月 1 號會傳上個月的開銷報表給你\n・想看目前花費，私訊我「本月用量」");
+    return reply("好，你是管理員了。費用快到上限、每月 1 號的開銷報表都會傳給你；想知道目前花多少直接問我。");
   }
   if (!group && c === "新增管理員" && (await isAdmin(db, userId))) {
     const code = Math.random().toString().slice(2, 8);
@@ -136,7 +136,7 @@ async function handle(env, ev, origin) {
     if (!want || want.exp < Date.now() || want.code !== code) return reply("代碼不對或已過期。");
     const list = await admins(db); if (!list.includes(userId)) list.push(userId);
     await kv.set(db, "admins", JSON.stringify(list)); await kv.set(db, "admincode", "null");
-    return reply("✓ 你是管理員了。");
+    return reply("好，你是管理員了。");
   }
   if (group && /^記帳表$/.test(c)) {
     const b = await getBook(db, chatId);
@@ -158,7 +158,7 @@ async function handle(env, ev, origin) {
 
   // ---- 交給 AI ----
   const ask = c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
-  if (!ask) return reply(group ? HELP_GROUP : HELP_USER);
+  if (!ask) return reply("在，什麼事？");
   return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask);
 }
 
@@ -169,7 +169,7 @@ async function record(db, chatId, userId, name, text, media) {
 async function answer(ctx, text, logText, imageId) {
   const { env, db, line, ev, chatId, userId, chips } = ctx;
   const send = t => line.reply(ev.replyToken, [textMessage(t, chips)]).catch(e => console.log("reply failed", e.message));
-  if (!env.ANTHROPIC_API_KEY) return send("我還在設定中，請稍後再試。");
+  if (!env.ANTHROPIC_API_KEY) return send("我還在設定中，晚點再找我。");
   if (!isGroup(chatId)) await line.loading(userId, 30);
   ctx.isAdmin = await isAdmin(db, userId);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
@@ -178,13 +178,13 @@ async function answer(ctx, text, logText, imageId) {
     try {
       const img = await line.image(imageId);
       content = [{ type: "image", source: { type: "base64", media_type: img.type, data: img.data } }, { type: "text", text: "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）" }];
-    } catch (e) { return send("照片讀取失敗，可以再傳一次嗎？"); }
+    } catch (e) { return send("照片沒讀到，再傳一次？"); }
   }
   let out, pending = null;
   try { const r = await chat(ctx, content, logText); out = r.text; pending = r.pending; }
   catch (e) {
     console.log("chat error", e.message);
-    out = e.status === 401 ? "AI 金鑰不正確，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "AI 現在比較忙，請過一分鐘再試。" : "我這邊出了點問題，請稍後再試一次。";
+    out = e.status === 401 ? "我現在沒辦法回覆，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。";
   }
   const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
   await line.reply(ev.replyToken, [textMessage(out, quick)]).catch(async e => {

@@ -22,9 +22,9 @@ export async function onRequestPost({ request, env }) {
       ? await db.prepare("UPDATE line_reminders SET due=? WHERE id=? AND due=? AND status='open'").bind(next, r.id, r.due).run()
       : await db.prepare("UPDATE line_reminders SET status='sent' WHERE id=? AND status='open'").bind(r.id).run();
     if ((claim.meta?.changes ?? 1) === 0) continue;
-    const late = now - r.due > 30 * 60e3 ? `（原定 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
+    const late = now - r.due > 30 * 60e3 ? `（原訂 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     const who = r.mention_id && isGroup(r.chat_id) ? "{who} " : "";
-    const text = `⏰ ${who}提醒${late}\n${r.text}` + (next ? `\n\n下次：${md(ymd(next))} ${hm(next)}` : "");
+    const text = `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
     try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
     catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
   }
