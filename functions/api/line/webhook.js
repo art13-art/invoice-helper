@@ -202,8 +202,21 @@ async function answer(ctx, text, logText, attach) {
     out = e.status === 401 ? "我現在沒辦法回覆，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。";
   }
   const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
-  await line.reply(ev.replyToken, [textMessage(out, quick)]).catch(async e => {
+  // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
+  const parts = splitText(out, 4800).slice(0, 5);
+  const msgs = parts.map((p, i) => textMessage(p, i === parts.length - 1 ? quick : undefined));
+  await line.reply(ev.replyToken, msgs).catch(async e => {
     console.log("reply failed, pushing", e.message);
-    await line.push(chatId, [textMessage(out, quick)]).then(() => recordPush(db, chatId, 1)).catch(() => null);
+    await line.push(chatId, msgs).then(() => recordPush(db, chatId, 1)).catch(() => null);
   });
+}
+
+function splitText(t, max) {
+  const out = []; let rest = String(t || "");
+  while (rest.length > max) {
+    let cut = rest.lastIndexOf("\n\n", max); if (cut < max * 0.5) cut = rest.lastIndexOf("\n", max); if (cut < max * 0.5) cut = max;
+    out.push(rest.slice(0, cut).trim()); rest = rest.slice(cut).trim();
+  }
+  if (rest) out.push(rest);
+  return out.length ? out : [""];
 }
