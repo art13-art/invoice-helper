@@ -7,3 +7,8 @@ compatibility_date = "2026-10-01"
 binding = "DB"
 database_name = "taxtools-ledger"
 database_id = "613dd9cd-9ac0-4540-924e-ec9f50782f8d"
+
+# LINE 小幫手：把要慢慢想的訊息排進 Cloudflare Queues，由 line-jobs Worker 送回來處理（不受 30 秒限制）
+[[queues.producers]]
+binding = "JOBS"
+queue = "line-jobs"

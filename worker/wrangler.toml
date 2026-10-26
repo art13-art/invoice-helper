@@ -1,0 +1,13 @@
+# LINE 小幫手排隊處理服務（Cloudflare Worker，Queues 的消費者）
+name = "line-jobs"
+main = "index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+SITE = "https://invoice-helper-eok.pages.dev"
+
+[[queues.consumers]]
+queue = "line-jobs"
+max_batch_size = 1
+max_batch_timeout = 0
+max_retries = 2

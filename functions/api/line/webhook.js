@@ -17,8 +17,16 @@ export async function onRequestPost({ request, env, waitUntil }) {
   let events = [];
   try { events = JSON.parse(body).events || []; } catch (e) { return new Response("bad json", { status: 400 }); }
   const origin = new URL(request.url).origin;
-  const work = (async () => { for (const ev of events) { try { await handle(env, ev, origin); } catch (e) { console.log("line event error", e.stack || e.message); } } })();
-  if (waitUntil) waitUntil(work); else await work;
+  // 有排隊服務（Cloudflare Queues）時：先排隊、立刻回 LINE；排隊服務再把同一包（含 LINE 簽章）送回來，
+  // 這時連線會一直開著，可以慢慢想（最多 15 分鐘），不受「回覆後只剩 30 秒」的限制。
+  const fromQueue = request.headers.get("x-from-queue") === "1";
+  if (!fromQueue && env.JOBS && events.length) {
+    try { await env.JOBS.send({ body, sig: request.headers.get("x-line-signature") }); return new Response("queued"); }
+    catch (e) { console.log("queue send failed, handling inline", e.message); }
+  }
+  const runEnv = fromQueue ? { ...env, LONG_RUN: "1" } : env;
+  const work = (async () => { for (const ev of events) { try { await handle(runEnv, ev, origin); } catch (e) { console.log("line event error", e.stack || e.message); } } })();
+  if (fromQueue || !waitUntil) await work; else waitUntil(work);
   return new Response("ok");
 }
 
