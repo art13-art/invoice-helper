@@ -10,7 +10,7 @@ import datetime as dt, html, json, pathlib, re
 SITE = "https://taxtools.tw"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TODAY = dt.date.today().isoformat()
-NOT_TOOLS = {"", "privacy"}
+NOT_TOOLS = {"", "privacy", "join"}
 
 def text(s):
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", s))).strip()
@@ -19,7 +19,7 @@ pages = []
 for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html")]):
     rel = f.parent.relative_to(ROOT).as_posix()
     rel = "" if rel == "." else rel
-    if rel.startswith(("scripts", "functions", "lib", "assets")):
+    if rel.startswith(("scripts", "functions", "lib", "assets", "join", "db")):
         continue
     src = f.read_text()
     title = text(re.search(r"<title>(.*?)</title>", src, re.S).group(1))
@@ -63,5 +63,5 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html")]):
 
 (ROOT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     "".join(f"  <url><loc>{u}</loc><lastmod>{TODAY}</lastmod><priority>{p}</priority></url>\n" for u, p in pages) + "</urlset>\n")
-(ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /scripts/\nDisallow: /lib/\n\nSitemap: {SITE}/sitemap.xml\n")
+(ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /scripts/\nDisallow: /lib/\nDisallow: /db/\nDisallow: /join/\n\nSitemap: {SITE}/sitemap.xml\n")
 print(len(pages), "pages")

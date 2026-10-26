@@ -79,6 +79,34 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
   .sheet form{padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px))}
   .sum3 b{font-size:18px}
 }
+.spaces{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.spaces label{position:relative;display:flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border:1px solid var(--line-strong);border-radius:99px;font-size:15px;cursor:pointer}
+.spaces input{position:absolute;opacity:0;pointer-events:none}
+.spaces label:has(input:checked){background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700}
+.spaces label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.spaces small{font-size:12.5px;opacity:.8;font-weight:500}
+.co-name{font-size:18px}
+.role-tag{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 10px}
+.brand{display:grid;gap:2px;background:var(--accent-soft);border-color:transparent}
+.brand b{font-size:18px}
+.brand-c{display:flex;flex-wrap:wrap;gap:0 16px}
+.brand-c a{display:inline-flex;align-items:center;min-height:40px;color:var(--accent);font-weight:500;text-decoration:none}
+.lockbar{margin:10px 0 0;padding:8px 12px;border-radius:8px;background:var(--sunk);color:var(--muted);font-size:15px}
+.lh-r{display:flex;align-items:center;gap:8px}
+.qchip{color:var(--warn)}
+.ent .t.q{background:var(--warm-soft);border-color:transparent;color:var(--fg)}
+.cmbox{display:grid;gap:8px;padding:12px;border-radius:10px;background:var(--sunk)}
+.cm{display:grid;grid-template-columns:auto 1fr;gap:0 8px;align-items:baseline}
+.cm span{font-size:13px;color:var(--muted)}
+.cm p{grid-column:1/-1;margin:2px 0 6px}
+.cm.done{opacity:.6}
+.cm-in{display:flex;gap:8px}
+.cm-in input{flex:1}
+.mem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mem small{display:block;color:var(--muted);font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.mem select{font:inherit;font-size:15px;min-height:40px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);padding:0 8px}
+.invite{display:grid;gap:8px;padding:12px;border-radius:10px;border:1px dashed var(--line-strong)}
+.invite code{word-break:break-all;font-size:14px;background:var(--sunk);padding:8px;border-radius:6px}
 .fab{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;font:inherit;font-weight:700;font-size:17px;border:0;border-radius:99px;padding:0 22px;min-height:54px;background:var(--accent);color:var(--on-accent);box-shadow:0 8px 24px rgba(37,84,166,.35);cursor:pointer}
 @media (max-width:639px){.wrap{padding-bottom:100px}}
 </style>
@@ -110,6 +138,7 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
   <div class="lg">
     <div class="col left">
       <section class="card" id="acct" aria-live="polite"></section>
+      <section class="card brand" id="brand" hidden></section>
       <section class="card">
         <div class="books" id="books"></div>
         <div class="month" style="margin-top:14px"><button type="button" id="prev" aria-label="上個月">‹</button><b id="mLbl"></b><button type="button" id="next" aria-label="下個月">›</button></div>
@@ -123,7 +152,8 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
 
     <div class="col">
       <section class="card">
-        <div class="list-h"><h2 id="listH">這個月的帳</h2><input class="search" id="q" type="search" placeholder="搜尋對象、備註" aria-label="搜尋"></div>
+        <div class="list-h"><h2 id="listH">這個月的帳</h2><span class="lh-r"><button type="button" class="btn link qchip" id="qChip" hidden></button><input class="search" id="q" type="search" placeholder="搜尋對象、備註" aria-label="搜尋"></span></div>
+        <p class="lockbar" id="lockBar" hidden></p>
         <div id="list"></div>
       </section>
       <section class="card plain">
@@ -148,6 +178,7 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
 <dialog class="sheet" id="ed">
   <form method="dialog" id="edf" autocomplete="off">
     <div class="hd"><h2 id="edH">記一筆</h2><button type="button" class="x" id="edX" aria-label="關閉">✕</button></div>
+    <p class="note warm" id="eRo" hidden></p>
     <div class="seg" role="group" aria-label="收入或支出">
       <button type="button" data-t="out" aria-pressed="true"><b>支出</b></button>
       <button type="button" data-t="in" aria-pressed="false"><b>收入</b></button>
@@ -185,6 +216,13 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
     <div class="field"><label for="eNote">備註</label><input id="eNote" maxlength="200" placeholder="選填"></div>
     <label class="check" id="eRecL"><input type="checkbox" id="eRec"><span>每月固定<br><span class="hint" id="eRecH">之後每個月同一天自動記一筆，例如房租、訂閱、電信費。</span></span></label>
     <p class="msg" id="eMsg" hidden></p>
+    <div class="cmbox" id="eCm" hidden>
+      <span class="lbl">問與答</span>
+      <div id="eCmList"></div>
+      <div class="cm-in"><input id="eCmText" maxlength="500" placeholder="例如：這筆有發票嗎？" enterkeyhint="send"><button type="button" class="btn" id="eCmSend">送出</button></div>
+      <button type="button" class="btn link" id="eCmDone" hidden style="justify-self:start">標記為已解決</button>
+    </div>
+    <p class="hint" id="eMeta" style="margin:0"></p>
     <div class="foot">
       <button type="button" class="btn link" id="eDel" style="color:var(--warn)">刪除</button>
       <span style="flex:1"></span>
@@ -210,11 +248,28 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
   </form>
 </dialog>
 
+<dialog class="sheet" id="co">
+  <form method="dialog" autocomplete="off">
+    <div class="hd"><h2 id="coH">公司帳</h2><button type="button" class="x" id="coX" aria-label="關閉">✕</button></div>
+    <div class="two">
+      <div class="field"><label for="coName">公司或工作室名稱</label><input id="coName" maxlength="40" placeholder="例如：好日子設計工作室"></div>
+      <div class="field"><label for="coUbn">統編（選填）</label><input id="coUbn" inputmode="numeric" maxlength="8" placeholder="8 碼"></div>
+    </div>
+    <div id="coBody"></div>
+    <p class="msg" id="coMsg" hidden></p>
+    <div class="foot">
+      <button type="button" class="btn link" id="coDel" style="color:var(--warn)">刪除公司帳</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn primary" id="coSave">儲存</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="/assets/nav.js"></script>
+<script src="/assets/auth.js"></script>
 <script>
-const GOOGLE_CLIENT_ID="PENDING.apps.googleusercontent.com";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>Math.round(n||0).toLocaleString("zh-TW");
@@ -232,99 +287,126 @@ const CATS={
 const WH_CATS=["租金","薪資","勞務報酬"];
 const PAYS=["現金","信用卡","轉帳","行動支付"];
 
-/* ---------- local store (works signed-out; syncs when signed in) ---------- */
-const KEY="taxtools.ledger.v1";
-let DB={items:{},srv:0,dirty:{},owner:null};
-try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(d&&d.items) DB=Object.assign(DB,d); }catch(e){}
-const persist=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(DB)); }catch(e){ toast("這台裝置的儲存空間不足，請下載備份或登入雲端"); } };
+/* ---------- local store: one bucket per space (personal, each company). Signed-out data lives in "local". ---------- */
+const AUTH=window.TT_AUTH;
+const KEY="taxtools.ledger.v2";
+let ST={owner:null,cur:"local",meta:[],spaces:{local:{items:{},srv:0,dirty:{}}}};
+try{ const d=JSON.parse(localStorage.getItem(KEY)||"null");
+  if(d&&d.spaces) ST=Object.assign(ST,d);
+  else{ const old=JSON.parse(localStorage.getItem("taxtools.ledger.v1")||"null");   // data from the first version of the ledger
+    if(old&&old.items&&!old.owner) ST.spaces.local={items:old.items,srv:0,dirty:Object.fromEntries(Object.keys(old.items).map(k=>[k,1]))}; } }catch(e){}
+let DB=ST.spaces[ST.cur]||(ST.spaces[ST.cur]={items:{},srv:0,dirty:{}});
+const persist=()=>{ try{ localStorage.setItem(KEY,JSON.stringify(ST)); }catch(e){ toast("這台裝置的儲存空間不足，請下載備份或登入雲端"); } };
 const live=kind=>Object.values(DB.items).filter(x=>x.kind===kind&&!x.deleted);
-function put(kind,id,data,deleted=false){ DB.items[id]={id,kind,data:deleted?null:data,updated_at:Date.now(),deleted}; DB.dirty[id]=1; persist(); queueSync(); }
+function put(kind,id,data,deleted=false){ const old=DB.items[id]; DB.items[id]={id,kind,data:deleted?null:data,updated_at:Date.now(),deleted,by:old?.by||USER?.id,upd:USER?.id}; DB.dirty[id]=1; persist(); queueSync(); }
 try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){}
+
+const SPACE=()=>ST.meta.find(x=>x.id===ST.cur)||{id:"local",kind:"personal",role:"owner",name:"這台裝置",members:[]};
+const ROLE=()=>SPACE().role;
+const isCo=()=>SPACE().kind==="company";
+const canEdit=()=>["owner","editor","firm"].includes(ROLE());
+const canAdd=()=>ROLE()!=="viewer";
+const canLockNow=()=>{ const sp=SPACE(); return ROLE()==="firm"||(ROLE()==="owner"&&(!sp.firm||sp.kind==="personal")); };
+const ROLE_NAME={owner:"負責人",editor:"記帳人員",submitter:"報帳人員",viewer:"檢視者",firm:"記帳士事務所"};
+const nameOf=id=>{ if(!id) return ""; const sp=SPACE(); const m=(sp.members||[]).find(x=>x.id===id)||(sp.firm?.staff||[]).find(x=>x.id===id); return m?m.name:(USER&&id===USER.id?USER.name:""); };
+const locks=()=>live("lock").map(l=>l.data);
+const lockedMonth=ym=>locks().some(l=>ym>=l.from&&ym<=l.to);
+function useSpace(id){ ST.cur=id; DB=ST.spaces[id]||(ST.spaces[id]={items:{},srv:0,dirty:{}}); V.book=null; V.onlyQ=false; persist(); }
 
 /* ---------- view state ---------- */
 const now=new Date();
-const V={book:null,y:now.getFullYear(),m:now.getMonth(),q:""};
-try{ const v=JSON.parse(localStorage.getItem(KEY+".view")||"null"); if(v&&v.book) V.book=v.book; }catch(e){}
+const V={book:null,y:now.getFullYear(),m:now.getMonth(),q:"",onlyQ:false};
 const books=()=>live("book").sort((a,b)=>(a.data.order||0)-(b.data.order||0)||a.updated_at-b.updated_at);
 const curBook=()=>{ const bs=books(); return bs.find(b=>b.id===V.book)||bs[0]||null; };
 const entries=bookId=>live("entry").filter(e=>e.data.book===bookId);
+const comments=entryId=>live("comment").filter(c=>c.data.entry===entryId).sort((a,b)=>a.data.at-b.data.at);
+const openQ=entryId=>comments(entryId).some(c=>!c.data.resolved);
 
 /* ---------- account + sync ---------- */
-let USER=null, syncing=false, syncTimer=null, syncState="off", gsiReady=false;
-const api=(p,body)=>fetch(p,{method:body?"POST":"GET",headers:body?{"content-type":"application/json","x-tt":"1"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"});
-function queueSync(){ if(!USER) return; clearTimeout(syncTimer); syncTimer=setTimeout(sync,1200); }
-async function sync(){
-  if(!USER||syncing) return; syncing=true; setSync("busy");
+let USER=null, syncing=false, syncTimer=null, syncState="off";
+function queueSync(){ if(!USER||ST.cur==="local") return; clearTimeout(syncTimer); syncTimer=setTimeout(()=>sync(),1200); }
+async function sync(id=ST.cur){
+  if(!USER||syncing||id==="local") return; syncing=true; setSync("busy");
+  const S=ST.spaces[id]||(ST.spaces[id]={items:{},srv:0,dirty:{}});
   try{
     let more=true;
     while(more){
-      const ids=Object.keys(DB.dirty).slice(0,400);
-      const changes=ids.map(id=>DB.items[id]).filter(Boolean).map(x=>({id:x.id,kind:x.kind,data:x.data,updated_at:x.updated_at,deleted:x.deleted}));
-      const r=await api("/api/sync",{since:DB.srv,changes});
-      if(r.status===401){ USER=null; renderAcct(); break; }
-      const j=await r.json(); if(!r.ok) throw new Error(j.error||"sync");
-      ids.forEach(id=>{ const sent=changes.find(c=>c.id===id); if(sent&&DB.items[id]&&DB.items[id].updated_at===sent.updated_at) delete DB.dirty[id]; });
-      for(const it of j.items){ const loc=DB.items[it.id]; if(!loc||it.updated_at>=loc.updated_at){ DB.items[it.id]=it; delete DB.dirty[it.id]; } }
-      DB.srv=j.srv; DB.owner=USER.id; persist();
-      more=j.more||Object.keys(DB.dirty).length>0&&ids.length===400;
+      const ids=Object.keys(S.dirty).slice(0,300);
+      const changes=ids.map(i=>S.items[i]).filter(Boolean).map(x=>({id:x.id,kind:x.kind,data:x.data,updated_at:x.updated_at,deleted:x.deleted}));
+      const j=await AUTH.api("/api/sync",{space:id,since:S.srv,changes});
+      ids.forEach(i=>{ const sent=changes.find(c=>c.id===i); if(sent&&S.items[i]&&S.items[i].updated_at===sent.updated_at) delete S.dirty[i]; });
+      for(const it of j.items){
+        if(it.gone){ delete S.items[it.id]; delete S.dirty[it.id]; continue; }
+        const loc=S.items[it.id]; if(it.force||!loc||it.updated_at>=loc.updated_at){ S.items[it.id]=it; delete S.dirty[it.id]; }
+      }
+      if(j.rejected&&j.rejected.length) toast(j.rejected[0].reason+(j.rejected.length>1?`（共 ${j.rejected.length} 筆沒存進去）`:""));
+      S.srv=j.srv; persist();
+      more=j.more||(Object.keys(S.dirty).length>0&&ids.length===300);
     }
-    setSync("ok"); runRecurring(); render();
-  }catch(e){ setSync("err"); }
+    setSync("ok"); if(id===ST.cur){ if(canEdit()) runRecurring(); render(); }
+  }catch(e){
+    if(e.status===401){ USER=null; renderAcct(); }
+    else if(e.status===404){ syncing=false; await loadSpaces(); return; }
+    else setSync("err");
+  }
   syncing=false;
 }
-function setSync(s){ syncState=s; const el=$("syncSt"); if(!el) return;
-  el.className="sync "+(s==="err"?"err":s==="off"?"off":"");
-  el.lastChild.textContent=s==="busy"?"同步中…":s==="err"?"同步失敗，稍後自動重試":s==="ok"?`已同步 ${new Date().toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"})}`:"未同步"; }
+function setSync(st){ syncState=st; const el=$("syncSt"); if(!el) return;
+  el.className="sync "+(st==="err"?"err":st==="off"?"off":"");
+  el.lastChild.textContent=st==="busy"?"同步中…":st==="err"?"同步失敗，稍後自動重試":st==="ok"?`已同步 ${new Date().toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"})}`:"未同步"; }
+
+/* Spaces the user can open; the first sign-in on this device moves signed-out data into the personal space. */
+async function loadSpaces(){
+  let j; try{ j=await AUTH.api("/api/spaces"); }catch(e){ return; }
+  if(!j.user){ USER=null; renderAcct(); render(); return; }
+  USER=j.user; ST.owner=USER.id; ST.meta=j.spaces;
+  const personal=j.spaces.find(x=>x.kind==="personal");
+  const local=ST.spaces.local; let moved=0;
+  if(personal&&local&&Object.keys(local.items).length){
+    const P=ST.spaces[personal.id]||(ST.spaces[personal.id]={items:{},srv:0,dirty:{}});
+    for(const [k,v] of Object.entries(local.items)){ P.items[k]={...v,updated_at:Math.max(v.updated_at||0,Date.now())}; P.dirty[k]=1; moved++; }
+    ST.spaces.local={items:{},srv:0,dirty:{}};
+  }
+  const want=new URLSearchParams(location.search).get("space");
+  if(want&&j.spaces.some(x=>x.id===want)){ useSpace(want); try{ history.replaceState(null,"",location.pathname); }catch(e){} }
+  else if(!j.spaces.some(x=>x.id===ST.cur)) useSpace(personal?personal.id:"local");
+  else DB=ST.spaces[ST.cur]||(ST.spaces[ST.cur]={items:{},srv:0,dirty:{}});
+  persist(); renderAcct(); render();
+  if(moved){ await sync(personal.id); toast(`已把這台裝置上的 ${moved} 筆資料存到你的個人帳`); }
+  await sync();
+}
 
 function renderAcct(){
   const A=$("acct");
   if(USER){
+    const cos=ST.meta.filter(x=>x.kind!=="firm"), firms=ST.meta.filter(x=>x.kind==="firm");
     A.innerHTML=`<div class="acct">${USER.picture?`<img src="${esc(USER.picture)}" alt="" referrerpolicy="no-referrer">`:""}<span class="who"><b>${esc(USER.name||"已登入")}</b><small>${esc(USER.email||"")}</small></span>
       <span class="sync" id="syncSt"><i></i><span></span></span></div>
-      <div class="actions" style="gap:0 16px;margin-top:6px"><button type="button" class="btn link" id="out">登出</button><button type="button" class="btn link" id="del" style="color:var(--muted)">刪除雲端資料</button></div>`;
+      <div class="spaces" role="radiogroup" aria-label="帳本">${cos.map(x=>`<label><input type="radio" name="space" value="${x.id}" ${x.id===ST.cur?"checked":""}>${x.kind==="personal"?"個人":esc(x.name)}${x.viaFirm?`<small>客戶</small>`:""}</label>`).join("")}
+        <button type="button" class="btn link" id="coNew">＋ 公司帳</button></div>
+      <div class="actions" style="gap:0 16px;margin-top:2px">${firms.length?`<a class="btn link" href="/firm/" style="display:inline-flex;align-items:center;text-decoration:none">事務所總覽 →</a>`:`<a class="btn link" href="/firm/" style="display:inline-flex;align-items:center;text-decoration:none;color:var(--muted)">我是記帳士事務所</a>`}
+        <button type="button" class="btn link" id="out">登出</button><button type="button" class="btn link" id="del" style="color:var(--muted)">刪除雲端資料</button></div>`;
     setSync(syncState==="off"?"busy":syncState);
-    $("out").onclick=logout; $("del").onclick=delAccount;
+    A.querySelectorAll("input[name=space]").forEach(r=>r.onchange=()=>{ useSpace(r.value); render(); sync(); });
+    $("coNew").onclick=()=>openCo(null); $("out").onclick=logout; $("del").onclick=delAccount;
   }else{
-    const ready=!/^PENDING/.test(GOOGLE_CLIENT_ID);
     A.innerHTML=`<b style="display:block;margin-bottom:4px">存到雲端，手機電腦都能看</b>
-      <p class="hint" style="margin:0 0 12px">${ready?"用 Google 帳號登入，帳本自動同步，換手機也不會不見。沒登入也能用，資料只存在這台裝置。":"雲端同步即將開放。現在資料存在這台裝置的瀏覽器，記得定期下載備份檔。"}</p>
+      <p class="hint" style="margin:0 0 12px">${AUTH.ready?"用 Google 帳號登入，帳本自動同步、可以和公司同事或記帳士一起記。沒登入也能用，資料只存在這台裝置。":"雲端同步即將開放。現在資料存在這台裝置的瀏覽器，記得定期下載備份檔。"}</p>
       <div id="gbtn" style="min-height:44px"></div>`;
-    if(ready) loadGsi();
+    AUTH.button($("gbtn"),()=>loadSpaces(),m=>toast(m));
   }
 }
-function loadGsi(){
-  const draw=()=>{ try{
-    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onCredential,ux_mode:"popup",auto_select:false,itp_support:true});
-    const dark=matchMedia("(prefers-color-scheme: dark)").matches;
-    google.accounts.id.renderButton($("gbtn"),{theme:dark?"filled_black":"outline",size:"large",shape:"pill",text:"signin_with",locale:"zh-TW",width:Math.min(320,$("gbtn").clientWidth||320)});
-  }catch(e){} };
-  if(gsiReady) return draw();
-  const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.onload=()=>{ gsiReady=true; draw(); };
-  s.onerror=()=>{ $("gbtn").innerHTML=`<p class="msg">Google 登入載入失敗，請檢查網路後重新整理。</p>`; };
-  document.head.appendChild(s);
-}
-async function onCredential(resp){
-  try{
-    const r=await api("/api/auth/google",{credential:resp.credential}); const j=await r.json();
-    if(!r.ok) throw new Error(j.error);
-    // another person's data left on this device: keep it out of the new account
-    if(DB.owner&&DB.owner!==j.user.id){ DB={items:{},srv:0,dirty:{},owner:null}; }
-    const local=Object.keys(DB.dirty).length;
-    USER=j.user; DB.owner=USER.id; persist(); renderAcct(); await sync();
-    toast(local&&!DB.srv?`已登入，這台裝置上的 ${local} 筆資料已上傳`:"已登入，帳本會自動同步");
-  }catch(e){ toast(e.message||"登入失敗，請再試一次"); }
-}
 async function logout(){
-  if(Object.keys(DB.dirty).length) await sync();
-  if(Object.keys(DB.dirty).length&&!confirm("還有資料沒同步到雲端，登出會遺失。仍要登出嗎？")) return;
-  await api("/api/auth/logout",{}); USER=null; DB={items:{},srv:0,dirty:{},owner:null}; persist();
-  try{ google.accounts.id.disableAutoSelect(); }catch(e){}
+  for(const id of Object.keys(ST.spaces)) if(Object.keys(ST.spaces[id].dirty).length) await sync(id);
+  if(Object.values(ST.spaces).some(x=>Object.keys(x.dirty).length)&&!confirm("還有資料沒同步到雲端，登出會遺失。仍要登出嗎？")) return;
+  try{ await AUTH.logout(); }catch(e){}
+  USER=null; ST={owner:null,cur:"local",meta:[],spaces:{local:{items:{},srv:0,dirty:{}}}}; DB=ST.spaces.local; persist();
   syncState="off"; renderAcct(); render(); toast("已登出，這台裝置上的帳本已清除；再登入就會回來");
 }
 async function delAccount(){
-  if(!confirm("確定要刪除雲端上的所有帳本資料和帳號嗎？刪除後無法復原。建議先下載備份檔。")) return;
-  const r=await api("/api/auth/delete",{}); if(!r.ok) return toast("刪除失敗，請稍後再試");
-  USER=null; DB={items:{},srv:0,dirty:{},owner:null}; persist(); renderAcct(); render(); toast("雲端資料和帳號已刪除");
+  if(!confirm("確定要刪除你的帳號、個人帳和你負責的公司帳嗎？刪除後無法復原。建議先下載備份檔。")) return;
+  try{ await AUTH.api("/api/auth/delete",{}); }catch(e){ return toast(e.message); }
+  USER=null; ST={owner:null,cur:"local",meta:[],spaces:{local:{items:{},srv:0,dirty:{}}}}; DB=ST.spaces.local; persist(); renderAcct(); render(); toast("帳號和雲端資料已刪除");
 }
 
 /* ---------- monthly recurring entries ---------- */
@@ -360,18 +442,29 @@ function renderRecur(b){
 /* ---------- rendering ---------- */
 function vatPeriod(y,m){ const s=m-(m%2); return {y,s,e:s+1,due:new Date(y,s+2,15)}; }   // months 0-based: Jan–Feb, Mar–Apr …
 function render(){
-  const bs=books(), b=curBook();
-  if(b) V.book=b.id; try{ localStorage.setItem(KEY+".view",JSON.stringify({book:V.book})); }catch(e){}
-  $("books").innerHTML=bs.map(x=>`<label class="chip-b"><input type="radio" name="book" value="${x.id}" ${x.id===V.book?"checked":""}>${esc(x.data.name)}</label>`).join("")+
-    `<button type="button" class="btn link" id="bkAdd">${bs.length?"＋ 帳本":"＋ 建立第一本帳"}</button>${b?`<button type="button" class="btn link" id="bkEdit">設定</button>`:""}`;
+  const bs=books(), b=curBook(), sp=SPACE(), co=isCo();
+  if(b) V.book=b.id;
+  if(co){
+    $("books").innerHTML=`<b class="co-name">${esc(sp.name)}</b><span class="role-tag">${ROLE_NAME[sp.role]||""}</span><button type="button" class="btn link" id="coSet">${sp.role==="owner"?"成員與設定":"成員"}</button>`;
+    $("coSet").onclick=()=>openCo(sp);
+  }else{
+    $("books").innerHTML=bs.map(x=>`<label class="chip-b"><input type="radio" name="book" value="${x.id}" ${x.id===V.book?"checked":""}>${esc(x.data.name)}</label>`).join("")+
+      `<button type="button" class="btn link" id="bkAdd">${bs.length?"＋ 帳本":"＋ 建立第一本帳"}</button>${b?`<button type="button" class="btn link" id="bkEdit">設定</button>`:""}`;
+    document.querySelectorAll("input[name=book]").forEach(r=>r.onchange=()=>{ V.book=r.value; render(); });
+    $("bkAdd").onclick=()=>openBook(null); if(b) $("bkEdit").onclick=()=>openBook(b);
+  }
   $("books").classList.add("chips");
-  document.querySelectorAll("input[name=book]").forEach(r=>r.onchange=()=>{ V.book=r.value; render(); });
-  $("bkAdd").onclick=()=>openBook(null); if(b) $("bkEdit").onclick=()=>openBook(b);
-  $("add").hidden=!b;
+  // firm branding: the 記帳士事務所 that keeps this company's books
+  const F=sp.firm, BR=$("brand"); BR.hidden=!F;
+  if(F){ const pf=F.profile||{};
+    BR.innerHTML=`<span class="lbl">${sp.role==="firm"?"你的客戶":"記帳服務"}</span><b>${esc(F.name)}</b>
+      <div class="brand-c">${pf.phone?`<a href="tel:${esc(pf.phone.replace(/[^\d+]/g,""))}">${esc(pf.phone)}</a>`:""}${pf.line?`<a href="https://line.me/R/ti/p/${encodeURIComponent(pf.line)}" target="_blank" rel="noopener">LINE ${esc(pf.line)}</a>`:""}${pf.email?`<a href="mailto:${esc(pf.email)}">${esc(pf.email)}</a>`:""}</div>
+      ${pf.intro&&sp.role!=="firm"?`<p class="hint" style="margin:6px 0 0">${esc(pf.intro)}</p>`:""}`; }
+  $("add").hidden=!b||!canAdd();
   $("mLbl").textContent=`${V.y-1911} 年 ${V.m+1} 月`;
   if(!b){ $("sum").innerHTML=""; $("cats").innerHTML=""; $("taxbox").hidden=$("yearbox").hidden=true;
     $("list").innerHTML=`<div class="empty-l"><p style="margin:0 0 12px">先建立一本帳。公司、工作室和個人可以分開記。</p><button type="button" class="btn primary" id="first">建立帳本</button></div>`;
-    $("first").onclick=()=>openBook(null); $("recbox").hidden=true; bakHint(); return; }
+    $("first").onclick=()=>openBook(null); $("recbox").hidden=true; $("lockBar").hidden=true; $("qChip").hidden=true; bakHint(); return; }
   const kind=b.data.kind, all=entries(b.id);
   const inMonth=all.filter(e=>{ const [y,m]=e.data.date.split("-").map(Number); return y===V.y&&m-1===V.m; });
   const sIn=inMonth.filter(e=>e.data.type==="in").reduce((a,e)=>a+e.data.amount,0), sOut=inMonth.filter(e=>e.data.type==="out").reduce((a,e)=>a+e.data.amount,0);
@@ -380,8 +473,11 @@ function render(){
   const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,5), mx=top[0]?top[0][1]:1;
   $("cats").innerHTML=top.map(([c,v])=>`<div><span>${esc(c)}</span><i style="width:${Math.max(4,v/mx*100)}%"></i><em>${money(v)}</em></div>`).join("");
 
-  // tax box
+  // tax box (a submitter only sees their own entries, so company totals would mislead)
   const T=$("taxbox"), Y=$("yearbox"); T.hidden=Y.hidden=false;
+  if(ROLE()==="submitter"){ T.hidden=false; Y.hidden=true;
+    T.innerHTML=`<h2>你記的帳</h2><p class="sub" style="margin:0">你是報帳人員，只看得到自己記的帳，例如代墊的費用。公司的營業稅和其他帳由負責人${sp.firm?"和事務所":""}處理。</p>`; }
+  else {
   const yearE=all.filter(e=>+e.data.date.slice(0,4)===V.y);
   if(kind==="biz"){
     const p=vatPeriod(V.y,V.m);
@@ -393,7 +489,14 @@ function render(){
     T.innerHTML=`<h2>營業稅（${p.y-1911} 年 ${p.s+1}–${p.e+1} 月）</h2><p class="sub">${p.due.getMonth()+1}/${p.due.getDate()} 前申報繳納${days>=0&&days<=45?`，還有 ${days} 天`:""}（遇假日順延）</p>
       <div class="kv"><span>銷售額（未稅）</span><b>${money(sales)}</b><span>銷項稅額</span><b>${money(outTax)}</b><span>可扣抵進項稅額</span><b>− ${money(inTax)}</b><i class="line"></i>
       <span>${due>=0?"應繳營業稅":"留抵稅額（下期再扣）"}</span><b class="big2">${money(Math.abs(due))}</b></div>
-      <p class="hint" style="margin-top:10px">只算有開統一發票的收入，和有打你統編的進貨、費用發票；交際費的進項不能扣抵。</p>`;
+      <p class="hint" style="margin-top:10px">只算有開統一發票的收入，和有打你統編的進貨、費用發票；交際費的進項不能扣抵。</p>
+      ${(()=>{ const from=`${p.y}-${pad(p.s+1)}`, to=`${p.y}-${pad(p.e+1)}`, lid=`lock-${from}`, L=DB.items[lid], on=L&&!L.deleted;
+        if(!canLockNow()) return on?`<p class="note" style="margin-top:10px">🔒 這一期已經鎖帳。</p>`:"";
+        return `<div class="actions" style="margin-top:10px"><button type="button" class="btn${on?"":" primary"}" id="lockBtn" data-id="${lid}" data-from="${from}" data-to="${to}" data-on="${on?1:0}">${on?"解除這一期的鎖帳":`🔒 鎖帳 ${p.s+1}–${p.e+1} 月`}</button></div>
+          <p class="hint" style="margin-top:6px">${on?`由 ${esc(nameOf(L.by)||"")} 鎖帳。`:"整理完、申報後鎖起來，其他人就不能再改這兩個月的帳。"}</p>`; })()}`;
+    const lb=$("lockBtn"); if(lb) lb.onclick=()=>{ const on=lb.dataset.on==="1";
+      if(on&&!confirm("解除後，其他人又可以修改這一期的帳。確定解除？")) return;
+      put("lock",lb.dataset.id,on?null:{from:lb.dataset.from,to:lb.dataset.to,at:Date.now()},on); render(); toast(on?"已解除鎖帳":"已鎖帳"); };
     const wh=yearE.filter(e=>e.data.type==="out"&&(e.data.wh||e.data.nhi));
     const sw=wh.reduce((a,e)=>a+(e.data.wh||0),0), sn=wh.reduce((a,e)=>a+(e.data.nhi||0),0), payees=new Set(wh.map(e=>e.data.party||"（未填對象）"));
     Y.innerHTML=`<h2>${V.y-1911} 年代扣紀錄</h2><p class="sub">明年 1 月底前申報扣繳憑單、2 月 10 日前寄給對方</p>
@@ -409,28 +512,33 @@ function render(){
     const inc=yearE.filter(e=>e.data.type==="in"), byI={}; inc.forEach(e=>byI[e.data.cat]=(byI[e.data.cat]||0)+e.data.amount);
     Y.innerHTML=`<h2>${V.y-1911} 年收入</h2><div class="kv">${Object.entries(byI).map(([c,v])=>`<span>${esc(c)}</span><b>${money(v)}</b>`).join("")||`<span>還沒有記收入</span><b>0</b>`}</div>`;
   }
+  }
 
   renderRecur(b);
   // list
+  const ym=`${V.y}-${pad(V.m+1)}`, locked=lockedMonth(ym);
+  const qs=all.filter(e=>openQ(e.id));
+  $("lockBar").hidden=!locked; if(locked) $("lockBar").innerHTML=`🔒 ${V.m+1} 月已經${sp.firm?"由事務所":""}鎖帳，${canLockNow()?"你仍可以修改。":"不能再修改；要改請聯絡"+(sp.firm?"事務所":"負責人")+"。"}`;
+  $("qChip").hidden=!qs.length; $("qChip").textContent=V.onlyQ?`顯示全部`:`待回覆 ${qs.length}`;
   const q=V.q.trim().toLowerCase();
-  const rows=(q?all.filter(e=>[e.data.party,e.data.note,e.data.cat,e.data.inv].join(" ").toLowerCase().includes(q)):inMonth)
+  const rows=(V.onlyQ?qs:q?all.filter(e=>[e.data.party,e.data.note,e.data.cat,e.data.inv].join(" ").toLowerCase().includes(q)):inMonth)
     .sort((a,b)=>b.data.date.localeCompare(a.data.date)||b.updated_at-a.updated_at);
-  $("listH").textContent=q?`搜尋結果（${rows.length} 筆）`:`${V.m+1} 月的帳（${rows.length} 筆）`;
+  $("listH").textContent=V.onlyQ?`待回覆的問題（${rows.length} 筆）`:q?`搜尋結果（${rows.length} 筆）`:`${V.m+1} 月的帳（${rows.length} 筆）`;
   const byDay={}; rows.forEach(e=>(byDay[e.data.date]=byDay[e.data.date]||[]).push(e));
   const WD="日一二三四五六";
   $("list").innerHTML=rows.length?Object.entries(byDay).map(([d,es])=>{ const dt=new Date(d+"T00:00"), net=es.reduce((a,e)=>a+(e.data.type==="in"?1:-1)*e.data.amount,0);
     return `<div class="day"><h3><span>${q?`${dt.getFullYear()-1911}/`:""}${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）</span><span>${net>=0?"+":"−"}${money(Math.abs(net))}</span></h3>${es.map(e=>`<button type="button" class="ent" data-id="${e.id}">
-      <span class="c">${esc(e.data.cat)}${e.data.doc==="inv"&&kind==="biz"?`<span class="t">發票</span>`:""}${e.data.wh||e.data.nhi?`<span class="t">代扣</span>`:""}</span>
-      <span class="p">${esc([e.data.party,e.data.note,e.data.acct||e.data.pay].filter(Boolean).join("・"))||"&nbsp;"}${e.data.recur?" ↻":""}</span>
+      <span class="c">${esc(e.data.cat)}${e.data.doc==="inv"&&kind==="biz"?`<span class="t">發票</span>`:""}${e.data.wh||e.data.nhi?`<span class="t">代扣</span>`:""}${openQ(e.id)?`<span class="t q">待回覆</span>`:comments(e.id).length?`<span class="t">已回覆</span>`:""}</span>
+      <span class="p">${esc([e.data.party,e.data.note,e.data.acct||e.data.pay,co&&sp.members.length>1?nameOf(e.by):""].filter(Boolean).join("・"))||"&nbsp;"}${e.data.recur?" ↻":""}</span>
       <span class="a ${e.data.type}">${e.data.type==="in"?"+":"−"}${money(e.data.amount)}</span></button>`).join("")}</div>`; }).join("")
-    :`<div class="empty-l">${q?"找不到符合的帳。":`這個月還沒有記帳。<br>按「＋ 記一筆」開始。`}</div>`;
+    :`<div class="empty-l">${q?"找不到符合的帳。":ROLE()==="viewer"?"這個月還沒有帳。":`這個月還沒有記帳。<br>按「＋ 記一筆」開始。`}</div>`;
   $("list").querySelectorAll(".ent").forEach(x=>x.onclick=()=>openEntry(DB.items[x.dataset.id]));
   bakHint();
 }
 function bakHint(){
   let t=null; try{ t=+localStorage.getItem(KEY+".bak")||0; }catch(e){}
   const n=live("entry").length;
-  $("bakHint").textContent=USER?"已登入，帳本存在雲端。備份檔可以留一份在自己的雲端硬碟。":
+  $("bakHint").textContent=USER?(isCo()?"公司帳存在雲端，成員都看得到最新的帳。":"已登入，帳本存在雲端。備份檔可以留一份在自己的雲端硬碟。"):
     n?`資料只存在這台裝置。${t?`上次備份：${new Date(t).toLocaleDateString("zh-TW")}。`:"還沒有備份過，建議下載一份。"}登入 Google 就會自動存到雲端。`:"";
 }
 
@@ -451,8 +559,25 @@ function openEntry(it){
   let cust=[]; try{ cust=JSON.parse(localStorage.getItem("invhelper.customers")||"[]"); }catch(e){}
   const parties=[...new Set([...entries(b.id).map(e=>e.data.party).filter(Boolean),...cust.map(c=>c.name)])].slice(0,80);
   $("custList").innerHTML=parties.map(p=>`<option value="${esc(p)}">`).join("");
-  edRender(); $("ed").showModal(); if(!it) setTimeout(()=>$("eAmt").focus(),50);
+  // who may change this one
+  const mine=!it||it.by===USER?.id||!it.by, lk=lockedMonth(E.date.slice(0,7))&&!canLockNow();
+  E.ro=!canAdd()||(it&&((!canEdit()&&!mine)||lk));
+  $("eRo").hidden=!E.ro; $("eRo").textContent=lk?"這一期已經鎖帳，不能修改。":"你可以看這筆，但不能修改。";
+  $("eSave").hidden=E.ro; $("eDel").hidden=!it||E.ro;
+  $("edf").querySelectorAll("input,button[data-t]").forEach(x=>{ if(x.closest("#eCm")) return; x.disabled=!!E.ro; });
+  $("eMeta").textContent=it&&isCo()?[it.by?`${nameOf(it.by)||"成員"} 記的`:"",it.upd&&it.upd!==it.by?`${nameOf(it.upd)||"成員"} 改過`:""].filter(Boolean).join("・"):"";
+  renderComments(); edRender(); $("ed").showModal(); if(!it) setTimeout(()=>$("eAmt").focus(),50);
 }
+function renderComments(){
+  const box=$("eCm"); box.hidden=!isCo()||!DB.items[E.id]; if(box.hidden) return;
+  const cs=comments(E.id);
+  $("eCmList").innerHTML=cs.map(c=>`<div class="cm${c.data.resolved?" done":""}"><b>${esc(nameOf(c.by)||"成員")}</b><span>${new Date(c.data.at).toLocaleString("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})}</span><p>${esc(c.data.text)}</p></div>`).join("")||`<p class="hint" style="margin:0">對這筆有疑問？在這裡留言，${SPACE().firm?"事務所和":""}成員都看得到。</p>`;
+  const open=cs.some(c=>!c.data.resolved);
+  $("eCmDone").hidden=!open||!(canEdit()||ROLE()==="firm");
+}
+$("eCmSend").onclick=()=>{ const t=$("eCmText").value.trim(); if(!t) return;
+  put("comment",uid(),{entry:E.id,text:t.slice(0,500),at:Date.now(),resolved:false}); $("eCmText").value=""; renderComments(); render(); };
+$("eCmDone").onclick=()=>{ comments(E.id).filter(c=>!c.data.resolved).forEach(c=>put("comment",c.id,{...c.data,resolved:true})); renderComments(); render(); toast("已標記為解決"); };
 function edRender(){
   const b=curBook(), biz=b.data.kind==="biz";
   document.querySelectorAll("#ed [data-t]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.t===E.type));
@@ -482,6 +607,8 @@ $("eInv").addEventListener("input",e=>{ e.target.value=e.target.value.toUpperCas
 $("edX").onclick=()=>$("ed").close();
 $("eSave").onclick=()=>{
   const a=intOf($("eAmt").value), msg=t=>{ $("eMsg").textContent=t; $("eMsg").hidden=false; };
+  if(E.ro) return;
+  if(lockedMonth($("eDate").value.slice(0,7))&&!canLockNow()) return msg("這一期已經鎖帳，不能記在這個日期。");
   if(!a) return msg("請輸入金額。");
   if(!$("eDate").value) return msg("請選日期。");
   const b=curBook(), biz=b.data.kind==="biz", doc=biz?E.doc:"none", ubn=$("eUbn").value, inv=$("eInv").value;
@@ -524,6 +651,60 @@ $("bkSave").onclick=()=>{ const name=$("bkName").value.trim()||(BK.kind==="biz"?
 $("bkDel").onclick=()=>{ const n=entries(BK.id).length; if(!confirm(`確定刪除「${BK.name}」${n?`和裡面的 ${n} 筆帳`:""}嗎？`)) return;
   entries(BK.id).forEach(e=>put("entry",e.id,null,true)); put("book",BK.id,null,true); V.book=null; $("bk").close(); render(); toast("帳本已刪除"); };
 
+/* ---------- company settings, members, invites ---------- */
+let CO=null;
+function openCo(sp){
+  if(!USER) return toast("公司帳要先用 Google 登入");
+  CO=sp; const owner=sp&&sp.role==="owner";
+  $("coH").textContent=sp?sp.name:"新增公司帳"; $("coMsg").hidden=true;
+  $("coName").value=sp?sp.name:""; $("coUbn").value=sp?sp.ubn:"";
+  $("coName").disabled=$("coUbn").disabled=!!sp&&!owner;
+  $("coSave").hidden=!!sp&&!owner; $("coSave").textContent=sp?"儲存":"建立";
+  $("coDel").hidden=!owner;
+  if(!sp){ $("coBody").innerHTML=`<p class="hint">建立後可以邀請老闆、同事一起記，也可以讓你的記帳士事務所連結進來。</p>`; $("co").showModal(); return; }
+  const F=sp.firm;
+  $("coBody").innerHTML=`
+    <div class="field"><span class="lbl">記帳士事務所</span>
+      ${F?`<p style="margin:0"><b>${esc(F.name)}</b>　可以看、整理、提問和鎖帳</p>${owner?`<button type="button" class="btn link" id="coUnlink" style="justify-self:start;color:var(--muted)">取消和事務所的連結</button>`:""}`
+        :`<p class="hint" style="margin:0">還沒有連結。請你的記帳士給你「報稅帳本」的邀請連結，點開就能連結這本帳。</p>`}</div>
+    <div class="field"><span class="lbl">成員</span>
+      <div>${sp.members.map(m=>`<div class="mem"><span>${esc(m.name||"成員")}${m.id===USER.id?"（你）":""}<small>${esc(m.email||"")}</small></span>
+        ${owner&&m.role!=="owner"?`<span style="display:flex;gap:6px;align-items:center"><select data-u="${m.id}" aria-label="角色">${["editor","submitter","viewer"].map(r=>`<option value="${r}" ${r===m.role?"selected":""}>${ROLE_NAME[r]}</option>`).join("")}</select><button type="button" class="btn link" data-rm="${m.id}" style="color:var(--warn)">移除</button></span>`
+          :`<span class="role-tag">${ROLE_NAME[m.role]}</span>`}</div>`).join("")}
+      ${(F?.staff||[]).map(m=>`<div class="mem"><span>${esc(m.name)}<small>${esc(F.name)}</small></span><span class="role-tag">事務所</span></div>`).join("")}</div>
+      <p class="hint" style="margin:6px 0 0">記帳人員：可以記和改所有帳。報帳人員：只看得到、改得到自己記的帳，適合員工報代墊費用。檢視者：只能看。</p></div>
+    ${owner?`<div class="invite"><span class="lbl">邀請成員</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><select id="invRole" class="mem-sel" aria-label="邀請的角色" style="font:inherit;min-height:44px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);padding:0 8px">${["editor","submitter","viewer"].map(r=>`<option value="${r}">${ROLE_NAME[r]}</option>`).join("")}</select>
+      <button type="button" class="btn" id="invMake">產生邀請連結</button></div><div id="invOut"></div></div>`
+      :sp.role!=="firm"?`<button type="button" class="btn link" id="coLeave" style="justify-self:start;color:var(--warn)">退出這本帳</button>`:""}`;
+  $("coBody").querySelectorAll("select[data-u]").forEach(x=>x.onchange=()=>coCall({action:"setRole",space:sp.id,user:x.dataset.u,role:x.value},"已更新角色"));
+  $("coBody").querySelectorAll("[data-rm]").forEach(x=>x.onclick=()=>{ if(confirm("確定移除這位成員？他就看不到這本帳了。")) coCall({action:"remove",space:sp.id,user:x.dataset.rm},"已移除"); });
+  const un=$("coUnlink"); if(un) un.onclick=()=>{ if(confirm(`取消後，${F.name} 就看不到這本帳了。確定？`)) coCall({action:"unlinkFirm",space:sp.id},"已取消連結"); };
+  const lv=$("coLeave"); if(lv) lv.onclick=async()=>{ if(!confirm("退出後就看不到這本帳了。確定？")) return; await coCall({action:"leave",space:sp.id},"已退出"); $("co").close(); };
+  const mk=$("invMake"); if(mk) mk.onclick=async()=>{ try{
+    const j=await AUTH.api("/api/invite",{action:"create",space:sp.id,kind:"member",role:$("invRole").value});
+    const text=`邀請你加入「${sp.name}」的報稅帳本（${ROLE_NAME[$("invRole").value]}）：${j.url}`;
+    $("invOut").innerHTML=`<code>${esc(j.url)}</code><div class="actions" style="gap:8px"><button type="button" class="btn primary" id="invCopy">複製邀請訊息</button>${navigator.share?`<button type="button" class="btn" id="invShare">分享…</button>`:""}</div><p class="hint" style="margin:0">7 天內有效。對方點開、用 Google 登入就會加入。</p>`;
+    $("invCopy").onclick=()=>copyText(text,"已複製，可以貼到 LINE");
+    const sh=$("invShare"); if(sh) sh.onclick=()=>navigator.share({title:"報稅帳本邀請",text}).catch(()=>{});
+  }catch(e){ toast(e.message); } };
+  $("co").showModal();
+}
+async function coCall(body,okMsg){ try{ await AUTH.api("/api/spaces",body); toast(okMsg); await loadSpaces(); const sp=ST.meta.find(x=>x.id===(CO&&CO.id)); if(sp&&$("co").open) openCo(sp); }catch(e){ toast(e.message); } }
+$("coX").onclick=()=>$("co").close();
+$("coUbn").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+$("coSave").onclick=async()=>{
+  const name=$("coName").value.trim(), ubn=$("coUbn").value;
+  if(!name){ $("coMsg").textContent="請輸入名稱。"; $("coMsg").hidden=false; return; }
+  if(ubn&&!ubnOk(ubn)){ $("coMsg").textContent="統編檢查碼不符，請再核對一次。"; $("coMsg").hidden=false; return; }
+  try{
+    if(CO){ await AUTH.api("/api/spaces",{action:"update",space:CO.id,name,ubn}); $("co").close(); await loadSpaces(); toast("已儲存"); }
+    else{ const j=await AUTH.api("/api/spaces",{action:"create",kind:"company",name,ubn}); $("co").close(); useSpace(j.space); await loadSpaces(); toast("公司帳建立好了，可以在「成員與設定」邀請同事"); }
+  }catch(e){ $("coMsg").textContent=e.message; $("coMsg").hidden=false; }
+};
+$("coDel").onclick=async()=>{ if(!CO) return; if(prompt(`刪除後所有成員都看不到，帳也無法復原。請輸入「${CO.name}」確認刪除：`)!==CO.name) return;
+  try{ await AUTH.api("/api/spaces",{action:"deleteSpace",space:CO.id}); $("co").close(); delete ST.spaces[CO.id]; useSpace("local"); await loadSpaces(); toast("公司帳已刪除"); }catch(e){ toast(e.message); } };
+
 /* ---------- export / backup ---------- */
 function download(name,text,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },500); }
 $("csv").onclick=()=>{ const b=curBook(); if(!b) return;
@@ -533,9 +714,9 @@ $("csv").onclick=()=>{ const b=curBook(); if(!b) return;
   const csv="﻿"+[head.map(q).join(","),...rows.map(e=>{ const d=e.data; return [d.date,d.type==="in"?"收入":"支出",d.cat,d.party,d.amount,d.tax||0,d.inv,d.ubn,d.wh||0,d.nhi||0,d.pay,d.acct,d.note].map(q).join(","); })].join("\r\n");
   download(`${b.data.name}-${V.y-1911}年.csv`,csv,"text/csv"); };
 $("bak").onclick=()=>{ const items=Object.values(DB.items).filter(x=>!x.deleted);
-  download(`報稅帳本備份-${ymd(new Date())}.json`,JSON.stringify({app:"taxtools-ledger",v:1,at:Date.now(),items}),"application/json");
+  download(`報稅帳本備份-${SPACE().kind==="personal"?"個人":SPACE().name}-${ymd(new Date())}.json`,JSON.stringify({app:"taxtools-ledger",v:1,at:Date.now(),items}),"application/json");
   try{ localStorage.setItem(KEY+".bak",Date.now()); }catch(e){} bakHint(); };
-$("imp").onclick=()=>$("impFile").click();
+$("imp").onclick=()=>{ if(isCo()&&!canEdit()) return toast("只有負責人、記帳人員和事務所可以匯入"); $("impFile").click(); };
 $("impFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
   try{ const j=JSON.parse(await f.text()); if(j.app!=="taxtools-ledger"||!Array.isArray(j.items)) throw 0;
     let n=0; j.items.forEach(x=>{ if(!x||!x.id||!["entry","book","recur"].includes(x.kind)) return; const loc=DB.items[x.id]; if(loc&&loc.updated_at>=x.updated_at) return;
@@ -565,12 +746,13 @@ function importCSV(text){
   for(const [k,names] of Object.entries(COLS)){ const i=head.findIndex(h=>names.includes(h)); if(i>=0) col[k]=i; }
   if(col.date==null||col.amount==null) throw new Error("找不到「日期」和「金額」欄");
   const get=(r,k)=>col[k]!=null?String(r[col[k]]??"").trim():"";
+  if(isCo()&&!canEdit()) throw new Error("只有負責人、記帳人員和事務所可以匯入");
   const bookByName={}; books().forEach(b=>bookByName[b.data.name]=b.id);
   const cur=curBook(); let n=0, skip=0, newBooks=0;
   for(const r of rows.slice(1)){
     const amt=intOf(get(r,"amount")), dm=get(r,"date").match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
     if(!amt||!dm||/作廢/.test(get(r,"status")+get(r,"amount"))){ skip++; continue; }
-    let bookId=cur?.id; const bn=get(r,"book");
+    let bookId=cur?.id; const bn=isCo()?"":get(r,"book");
     if(bn){ if(!bookByName[bn]){ const id=uid(); put("book",id,{kind:/個人|家/.test(bn)?"me":"biz",name:bn,ubn:"",order:books().length}); bookByName[bn]=id; newBooks++; } bookId=bookByName[bn]; }
     if(!bookId){ const id=uid(); put("book",id,{kind:"biz",name:"匯入的帳",ubn:"",order:0}); bookId=id; bookByName["匯入的帳"]=id; newBooks++; }
     const kind=DB.items[bookId].data.kind, type=/收/.test(get(r,"type"))?"in":"out";
@@ -596,16 +778,18 @@ $("prev").onclick=()=>{ V.m--; if(V.m<0){ V.m=11; V.y--; } render(); };
 $("next").onclick=()=>{ V.m++; if(V.m>11){ V.m=0; V.y++; } render(); };
 $("add").onclick=()=>openEntry(null);
 $("q").addEventListener("input",e=>{ V.q=e.target.value; render(); });
+$("qChip").onclick=()=>{ V.onlyQ=!V.onlyQ; render(); };
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sync(); });
 setInterval(()=>{ if(!document.hidden) sync(); },60000);
 window.addEventListener("online",()=>sync());
 
-renderAcct(); if(!DB.owner) runRecurring(); render();
-api("/api/auth/me").then(r=>r.ok?r.json():null).then(j=>{
-  if(!j) return;   // server unreachable: keep working locally
-  if(j.user){ if(DB.owner&&DB.owner!==j.user.id){ DB={items:{},srv:0,dirty:{},owner:null}; persist(); } USER=j.user; renderAcct(); sync(); }
-  else if(DB.owner&&!Object.keys(DB.dirty).length){ /* session ended: the cloud has everything, so clear this device until the next sign-in */ DB={items:{},srv:0,dirty:{},owner:null}; persist(); render(); }
-}).catch(()=>{});
+renderAcct(); if(ST.cur==="local") runRecurring(); render();
+AUTH.me().then(u=>{
+  if(u===undefined) return;                     // offline: keep working with what is on this device
+  if(u){ if(ST.owner&&ST.owner!==u.id){ ST={owner:null,cur:"local",meta:[],spaces:{local:{items:{},srv:0,dirty:{}}}}; DB=ST.spaces.local; persist(); } loadSpaces(); }
+  else if(ST.owner&&!Object.values(ST.spaces).some(x=>Object.keys(x.dirty).length)){   // session ended: the cloud has everything
+    ST={owner:null,cur:"local",meta:[],spaces:{local:{items:{},srv:0,dirty:{}}}}; DB=ST.spaces.local; persist(); renderAcct(); render(); }
+});
 </script>
 </body>
 </html>

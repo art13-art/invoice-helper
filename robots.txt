@@ -3,5 +3,7 @@ Allow: /
 Disallow: /api/
 Disallow: /scripts/
 Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
 
 Sitemap: https://taxtools.tw/sitemap.xml

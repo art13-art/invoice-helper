@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>加入報稅帳本｜稅務小工具</title>
+<meta name="description" content="接受邀請，用 Google 登入加入報稅帳本，和公司同事或記帳士事務所一起記帳。">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* One centred card: who invites you, what you get, then sign in. */
+.join{max-width:560px;margin:0 auto;width:100%;display:grid;gap:18px}
+.inv-h{display:grid;gap:6px}
+.inv-h .lbl{color:var(--accent);font-weight:700}
+.inv-h h1{font-family:var(--f-head);font-size:clamp(24px,4vw,30px);margin:0;letter-spacing:.04em;line-height:1.35}
+.inv-h p{margin:0;color:var(--muted)}
+.contact{display:flex;flex-wrap:wrap;gap:0 16px}
+.contact a{display:inline-flex;align-items:center;min-height:40px;color:var(--accent);font-weight:500;text-decoration:none}
+.feat{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.feat li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start}
+.feat i{font-style:normal;width:28px;height:28px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700}
+.feat b{display:block}
+.feat span{color:var(--muted);font-size:15px}
+.step{display:grid;gap:12px}
+.mine{display:grid;gap:8px}
+</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="加入報稅帳本｜稅務小工具">
+<meta property="og:description" content="接受邀請，用 Google 登入加入報稅帳本，和公司同事或記帳士事務所一起記帳。">
+<meta property="og:url" content="https://taxtools.tw/join/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+<div class="wrap">
+  <div class="join" id="app"><section class="card"><p class="hint">讀取邀請中…</p></section></div>
+  <p class="site-foot">報稅帳本由稅務小工具提供。登入後的帳本資料存在本站雲端資料庫，只有帳本成員和你連結的記帳士事務所能讀取。</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/nav.js"></script>
+<script src="/assets/auth.js"></script>
+<script>
+const $=id=>document.getElementById(id), AUTH=window.TT_AUTH;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const t=new URLSearchParams(location.search).get("t")||"";
+let INV=null, USER=null, MINE=[];
+const W=[1,2,1,2,1,2,4,1];
+const ubnOk=v=>{ if(!/^\d{8}$/.test(v)) return false; const s=v.split("").reduce((a,d,i)=>{const p=+d*W[i];return a+Math.floor(p/10)+p%10},0); return s%5===0||(v[6]==="7"&&(s+1)%5===0); };
+
+function header(){
+  const F=INV.firm, pf=F?.profile||{};
+  if(INV.kind==="client") return `<section class="card inv-h"><span class="lbl">記帳士事務所邀請</span><h1>${esc(F.name)}<br>邀請你使用報稅帳本</h1>
+    ${pf.intro?`<p>${esc(pf.intro)}</p>`:""}
+    <div class="contact">${pf.phone?`<a href="tel:${esc(pf.phone.replace(/[^\d+]/g,""))}">${esc(pf.phone)}</a>`:""}${pf.line?`<a href="https://line.me/R/ti/p/${encodeURIComponent(pf.line)}" target="_blank" rel="noopener">LINE ${esc(pf.line)}</a>`:""}${pf.email?`<a href="mailto:${esc(pf.email)}">${esc(pf.email)}</a>`:""}</div></section>
+    <section class="card"><ul class="feat">
+      <li><i>1</i><span><b>隨手記帳，營業稅自動算</b><span>手機拍照前先記一筆，每兩個月的營業稅、進項銷項自動整理好。</span></span></li>
+      <li><i>2</i><span><b>事務所直接看得到</b><span>不用再整理單據、傳 LINE，記帳士線上就能看帳、整理、提問。</span></span></li>
+      <li><i>3</i><span><b>有問題在帳上直接回</b><span>哪一筆缺發票、哪一筆要說明，事務所會在那一筆留言，你回覆就好。</span></span></li>
+      <li><i>4</i><span><b>免費，資料只有你和事務所看得到</b><span>可以邀請同事一起記，隨時可以取消和事務所的連結。</span></span></li>
+    </ul></section>`;
+  return `<section class="card inv-h"><span class="lbl">${INV.space.kind==="firm"?"事務所同仁邀請":"帳本邀請"}</span><h1>加入「${esc(INV.space.name)}」</h1>
+    <p>你會以「${esc(INV.roleName)}」的身分加入。${{editor:"可以記帳、修改所有帳。",submitter:"可以記自己的帳，例如代墊的費用，只看得到自己記的。",viewer:"可以看帳、匯出，不能修改。"}[INV.role]||""}</p>
+    ${F&&INV.space.kind!=="firm"?`<p>這本帳由 ${esc(F.name)} 協助記帳。</p>`:""}</section>`;
+}
+
+function render(){
+  const A=$("app");
+  if(!INV) return;
+  let step;
+  if(!USER){
+    step=`<section class="card step"><b>用 Google 帳號登入${INV.kind==="client"?"開始使用":"接受邀請"}</b><div id="gbtn" style="min-height:44px"></div>
+      <p class="hint" style="margin:0">登入只用來辨識你是誰，不會讀取你的 Gmail 或雲端硬碟。</p></section>`;
+  }else if(INV.kind==="client"){
+    const owned=MINE.filter(x=>x.kind==="company"&&x.role==="owner");
+    step=`<section class="card step"><b>你的公司或工作室</b>
+      ${owned.length?`<div class="mine"><span class="lbl">連結已經在記的帳</span>${owned.map(x=>`<button type="button" class="btn" data-link="${x.id}">${esc(x.name)}${x.firm?`（目前連結 ${esc(x.firm.name)}）`:""}</button>`).join("")}<span class="lbl" style="margin-top:6px">或建立一本新的</span></div>`:""}
+      <div class="field"><label for="nm">公司或工作室名稱</label><input id="nm" maxlength="40" placeholder="例如：好日子設計工作室"></div>
+      <div class="field"><label for="ubn">統編（選填）</label><input id="ubn" inputmode="numeric" maxlength="8" placeholder="8 碼"></div>
+      <p class="msg" id="msg" hidden></p>
+      <button type="button" class="btn primary" id="go">開始使用</button>
+      <p class="hint" style="margin:0">登入身分：${esc(USER.email||USER.name)}</p></section>`;
+  }else{
+    step=`<section class="card step"><p class="msg" id="msg" hidden></p><button type="button" class="btn primary" id="go">加入「${esc(INV.space.name)}」</button>
+      <p class="hint" style="margin:0">登入身分：${esc(USER.email||USER.name)}</p></section>`;
+  }
+  A.innerHTML=header()+step;
+  if(!USER){ AUTH.button($("gbtn"),async u=>{ USER=u; await loadMine(); render(); },m=>toast(m)); return; }
+  const msg=m=>{ $("msg").textContent=m; $("msg").hidden=false; };
+  const u=$("ubn"); if(u) u.addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+  A.querySelectorAll("[data-link]").forEach(b=>b.onclick=()=>accept({link:b.dataset.link}));
+  $("go").onclick=()=>{
+    if(INV.kind==="client"){ const name=$("nm").value.trim(), ubn=$("ubn").value;
+      if(!name) return msg("請輸入公司或工作室名稱。"); if(ubn&&!ubnOk(ubn)) return msg("統編檢查碼不符，請再核對一次。");
+      accept({name,ubn}); }
+    else accept({});
+  };
+  async function accept(extra){
+    try{ const j=await AUTH.api("/api/invite",{action:"accept",t,...extra});
+      location.href=j.kind==="firm"?"/firm/":`/ledger/?space=${encodeURIComponent(j.space)}`;
+    }catch(e){ msg(e.message); }
+  }
+}
+async function loadMine(){ try{ MINE=(await AUTH.api("/api/spaces")).spaces||[]; }catch(e){ MINE=[]; } }
+
+(async()=>{
+  try{ INV=await AUTH.api("/api/invite?t="+encodeURIComponent(t)); }
+  catch(e){ $("app").innerHTML=`<section class="card inv-h"><h1>邀請連結無法使用</h1><p>${esc(e.message)}</p><p><a href="/ledger/" style="display:inline-flex;align-items:center;min-height:44px">先看看報稅帳本 →</a></p></section>`; return; }
+  const u=await AUTH.me(); if(u){ USER=u; await loadMine(); }
+  render();
+})();
+</script>
+</body>
+</html>

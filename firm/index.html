@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>記帳士事務所總覽｜報稅帳本</title>
+<meta name="description" content="給記帳士事務所的客戶總覽：一頁看每位客戶本期記了幾筆、缺幾張發票、有幾個問題待回覆、營業稅預估和是否已鎖帳；用專屬連結和 QR Code 邀請客戶使用報稅帳本。">
+<link rel="canonical" href="https://taxtools.tw/firm/">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js"></script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<link rel="stylesheet" href="/assets/calc.css">
+<style>
+/* Firm dashboard: who needs chasing this period, the client invite link with QR, and staff. */
+.fg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:28px;align-items:start}
+@media (max-width:1080px){.fg{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:18px;min-width:0}
+.per{display:flex;align-items:center;gap:8px}
+.per b{font-size:18px;font-variant-numeric:tabular-nums;min-width:9em;text-align:center}
+.per button{font:inherit;font-size:20px;width:44px;height:44px;border-radius:99px;border:1px solid var(--line-strong);background:var(--surface);color:var(--accent);cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stats div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:2px}
+.stats span{font-size:14px;color:var(--muted)}
+.stats b{font-size:24px;font-variant-numeric:tabular-nums}
+@media (max-width:639px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cl-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.cl-h h2{margin:0}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.cl{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr)) auto;gap:4px 14px;align-items:center;padding:12px 4px;border-top:1px solid var(--line);text-decoration:none;color:var(--fg)}
+.cl:hover{background:var(--sunk)}
+.cl.head{color:var(--muted);font-size:14px;border-top:0;padding-block:4px}
+.cl.head:hover{background:none}
+.cl .n b{display:block}
+.cl .n small{color:var(--muted);font-size:14px}
+.cl .v{font-variant-numeric:tabular-nums;text-align:right}
+.cl .warn{color:var(--warn);font-weight:700}
+.cl .vs{display:contents}
+.st{font-size:13px;padding:2px 10px;border-radius:99px;white-space:nowrap;justify-self:end}
+.st.lock{background:var(--accent-soft);color:var(--accent)}
+.st.work{background:var(--warm-soft);color:var(--fg)}
+.st.none{background:var(--sunk);color:var(--muted)}
+@media (max-width:760px){
+  .cl{grid-template-columns:minmax(0,1fr) auto;gap:2px 12px}
+  .cl.head{display:none}
+  .cl .v{text-align:left;font-size:14px;color:var(--muted)}
+  .cl .v::before{content:attr(data-l) " "}
+  .cl .vs{grid-column:1;display:flex;flex-wrap:wrap;gap:0 14px}
+  .cl .st{grid-row:1;grid-column:2}
+}
+.qr{display:grid;place-items:center;background:#fff;border-radius:12px;padding:12px;border:1px solid var(--line)}
+.qr svg{width:180px;height:180px}
+.link code{display:block;word-break:break-all;font-size:14px;background:var(--sunk);padding:8px;border-radius:6px}
+.mem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.mem small{display:block;color:var(--muted);font-size:14px}
+.role-tag{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 10px}
+.empty-l{padding:28px 4px;text-align:center;color:var(--muted)}
+select.sel{font:inherit;font-size:15px;min-height:44px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);padding:0 8px}
+</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="記帳士事務所總覽｜報稅帳本">
+<meta property="og:description" content="給記帳士事務所的客戶總覽：一頁看每位客戶本期記了幾筆、缺幾張發票、有幾個問題待回覆、營業稅預估和是否已鎖帳；用專屬連結和 QR Code 邀請客戶使用報稅帳本。">
+<meta property="og:url" content="https://taxtools.tw/firm/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "記帳士事務所總覽", "url": "https://taxtools.tw/firm/", "description": "給記帳士事務所的客戶總覽：一頁看每位客戶本期記了幾筆、缺幾張發票、有幾個問題待回覆、營業稅預估和是否已鎖帳；用專屬連結和 QR Code 邀請客戶使用報稅帳本。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+<div class="wrap">
+  <div class="page-head">
+    <h1 id="title">記帳士事務所總覽</h1>
+    <p id="sub">一頁看完所有客戶這一期的記帳狀況，知道該催誰、該問什麼。用專屬連結邀請客戶，客戶記的帳你直接看得到。</p>
+  </div>
+  <div id="app"><section class="card"><p class="hint">讀取中…</p></section></div>
+  <p class="site-foot">客戶的帳本資料只有客戶本人、客戶邀請的成員，以及客戶連結的事務所看得到。客戶可以隨時取消連結。營業稅預估依客戶記帳資料計算（銷項稅額減可扣抵進項稅額），僅供參考。</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/nav.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+<script>
+const $=id=>document.getElementById(id), AUTH=window.TT_AUTH;
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>Math.round(n||0).toLocaleString("zh-TW");
+const pad=n=>String(n).padStart(2,"0");
+const ROLE_NAME={owner:"負責人",editor:"記帳人員",viewer:"檢視者"};
+let USER=null, SP=[], FIRM=null, DATA=null, LINK=null, FILTER="all", Q="";
+const KEY="taxtools.firm.v1";
+// VAT periods: Jan–Feb, Mar–Apr …  P = {y, s} with s = first month (1-based, odd)
+const n0=new Date(); let P={y:n0.getFullYear(),s:n0.getMonth()+1-((n0.getMonth())%2)};
+try{ const v=JSON.parse(localStorage.getItem(KEY)||"null"); if(v&&v.firm) FIRM=v.firm; }catch(e){}
+
+function app(html){ $("app").innerHTML=html; }
+async function start(){
+  USER=await AUTH.me();
+  if(!USER){ app(`<section class="card" style="max-width:560px;display:grid;gap:12px"><b>用 Google 帳號登入</b><p class="hint" style="margin:0">登入後可以建立事務所、邀請客戶和同仁。</p><div id="gbtn" style="min-height:44px"></div></section>`);
+    AUTH.button($("gbtn"),()=>start(),m=>toast(m)); return; }
+  SP=(await AUTH.api("/api/spaces")).spaces||[];
+  const firms=SP.filter(s=>s.kind==="firm");
+  if(!firms.length) return createForm();
+  if(!firms.some(f=>f.id===FIRM)) FIRM=firms[0].id;
+  try{ localStorage.setItem(KEY,JSON.stringify({firm:FIRM})); }catch(e){}
+  await load();
+}
+function createForm(f){
+  const pf=f?.profile||{};
+  app(`<section class="card" style="max-width:640px;display:grid;gap:14px">
+    <h2 style="margin:0">${f?"事務所資料":"建立你的事務所"}</h2>
+    <p class="hint" style="margin:0">這些資料會顯示在客戶的帳本和邀請頁上，方便客戶聯絡你。</p>
+    <div class="field"><label for="fn">事務所名稱</label><input id="fn" maxlength="40" value="${esc(f?.name||"")}" placeholder="例如：好帳記帳士事務所"></div>
+    <div class="two" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+      <div class="field"><label for="fp">電話</label><input id="fp" maxlength="30" value="${esc(pf.phone||"")}" inputmode="tel"></div>
+      <div class="field"><label for="fl">LINE ID</label><input id="fl" maxlength="40" value="${esc(pf.line||"")}" placeholder="@xxxx"></div>
+      <div class="field"><label for="fe">Email</label><input id="fe" maxlength="80" value="${esc(pf.email||"")}" inputmode="email"></div>
+      <div class="field"><label for="fu">統編（選填）</label><input id="fu" maxlength="8" value="${esc(f?.ubn||"")}" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label for="fi">一句話介紹</label><input id="fi" maxlength="200" value="${esc(pf.intro||"")}" placeholder="例如：專門服務工作室與小型公司，營業稅、扣繳一手包辦。"></div>
+    <p class="msg" id="msg" hidden></p>
+    <div class="actions">${f?`<button type="button" class="btn" id="cancel">取消</button>`:""}<button type="button" class="btn primary" id="save">${f?"儲存":"建立事務所"}</button></div>
+  </section>`);
+  $("fu").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+  if(f) $("cancel").onclick=()=>render();
+  $("save").onclick=async()=>{
+    const body={name:$("fn").value.trim(),ubn:$("fu").value,profile:{phone:$("fp").value,line:$("fl").value,email:$("fe").value,intro:$("fi").value}};
+    if(!body.name){ $("msg").textContent="請輸入事務所名稱。"; $("msg").hidden=false; return; }
+    try{ if(f){ await AUTH.api("/api/spaces",{action:"update",space:f.id,...body}); toast("已儲存"); }
+      else{ const j=await AUTH.api("/api/spaces",{action:"create",kind:"firm",...body}); FIRM=j.space; toast("事務所建立好了，現在可以邀請客戶"); }
+      start(); }catch(e){ $("msg").textContent=e.message; $("msg").hidden=false; }
+  };
+}
+async function load(){
+  const from=`${P.y}-${pad(P.s)}`, to=`${P.y}-${pad(P.s+1)}`;
+  try{ DATA=await AUTH.api(`/api/firm?space=${encodeURIComponent(FIRM)}&from=${from}&to=${to}`); }catch(e){ app(`<section class="card"><p class="msg">${esc(e.message)}</p></section>`); return; }
+  const f=SP.find(s=>s.id===FIRM);
+  if(f&&["owner","editor"].includes(f.role)&&LINK===null){ try{ LINK=(await AUTH.api("/api/invite?space="+encodeURIComponent(FIRM))).url||""; }catch(e){ LINK=""; } }
+  render();
+}
+function status(c){ return c.locked?["lock","已鎖帳"]:c.n?["work","整理中"]:["none","本期還沒記"]; }
+function render(){
+  const f=SP.find(s=>s.id===FIRM), canAdmin=f.role==="owner", staff=["owner","editor"].includes(f.role);
+  $("title").textContent=f.name; $("sub").textContent=`${ROLE_NAME[f.role]||""}・${DATA.clients.length} 位客戶`;
+  const cs=DATA.clients, due=new Date(P.y,P.s+1,15);
+  const st={all:cs.length,none:cs.filter(c=>!c.n).length,q:cs.filter(c=>c.openQ).length,lock:cs.filter(c=>c.locked).length};
+  const shown=cs.filter(c=>(FILTER==="all"||(FILTER==="none"&&!c.n)||(FILTER==="q"&&c.openQ)||(FILTER==="lock"&&c.locked)||(FILTER==="open"&&!c.locked))&&(!Q||(c.name+c.ubn).includes(Q)));
+  const firms=SP.filter(s=>s.kind==="firm");
+  app(`<div class="fg">
+    <div class="col">
+      <div class="per"><button type="button" id="pPrev" aria-label="上一期">‹</button><b>${P.y-1911} 年 ${P.s}–${P.s+1} 月</b><button type="button" id="pNext" aria-label="下一期">›</button>
+        <span class="hint" style="margin-left:6px">營業稅 ${due.getMonth()+1}/15 前申報</span></div>
+      <div class="stats"><div><span>客戶</span><b>${st.all}</b></div><div><span>本期還沒記</span><b>${st.none}</b></div><div><span>有問題待回覆</span><b>${st.q}</b></div><div><span>已鎖帳</span><b>${st.lock}</b></div></div>
+      <section class="card">
+        <div class="cl-h"><h2>客戶</h2><input type="search" id="q" placeholder="搜尋客戶名稱、統編" value="${esc(Q)}" style="max-width:240px"></div>
+        <div class="filters chips" role="radiogroup" aria-label="篩選">${[["all","全部"],["open","還沒鎖帳"],["none","本期還沒記"],["q","有待回覆"],["lock","已鎖帳"]].map(([k,t])=>`<label><input type="radio" name="flt" value="${k}" ${FILTER===k?"checked":""}>${t}</label>`).join("")}</div>
+        ${cs.length?`<div class="cl head"><span>客戶</span><span class="v">本期筆數</span><span class="v">缺發票支出</span><span class="v">待回覆</span><span class="v">營業稅預估</span><span></span></div>
+        ${shown.map(c=>{ const [k,t]=status(c), vat=c.outTax-c.inTax; return `<a class="cl" href="/ledger/?space=${encodeURIComponent(c.id)}">
+          <span class="n"><b>${esc(c.name)}</b><small>${c.ubn?esc(c.ubn)+"・":""}${c.last?"最後更新 "+new Date(c.last).toLocaleDateString("zh-TW",{month:"numeric",day:"numeric"}):"還沒有記帳"}</small></span>
+          <span class="vs"><span class="v" data-l="筆數">${c.n}</span><span class="v ${c.noInv?"warn":""}" data-l="缺發票">${c.noInv}</span><span class="v ${c.openQ?"warn":""}" data-l="待回覆">${c.openQ}</span><span class="v" data-l="營業稅">${vat<0?"留抵 ":""}${money(Math.abs(vat))}</span></span>
+          <span class="st ${k}">${t}</span></a>`; }).join("")||`<div class="empty-l">沒有符合的客戶。</div>`}`
+        :`<div class="empty-l">還沒有客戶。<br>把右邊的邀請連結或 QR Code 給客戶，客戶加入後就會出現在這裡。</div>`}
+        <p class="hint" style="margin-top:10px">「缺發票支出」是本期沒有標記統一發票的支出筆數；點客戶可以打開他的帳本，整理、留言或鎖帳。</p>
+      </section>
+    </div>
+    <div class="col">
+      ${staff?`<section class="card link" style="display:grid;gap:12px"><h2 style="margin:0">邀請客戶</h2>
+        <p class="hint" style="margin:0">客戶點連結或掃 QR Code、用 Google 登入，就會建立帳本並自動連結到你的事務所。這個連結可以重複使用，印在名片或放在 LINE 官方帳號都可以。</p>
+        ${LINK?`<div class="qr" id="qr"></div><code>${esc(LINK)}</code>
+          <div class="actions" style="gap:8px"><button type="button" class="btn primary" id="cpMsg">複製邀請訊息</button><button type="button" class="btn" id="cpLink">複製連結</button>${navigator.share?`<button type="button" class="btn" id="share">分享…</button>`:""}</div>
+          <div class="actions" style="gap:0 14px"><button type="button" class="btn link" id="dlQr">下載 QR Code</button><button type="button" class="btn link" id="regen" style="color:var(--muted)">重新產生（舊連結失效）</button></div>`
+        :`<button type="button" class="btn primary" id="mkLink">產生邀請客戶連結</button>`}
+      </section>`:""}
+      <section class="card" style="display:grid;gap:8px"><h2 style="margin:0">事務所同仁</h2>
+        <div>${f.members.map(m=>`<div class="mem"><span>${esc(m.name||"同仁")}${m.id===USER.id?"（你）":""}<small>${esc(m.email||"")}</small></span>
+          ${canAdmin&&m.role!=="owner"?`<span style="display:flex;gap:6px;align-items:center"><select class="sel" data-u="${m.id}" aria-label="角色">${["editor","viewer"].map(r=>`<option value="${r}" ${r===m.role?"selected":""}>${ROLE_NAME[r]}</option>`).join("")}</select><button type="button" class="btn link" data-rm="${m.id}" style="color:var(--warn)">移除</button></span>`:`<span class="role-tag">${ROLE_NAME[m.role]}</span>`}</div>`).join("")}</div>
+        <p class="hint" style="margin:0">記帳人員可以處理所有客戶的帳；檢視者只能看。</p>
+        ${canAdmin?`<div style="display:flex;gap:8px;flex-wrap:wrap"><select class="sel" id="sRole">${["editor","viewer"].map(r=>`<option value="${r}">${ROLE_NAME[r]}</option>`).join("")}</select><button type="button" class="btn" id="sInv">邀請同仁</button></div><div id="sOut"></div>`:""}
+      </section>
+      <section class="card plain"><div class="actions" style="gap:0 16px">
+        ${canAdmin?`<button type="button" class="btn link" id="edit">編輯事務所資料</button>`:""}
+        <a class="btn link" href="/ledger/" style="display:inline-flex;align-items:center;text-decoration:none">我的帳本</a>
+        ${firms.length>1?firms.filter(x=>x.id!==FIRM).map(x=>`<button type="button" class="btn link" data-firm="${x.id}">切換到 ${esc(x.name)}</button>`).join(""):""}
+      </div></section>
+    </div></div>`);
+
+  $("pPrev").onclick=()=>{ P.s-=2; if(P.s<1){ P.s=11; P.y--; } load(); };
+  $("pNext").onclick=()=>{ P.s+=2; if(P.s>11){ P.s=1; P.y++; } load(); };
+  document.querySelectorAll("input[name=flt]").forEach(r=>r.onchange=()=>{ FILTER=r.value; render(); });
+  $("q").addEventListener("input",e=>{ Q=e.target.value.trim(); const pos=e.target.selectionStart; render(); const n=$("q"); n.focus(); n.setSelectionRange(pos,pos); });
+  document.querySelectorAll("[data-firm]").forEach(b=>b.onclick=()=>{ FIRM=b.dataset.firm; LINK=null; try{ localStorage.setItem(KEY,JSON.stringify({firm:FIRM})); }catch(e){} load(); });
+  const ed=$("edit"); if(ed) ed.onclick=()=>createForm(f);
+  const mk=$("mkLink"), rg=$("regen");
+  const makeLink=async()=>{ try{ LINK=(await AUTH.api("/api/invite",{action:"create",space:FIRM,kind:"client"})).url; render(); toast("已產生邀請連結"); }catch(e){ toast(e.message); } };
+  if(mk) mk.onclick=makeLink;
+  if(rg) rg.onclick=()=>{ if(confirm("重新產生後，舊的連結和 QR Code 就不能再用了（已經加入的客戶不受影響）。確定？")) makeLink(); };
+  if(LINK){
+    const text=`${f.name} 邀請你使用「報稅帳本」：手機隨手記帳，營業稅自動算，事務所直接看得到，不用再整理單據傳 LINE。點這裡開始：${LINK}`;
+    $("cpMsg").onclick=()=>copyText(text,"已複製邀請訊息");
+    $("cpLink").onclick=()=>copyText(LINK,"已複製連結");
+    const sh=$("share"); if(sh) sh.onclick=()=>navigator.share({title:"報稅帳本",text}).catch(()=>{});
+    drawQR();
+    $("dlQr").onclick=()=>{ if(!window.qrcode) return toast("QR Code 還在載入"); const q=qrcode(0,"M"); q.addData(LINK); q.make();
+      const a=document.createElement("a"); a.href=q.createDataURL(12,24); a.download=`${f.name}-報稅帳本邀請.gif`; a.click(); };
+  }
+  document.querySelectorAll("select[data-u]").forEach(x=>x.onchange=()=>call({action:"setRole",space:FIRM,user:x.dataset.u,role:x.value},"已更新角色"));
+  document.querySelectorAll("[data-rm]").forEach(x=>x.onclick=()=>{ if(confirm("確定移除這位同仁？他就看不到客戶的帳了。")) call({action:"remove",space:FIRM,user:x.dataset.rm},"已移除"); });
+  const si=$("sInv"); if(si) si.onclick=async()=>{ try{
+    const j=await AUTH.api("/api/invite",{action:"create",space:FIRM,kind:"member",role:$("sRole").value});
+    $("sOut").innerHTML=`<code style="display:block;word-break:break-all;font-size:14px;background:var(--sunk);padding:8px;border-radius:6px;margin-top:8px">${esc(j.url)}</code><p class="hint" style="margin:6px 0 0">7 天內有效。</p>`;
+    copyText(`邀請你加入「${f.name}」的報稅帳本：${j.url}`,"已複製邀請訊息"); }catch(e){ toast(e.message); } };
+}
+function drawQR(){ const el=$("qr"); if(!el) return;
+  if(!window.qrcode){ drawQR.n=(drawQR.n||0)+1; if(drawQR.n>20){ el.hidden=true; return; } setTimeout(drawQR,300); return; }
+  const q=qrcode(0,"M"); q.addData(LINK); q.make(); el.innerHTML=q.createSvgTag({cellSize:5,margin:2,scalable:true}); }
+async function call(body,okMsg){ try{ await AUTH.api("/api/spaces",body); toast(okMsg); SP=(await AUTH.api("/api/spaces")).spaces||[]; render(); }catch(e){ toast(e.message); } }
+start();
+</script>
+</body>
+</html>
