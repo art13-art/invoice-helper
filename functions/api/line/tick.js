@@ -4,6 +4,7 @@ import { lineClient, mentionMessage, textMessage, say } from "../../../lib/line.
 import { recordPush, monthlyReport, checkQuota } from "../../../lib/usage.js";
 import { gas, gasConf } from "../../../lib/books.js";
 import { runFlows } from "../../../lib/orders.js";
+import { buildDigests } from "../../../lib/digest.js";
 import { kv, nextDue, ymd, hm, md, parseLocal, isGroup, KEEP_DAYS } from "../../../lib/assistant.js";
 
 export async function onRequestPost({ request, env }) {
@@ -23,6 +24,16 @@ export async function onRequestPost({ request, env }) {
       ? await db.prepare("UPDATE line_reminders SET due=? WHERE id=? AND due=? AND status='open'").bind(next, r.id, r.due).run()
       : await db.prepare("UPDATE line_reminders SET status='sent' WHERE id=? AND status='open'").bind(r.id).run();
     if ((claim.meta?.changes ?? 1) === 0) continue;
+    // 待辦的到期／逾期提醒：已經完成就不發；到期那次發完，隔天早上 9 點還沒完成再提醒一次
+    if (r.todo_id) {
+      const t = await db.prepare("SELECT status,task FROM line_todos WHERE id=?").bind(r.todo_id).first();
+      if (!t || t.status !== "open") continue;
+      if (!r.text.startsWith("逾期還沒完成：")) {
+        const d = new Date(r.due + 8 * 3600e3 + 864e5), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 1, 0);   // 隔天台北 09:00
+        await db.prepare("INSERT INTO line_reminders(id,chat_id,due,text,repeat,mention_id,mention_name,todo_id,created,created_by,status) VALUES(?,?,?,?,'none',?,?,?,?,?,'open')")
+          .bind(r.id + "o", r.chat_id, next, "逾期還沒完成：" + t.task, r.mention_id, r.mention_name, r.todo_id, now, r.created_by).run().catch(() => null);
+      }
+    }
     const late = now - r.due > 30 * 60e3 ? `（原訂 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     const who = r.mention_id && isGroup(r.chat_id) ? "{who} " : "";
     const text = `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
@@ -39,6 +50,8 @@ export async function onRequestPost({ request, env }) {
   // 保存期限：群組訊息與對話紀錄 30 天、處理過的事件 7 天
   if (tp_hour(now) === 3 && (await kv.get(db, "cleanup:last")) !== today) {
     await kv.set(db, "cleanup:last", today);
+    try { await buildDigests(env, db, now); } catch (e) { console.log("digests failed", e.message); }
+    await db.prepare("DELETE FROM line_digests WHERE day<?").bind(ymd(now - 365 * 864e5)).run();
     await db.prepare("DELETE FROM line_msgs WHERE ts<?").bind(now - KEEP_DAYS * 864e5).run();
     await db.prepare("DELETE FROM line_history WHERE ts<?").bind(now - KEEP_DAYS * 864e5).run();
     await db.prepare("DELETE FROM line_events WHERE ts<?").bind(now - 7 * 864e5).run();

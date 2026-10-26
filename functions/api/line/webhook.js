@@ -1,6 +1,7 @@
 // POST /api/line/webhook — LINE 官方帳號 Webhook（群組小助理，每個人都能用）。
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { vendorReply } from "../../../lib/orders.js";
+import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
 import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
@@ -22,7 +23,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
 }
 
 export async function forgetChat(db, chatId) {
-  for (const t of ["line_msgs", "line_members", "line_todos", "line_reminders", "line_history", "line_pending", "line_books"])
+  for (const t of ["line_msgs", "line_members", "line_todos", "line_reminders", "line_history", "line_pending", "line_books", "line_digests"])
     await db.prepare(`DELETE FROM ${t} WHERE chat_id=?`).bind(chatId).run();
 }
 
@@ -74,9 +75,11 @@ async function handle(env, ev, origin) {
   if (msg.type !== "text") {
     if (group) {
       if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
+      if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
       return;   // 群組裡的貼圖、照片不回應
     }
-    if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, null, "（傳了一張照片）", msg.id);
+    if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）", "（傳了一張照片）", { id: msg.id, name: "照片.jpg" });
+    if (msg.type === "file") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, `（使用者傳來檔案「${msg.fileName}」，整理重點；如果有期限、金額或要處理的事，列出來。）`, `（傳了檔案：${msg.fileName}）`, { id: msg.id, name: msg.fileName || "" });
     return reply(msg.type === "sticker" ? "👍" : "這個我還看不懂，打字跟我說吧。");
   }
 
@@ -165,14 +168,20 @@ async function handle(env, ev, origin) {
     const q = `（${who.name} 只 @ 了你，沒有另外說內容。看最近的群組對話，特別是 ${who.name} 剛才說的話，判斷他要你做什麼並直接處理。只處理他最新、還沒處理過的那件事，已經處理過的（標了［已完成］）不要再做；真的看不出來才簡短問一句。）`;
     return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, q, "（@了小助理）");
   }
-  return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask);
+  // 回覆（引用）某張照片或某個檔案再 @ 它：直接把那個照片／檔案一起給它看
+  let attach = null;
+  if (msg.quotedMessageId) {
+    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND (media=? OR media=?) LIMIT 1").bind(chatId, msg.quotedMessageId, "file:" + msg.quotedMessageId).first();
+    if (q) attach = { id: msg.quotedMessageId, name: q.media.startsWith("file:") ? (q.text.match(/檔案：(.*)］/) || [])[1] || "" : "照片.jpg" };
+  }
+  return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask, attach);
 }
 
 async function record(db, chatId, userId, name, text, media) {
   await db.prepare("INSERT INTO line_msgs(chat_id,user_id,name,text,ts,media) VALUES(?,?,?,?,?,?)").bind(chatId, userId || null, name, String(text).slice(0, 2000), Date.now(), media || null).run();
 }
 
-async function answer(ctx, text, logText, imageId) {
+async function answer(ctx, text, logText, attach) {
   const { env, db, line, ev, chatId, userId, chips } = ctx;
   const send = t => line.reply(ev.replyToken, [textMessage(t, chips)]).catch(e => console.log("reply failed", e.message));
   if (!env.ANTHROPIC_API_KEY) return send("我還在設定中，晚點再找我。");
@@ -180,11 +189,11 @@ async function answer(ctx, text, logText, imageId) {
   ctx.isAdmin = await isAdmin(db, userId);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
   let content = [{ type: "text", text }];
-  if (imageId) {
+  if (attach) {
     try {
-      const img = await line.image(imageId);
-      content = [{ type: "image", source: { type: "base64", media_type: img.type, data: img.data } }, { type: "text", text: "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）" }];
-    } catch (e) { return send("照片沒讀到，再傳一次？"); }
+      const f = await line.content(attach.id);
+      content = [...(await toBlocks(f.bytes, f.type, attach.name)), { type: "text", text }];
+    } catch (e) { return send(/讀不了|太大/.test(e.message) ? e.message : "檔案沒讀到，可能已經過期了，再傳一次？"); }
   }
   let out, pending = null;
   try { const r = await chat(ctx, content, logText); out = r.text; pending = r.pending; }

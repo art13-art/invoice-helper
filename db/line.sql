@@ -38,3 +38,9 @@ CREATE TABLE IF NOT EXISTS line_flow_rows (
   flow TEXT NOT NULL, row INTEGER NOT NULL, hash TEXT, first_seen INTEGER, status TEXT, ts INTEGER, dst_row INTEGER, sent_at INTEGER, acked INTEGER DEFAULT 0, nudged INTEGER DEFAULT 0,
   PRIMARY KEY (flow, row)
 );
+
+-- 每個群組每天的重點摘要（保留一年，原始訊息只留 30 天）
+CREATE TABLE IF NOT EXISTS line_digests (
+  chat_id TEXT NOT NULL, day TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL,
+  PRIMARY KEY (chat_id, day)
+);
