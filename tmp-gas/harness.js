@@ -1,3 +1,5 @@
+window.__tt=window.__tt||(window.trustedTypes?trustedTypes.createPolicy('harness'+Date.now(),{createScriptURL:u=>u}):{createScriptURL:u=>u});
+window.__load=u=>new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=__tt.createScriptURL(u);sc.onload=res;sc.onerror=()=>rej(new Error('load failed'));document.head.appendChild(sc)});
 // Test harness: runs inside the Apps Script editor page. Builds doGet() HTML from the open editor files plus theme.gs,
 // adds a fake google.script.run with sample data, and shows it in a phone-sized frame.
 window.__harness=async function(opts){
@@ -5,8 +7,10 @@ window.__harness=async function(opts){
   const base='https://invoice-helper-eok.pages.dev/tmp-gas/';
   const theme=opts.noTheme?'function themeHtml_(){return ""}':await (await fetch(base+'theme.gs?'+Date.now(),{cache:'no-store'})).text();
   const models=monaco.editor.getModels().map(m=>m.getValue()).filter(s=>s.indexOf('function themeHtml_')<0);
-  const Html={createHtmlOutput:h=>{const o={getContent:()=>h,setTitle(){return o},addMetaTag(){return o}};return o}};
-  let html=new Function('HtmlService',models.join('\n')+'\n'+theme+'\nvar h=doGet().getContent();if(h.indexOf("themeHtml_")<0&&!/class="t-title"/.test(h))h=h.replace("</body>",function(){return themeHtml_()+"</body>"});return h;')(Html);
+  const code='(function(){var HtmlService={createHtmlOutput:function(h){var o={getContent:function(){return h},setTitle:function(){return o},addMetaTag:function(){return o}};return o}};\n'+models.join('\n')+'\n'+theme+'\nvar h=doGet().getContent();if(!/t-title/.test(h))h=h.replace("</body>",function(){return themeHtml_()+"</body>"});window.__built=h;})();';
+  window.__built=null;
+  await window.__load(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));
+  let html=window.__built;
   const cats=['餐飲','交通','住宿','生活用品','服飾','醫療','娛樂','美容／個人照護','採購／材料','辦公室用品採購','廣告行銷','人事薪資','租金','水電瓦斯','軟體／訂閱','設備','運費','手續費','稅費','保險','業務收入','其他','每月訂閱制'];
   const data={
     getTransactionPreview:{ok:true,category:opts.cat||'餐飲',categories:cats},
