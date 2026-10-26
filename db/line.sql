@@ -32,3 +32,9 @@ CREATE INDEX IF NOT EXISTS line_usage_month ON line_usage(month, kind);
 CREATE TABLE IF NOT EXISTS line_reports (month TEXT PRIMARY KEY, data TEXT NOT NULL, created INTEGER NOT NULL);   -- 每月開銷報表
 CREATE TABLE IF NOT EXISTS line_memory (                                                 -- 管理員教小助理的事（所有群組共用）
   id TEXT PRIMARY KEY, text TEXT NOT NULL, created_by TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL);
+
+-- 訂單流程：監看來源表（客服表）每一列的處理狀態
+CREATE TABLE IF NOT EXISTS line_flow_rows (
+  flow TEXT NOT NULL, row INTEGER NOT NULL, hash TEXT, first_seen INTEGER, status TEXT, ts INTEGER,
+  PRIMARY KEY (flow, row)
+);

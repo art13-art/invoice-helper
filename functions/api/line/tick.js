@@ -2,7 +2,8 @@
 // 不需要金鑰：重複呼叫也只會送出已到期且尚未送出的提醒（先標記再送，不會重複）。
 import { lineClient, mentionMessage, textMessage, say } from "../../../lib/line.js";
 import { recordPush, monthlyReport } from "../../../lib/usage.js";
-import { gas } from "../../../lib/books.js";
+import { gas, gasConf } from "../../../lib/books.js";
+import { runFlows } from "../../../lib/orders.js";
 import { kv, nextDue, ymd, hm, md, parseLocal, isGroup, KEEP_DAYS } from "../../../lib/assistant.js";
 
 export async function onRequestPost({ request, env }) {
@@ -28,6 +29,8 @@ export async function onRequestPost({ request, env }) {
     try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
     catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
   }
+
+  try { if (await gasConf(env)) { const f = await runFlows(env, db, now); if (f.length) sent.flows = f; } } catch (e) { console.log("flows failed", e.message); }
 
   const today = ymd(now);
   try { if (await monthlyReport(env, db, gas)) sent.report = true; } catch (e) { console.log("report failed", e.message); }
