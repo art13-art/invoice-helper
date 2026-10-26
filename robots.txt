@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+
+Sitemap: https://taxtools.tw/sitemap.xml

@@ -37,6 +37,19 @@
 .rate-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .rate-row input{max-width:120px}
 </style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="含稅未稅計算機｜營業稅 5% 換算＋金額中文大寫">
+<meta property="og:description" content="輸入含稅或未稅金額，馬上算出銷售額、5% 營業稅和總計，並轉成發票、支票用的中文大寫。每一步怎麼算都寫清楚，尾數差 1 元也看得懂。">
+<meta property="og:url" content="https://taxtools.tw/tax-included/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "含稅未稅計算機", "url": "https://taxtools.tw/tax-included/", "description": "輸入含稅或未稅金額，馬上算出銷售額、5% 營業稅和總計，並轉成發票、支票用的中文大寫。每一步怎麼算都寫清楚，尾數差 1 元也看得懂。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "含稅換未稅，為什麼要除以 1.05，不是乘 0.95？", "acceptedAnswer": {"@type": "Answer", "text": "含稅價是「未稅價 × 1.05」，所以要除回去。乘 0.95 會少算：含稅 10,500 元 × 0.95 = 9,975 元，正確的未稅是 10,500 ÷ 1.05 = 10,000 元。"}}, {"@type": "Question", "name": "尾數為什麼有時候差 1 元？", "acceptedAnswer": {"@type": "Answer", "text": "稅額要算到整數元，元以下四捨五入，所以未稅 + 稅額不一定剛好等於「未稅 × 1.05」的小數結果。從含稅價拆的時候，先算出未稅（四捨五入），再用總額減掉未稅得到稅額，總額就一定對得起來。"}}, {"@type": "Question", "name": "好幾個品項，要逐項算稅還是加總後再算？", "acceptedAnswer": {"@type": "Answer", "text": "一張發票的營業稅是用整張的銷售額合計來算。逐項算稅再加總，可能會跟用合計算出來的差 1、2 元，開發票時以合計計算為準。"}}, {"@type": "Question", "name": "賣給一般消費者也要另外加 5% 嗎？", "acceptedAnswer": {"@type": "Answer", "text": "不行。依營業稅法第 32 條，賣給消費者的定價必須已經內含營業稅，不能另外加收。只有賣給公司行號、開三聯式發票時，才會把銷售額和稅額分開寫。"}}, {"@type": "Question", "name": "中文大寫有什麼要注意的？", "acceptedAnswer": {"@type": "Answer", "text": "前面寫「新臺幣」、結尾寫「整」，數字中間的零要寫出來（例如壹萬零伍佰元整），字跟字之間不要留空隙，避免被人補字。支票和手開發票都適用。"}}]}</script>
+<!--/seo-->
 </head>
 <body>
 <header class="site-head">

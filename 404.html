@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>找不到這個頁面｜稅務小工具</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/nav.css">
+<style>
+/* Short apology, then the tool list so the visitor can carry on. */
+.nf{display:grid;gap:14px;max-width:40em;padding-block:24px}
+.nf h1{font-family:var(--f-head);font-size:clamp(26px,4vw,36px);margin:0;letter-spacing:.04em}
+.nf p{margin:0;color:var(--muted)}
+.nf ul{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0 24px}
+.nf a{display:flex;align-items:center;min-height:44px;border-bottom:1px solid var(--line);color:var(--fg);text-decoration:none}
+.nf a:hover{color:var(--accent)}
+</style>
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+<div class="wrap">
+  <section class="nf">
+    <h1>找不到這個頁面</h1>
+    <p>網址可能打錯了，或這個頁面已經搬家。下面是所有工具：</p>
+    <ul id="tools"></ul>
+  </section>
+  <p class="site-foot">本站為民間提供的免費工具，非政府官方網站。</p>
+</div>
+<script src="/assets/nav.js"></script>
+<script>
+document.getElementById("tools").innerHTML=[...document.querySelectorAll(".site-nav a")].map(a=>`<li><a href="${a.getAttribute("href")}">${a.textContent}</a></li>`).join("");
+</script>
+</body>
+</html>

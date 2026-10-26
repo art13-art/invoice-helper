@@ -82,6 +82,18 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
 .fab{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:15;font:inherit;font-weight:700;font-size:17px;border:0;border-radius:99px;padding:0 22px;min-height:54px;background:var(--accent);color:var(--on-accent);box-shadow:0 8px 24px rgba(37,84,166,.35);cursor:pointer}
 @media (max-width:639px){.wrap{padding-bottom:100px}}
 </style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="報稅帳本｜記帳同時算好營業稅、扣繳和綜所稅扣除額">
+<meta property="og:description" content="給公司、工作室和個人的報稅帳本：記收入支出，自動算每期營業稅（銷項減進項）、整理代扣稅款和補充保費、年底可列舉的保險醫療捐款和房租。用 Google 登入，手機電腦同步。">
+<meta property="og:url" content="https://taxtools.tw/ledger/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "報稅帳本", "url": "https://taxtools.tw/ledger/", "description": "給公司、工作室和個人的報稅帳本：記收入支出，自動算每期營業稅（銷項減進項）、整理代扣稅款和補充保費、年底可列舉的保險醫療捐款和房租。用 Google 登入，手機電腦同步。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<!--/seo-->
 </head>
 <body>
 <header class="site-head">
@@ -106,6 +118,7 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
       </section>
       <section class="card box" id="taxbox"></section>
       <section class="card box" id="yearbox"></section>
+      <section class="card box" id="recbox"></section>
     </div>
 
     <div class="col">
@@ -118,7 +131,9 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
           <button type="button" class="btn link" id="csv">匯出今年 CSV</button>
           <button type="button" class="btn link" id="bak">下載備份檔</button>
           <button type="button" class="btn link" id="imp">匯入備份檔</button>
+          <button type="button" class="btn link" id="impCsv">從試算表匯入（CSV）</button>
           <input type="file" id="impFile" accept="application/json,.json" hidden>
+          <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
         </div>
         <p class="hint" id="bakHint"></p>
       </section>
@@ -163,7 +178,12 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
         <p class="hint" style="grid-column:1/-1" id="eWhH"></p>
       </div>
     </div>
+    <div class="field"><span class="lbl">怎麼付</span>
+      <div class="chips tight" id="ePay" role="radiogroup" aria-label="支付方式"></div>
+      <input id="eAcct" list="acctList" placeholder="哪張卡、哪個帳戶（選填）" maxlength="40" style="margin-top:8px"><datalist id="acctList"></datalist>
+    </div>
     <div class="field"><label for="eNote">備註</label><input id="eNote" maxlength="200" placeholder="選填"></div>
+    <label class="check" id="eRecL"><input type="checkbox" id="eRec"><span>每月固定<br><span class="hint" id="eRecH">之後每個月同一天自動記一筆，例如房租、訂閱、電信費。</span></span></label>
     <p class="msg" id="eMsg" hidden></p>
     <div class="foot">
       <button type="button" class="btn link" id="eDel" style="color:var(--warn)">刪除</button>
@@ -210,6 +230,7 @@ const CATS={
   me:{out:["餐飲","交通","房租","保險","醫療","捐贈","學費","購物","娛樂","生活","其他"],in:["薪資","接案","租金","利息股利","其他"]},
 };
 const WH_CATS=["租金","薪資","勞務報酬"];
+const PAYS=["現金","信用卡","轉帳","行動支付"];
 
 /* ---------- local store (works signed-out; syncs when signed in) ---------- */
 const KEY="taxtools.ledger.v1";
@@ -247,7 +268,7 @@ async function sync(){
       DB.srv=j.srv; DB.owner=USER.id; persist();
       more=j.more||Object.keys(DB.dirty).length>0&&ids.length===400;
     }
-    setSync("ok"); render();
+    setSync("ok"); runRecurring(); render();
   }catch(e){ setSync("err"); }
   syncing=false;
 }
@@ -306,6 +327,36 @@ async function delAccount(){
   USER=null; DB={items:{},srv:0,dirty:{},owner:null}; persist(); renderAcct(); render(); toast("雲端資料和帳號已刪除");
 }
 
+/* ---------- monthly recurring entries ---------- */
+// Each rule creates one entry per month on its day; the entry id is fixed per rule+month so two devices never double-book.
+function runRecurring(){
+  const t=new Date(), today=ymd(t); let made=0;
+  for(const r of live("recur")){
+    if(!r.data.tpl||r.data.stopped) continue;
+    const d={...r.data}, before=d.last;
+    let [y,m]=d.last.split("-").map(Number);
+    while(true){
+      m++; if(m>12){ m=1; y++; }
+      const last=new Date(y,m,0).getDate(), date=`${y}-${pad(m)}-${pad(Math.min(d.day,last))}`;
+      if(date>today) break;
+      const id=`r-${r.id}-${y}${pad(m)}`.slice(0,64);
+      if(!DB.items[id]){ put("entry",id,{...d.tpl,date,recur:r.id}); made++; }
+      d.last=`${y}-${pad(m)}`;
+    }
+    if(d.last!==before) put("recur",r.id,d);
+  }
+  if(made) toast(`已自動記上 ${made} 筆每月固定的帳`);
+}
+function renderRecur(b){
+  const R=$("recbox"), rs=live("recur").filter(r=>r.data.book===b.id&&!r.data.stopped);
+  R.hidden=!rs.length; if(!rs.length) return;
+  const tot=rs.reduce((a,r)=>a+(r.data.tpl.type==="out"?r.data.tpl.amount:0),0);
+  R.innerHTML=`<h2>每月固定</h2><p class="sub">每月固定支出 ${money(tot)} 元，到日子會自動記帳</p>
+    <div class="kv">${rs.map(r=>`<span>${r.data.day} 日・${esc(r.data.tpl.note||r.data.tpl.party||r.data.tpl.cat)}</span><b>${money(r.data.tpl.amount)}</b>`).join("")}</div>
+    <div class="actions" style="margin-top:8px;gap:0 14px">${rs.map(r=>`<button type="button" class="btn link" data-stop="${r.id}">停止「${esc(r.data.tpl.note||r.data.tpl.party||r.data.tpl.cat)}」</button>`).join("")}</div>`;
+  R.querySelectorAll("[data-stop]").forEach(x=>x.onclick=()=>{ const r=DB.items[x.dataset.stop]; if(!confirm("停止後不會再自動記帳，已經記的不會刪除。確定停止？")) return; put("recur",r.id,{...r.data,stopped:true}); render(); toast("已停止"); });
+}
+
 /* ---------- rendering ---------- */
 function vatPeriod(y,m){ const s=m-(m%2); return {y,s,e:s+1,due:new Date(y,s+2,15)}; }   // months 0-based: Jan–Feb, Mar–Apr …
 function render(){
@@ -320,7 +371,7 @@ function render(){
   $("mLbl").textContent=`${V.y-1911} 年 ${V.m+1} 月`;
   if(!b){ $("sum").innerHTML=""; $("cats").innerHTML=""; $("taxbox").hidden=$("yearbox").hidden=true;
     $("list").innerHTML=`<div class="empty-l"><p style="margin:0 0 12px">先建立一本帳。公司、工作室和個人可以分開記。</p><button type="button" class="btn primary" id="first">建立帳本</button></div>`;
-    $("first").onclick=()=>openBook(null); bakHint(); return; }
+    $("first").onclick=()=>openBook(null); $("recbox").hidden=true; bakHint(); return; }
   const kind=b.data.kind, all=entries(b.id);
   const inMonth=all.filter(e=>{ const [y,m]=e.data.date.split("-").map(Number); return y===V.y&&m-1===V.m; });
   const sIn=inMonth.filter(e=>e.data.type==="in").reduce((a,e)=>a+e.data.amount,0), sOut=inMonth.filter(e=>e.data.type==="out").reduce((a,e)=>a+e.data.amount,0);
@@ -359,6 +410,7 @@ function render(){
     Y.innerHTML=`<h2>${V.y-1911} 年收入</h2><div class="kv">${Object.entries(byI).map(([c,v])=>`<span>${esc(c)}</span><b>${money(v)}</b>`).join("")||`<span>還沒有記收入</span><b>0</b>`}</div>`;
   }
 
+  renderRecur(b);
   // list
   const q=V.q.trim().toLowerCase();
   const rows=(q?all.filter(e=>[e.data.party,e.data.note,e.data.cat,e.data.inv].join(" ").toLowerCase().includes(q)):inMonth)
@@ -369,7 +421,7 @@ function render(){
   $("list").innerHTML=rows.length?Object.entries(byDay).map(([d,es])=>{ const dt=new Date(d+"T00:00"), net=es.reduce((a,e)=>a+(e.data.type==="in"?1:-1)*e.data.amount,0);
     return `<div class="day"><h3><span>${q?`${dt.getFullYear()-1911}/`:""}${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）</span><span>${net>=0?"+":"−"}${money(Math.abs(net))}</span></h3>${es.map(e=>`<button type="button" class="ent" data-id="${e.id}">
       <span class="c">${esc(e.data.cat)}${e.data.doc==="inv"&&kind==="biz"?`<span class="t">發票</span>`:""}${e.data.wh||e.data.nhi?`<span class="t">代扣</span>`:""}</span>
-      <span class="p">${esc([e.data.party,e.data.note].filter(Boolean).join("・"))||"&nbsp;"}</span>
+      <span class="p">${esc([e.data.party,e.data.note,e.data.acct||e.data.pay].filter(Boolean).join("・"))||"&nbsp;"}${e.data.recur?" ↻":""}</span>
       <span class="a ${e.data.type}">${e.data.type==="in"?"+":"−"}${money(e.data.amount)}</span></button>`).join("")}</div>`; }).join("")
     :`<div class="empty-l">${q?"找不到符合的帳。":`這個月還沒有記帳。<br>按「＋ 記一筆」開始。`}</div>`;
   $("list").querySelectorAll(".ent").forEach(x=>x.onclick=()=>openEntry(DB.items[x.dataset.id]));
@@ -391,6 +443,11 @@ function openEntry(it){
   $("eAmt").value=E.amount?money(E.amount):""; $("eDate").value=E.date; $("eParty").value=E.party||""; $("eNote").value=E.note||"";
   $("eInv").value=E.inv||""; $("eUbn").value=E.ubn||""; $("eTax").value=E.tax!=null?money(E.tax):""; $("eWh").value=E.wh?money(E.wh):""; $("eNhi").value=E.nhi?money(E.nhi):"";
   document.querySelector(`input[name=doc][value="${E.doc||"inv"}"]`).checked=true;
+  if(!it){ const last=entries(b.id).sort((a,c)=>c.updated_at-a.updated_at)[0]; E.pay=last?.data.pay||""; E.acct=last?.data.acct||""; }
+  $("eAcct").value=E.acct||"";
+  $("acctList").innerHTML=[...new Set(entries(b.id).map(e=>e.data.acct).filter(Boolean))].slice(0,30).map(a=>`<option value="${esc(a)}">`).join("");
+  E.recur=it?.data.recur||null; $("eRec").checked=false; $("eRecL").hidden=!!E.recur;
+  E.confirmDup=false;
   let cust=[]; try{ cust=JSON.parse(localStorage.getItem("invhelper.customers")||"[]"); }catch(e){}
   const parties=[...new Set([...entries(b.id).map(e=>e.data.party).filter(Boolean),...cust.map(c=>c.name)])].slice(0,80);
   $("custList").innerHTML=parties.map(p=>`<option value="${esc(p)}">`).join("");
@@ -399,7 +456,10 @@ function openEntry(it){
 function edRender(){
   const b=curBook(), biz=b.data.kind==="biz";
   document.querySelectorAll("#ed [data-t]").forEach(x=>x.setAttribute("aria-pressed",x.dataset.t===E.type));
-  const list=CATS[b.data.kind][E.type]; if(!list.includes(E.cat)) E.cat=list[0];
+  const base=CATS[b.data.kind][E.type], extra=[...new Set(entries(b.id).filter(e=>e.data.type===E.type).map(e=>e.data.cat))].filter(c=>c&&!base.includes(c));
+  const list=[...base,...extra]; if(!list.includes(E.cat)) E.cat=base[0];
+  $("ePay").innerHTML=PAYS.map(p=>`<label><input type="radio" name="epay" value="${p}" ${p===E.pay?"checked":""}>${p}</label>`).join("");
+  $("ePay").querySelectorAll("input").forEach(r=>r.onchange=()=>{ E.pay=r.value; });
   $("eCats").innerHTML=list.map(c=>`<label><input type="radio" name="ecat" value="${c}" ${c===E.cat?"checked":""}>${c}</label>`).join("");
   $("eCats").querySelectorAll("input").forEach(r=>r.onchange=()=>{ E.cat=r.value; edRender(); });
   $("eBiz").hidden=!biz;
@@ -430,7 +490,17 @@ $("eSave").onclick=()=>{
   const tax=biz&&doc==="inv"?Math.min(a,intOf($("eTax").value)):0;
   const wh=biz&&E.type==="out"&&WH_CATS.includes(E.cat);
   const data={book:b.id,type:E.type,date:$("eDate").value,cat:E.cat,amount:a,party:$("eParty").value.trim(),note:$("eNote").value.trim(),
-    doc,inv:doc==="inv"?inv:"",ubn:doc==="inv"?ubn:"",tax,wh:wh?intOf($("eWh").value):0,nhi:wh?intOf($("eNhi").value):0};
+    doc,inv:doc==="inv"?inv:"",ubn:doc==="inv"?ubn:"",tax,wh:wh?intOf($("eWh").value):0,nhi:wh?intOf($("eNhi").value):0,
+    pay:E.pay||"",acct:$("eAcct").value.trim()};
+  if(E.recur) data.recur=E.recur;
+  // same day, same amount, same direction: probably entered twice
+  const dup=entries(b.id).find(e=>e.id!==E.id&&e.data.date===data.date&&e.data.amount===a&&e.data.type===data.type);
+  if(dup&&!E.confirmDup){ E.confirmDup=true; return msg(`同一天已經有一筆 ${money(a)} 元的${dup.data.cat}${dup.data.note?`（${dup.data.note}）`:""}，確定不是重複？再按一次「儲存」就會記下。`); }
+  if($("eRec").checked&&!E.recur){
+    const rid=uid(), day=+data.date.slice(8,10);
+    put("recur",rid,{book:b.id,day,start:data.date.slice(0,7),last:data.date.slice(0,7),tpl:{...data,date:undefined}});
+    data.recur=rid;
+  }
   put("entry",E.id,data); $("ed").close();
   const [y,m]=data.date.split("-").map(Number); if(y!==V.y||m-1!==V.m){ V.y=y; V.m=m-1; }
   render(); toast("已儲存");
@@ -459,8 +529,8 @@ function download(name,text,type){ const a=document.createElement("a"); a.href=U
 $("csv").onclick=()=>{ const b=curBook(); if(!b) return;
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
   const rows=entries(b.id).filter(e=>+e.data.date.slice(0,4)===V.y).sort((a,c)=>a.data.date.localeCompare(c.data.date));
-  const head=["日期","收支","分類","對象","金額（含稅）","營業稅","發票號碼","對方統編","代扣所得稅","代扣補充保費","備註"];
-  const csv="﻿"+[head.map(q).join(","),...rows.map(e=>{ const d=e.data; return [d.date,d.type==="in"?"收入":"支出",d.cat,d.party,d.amount,d.tax||0,d.inv,d.ubn,d.wh||0,d.nhi||0,d.note].map(q).join(","); })].join("\r\n");
+  const head=["日期","收支","分類","對象","金額（含稅）","營業稅","發票號碼","對方統編","代扣所得稅","代扣補充保費","支付方式","帳戶／卡片","備註"];
+  const csv="﻿"+[head.map(q).join(","),...rows.map(e=>{ const d=e.data; return [d.date,d.type==="in"?"收入":"支出",d.cat,d.party,d.amount,d.tax||0,d.inv,d.ubn,d.wh||0,d.nhi||0,d.pay,d.acct,d.note].map(q).join(","); })].join("\r\n");
   download(`${b.data.name}-${V.y-1911}年.csv`,csv,"text/csv"); };
 $("bak").onclick=()=>{ const items=Object.values(DB.items).filter(x=>!x.deleted);
   download(`報稅帳本備份-${ymd(new Date())}.json`,JSON.stringify({app:"taxtools-ledger",v:1,at:Date.now(),items}),"application/json");
@@ -468,12 +538,60 @@ $("bak").onclick=()=>{ const items=Object.values(DB.items).filter(x=>!x.deleted)
 $("imp").onclick=()=>$("impFile").click();
 $("impFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
   try{ const j=JSON.parse(await f.text()); if(j.app!=="taxtools-ledger"||!Array.isArray(j.items)) throw 0;
-    let n=0; j.items.forEach(x=>{ if(!x||!x.id||!["entry","book"].includes(x.kind)) return; const loc=DB.items[x.id]; if(loc&&loc.updated_at>=x.updated_at) return;
+    let n=0; j.items.forEach(x=>{ if(!x||!x.id||!["entry","book","recur"].includes(x.kind)) return; const loc=DB.items[x.id]; if(loc&&loc.updated_at>=x.updated_at) return;
       DB.items[x.id]={id:x.id,kind:x.kind,data:x.data,updated_at:Math.max(x.updated_at||0,Date.now()),deleted:false}; DB.dirty[x.id]=1; n++; });
     persist(); queueSync(); render(); toast(n?`已匯入 ${n} 筆`:"備份檔裡的資料都已經在帳本裡了");
   }catch(err){ toast("這不是報稅帳本的備份檔"); } };
 
+/* ---------- import from a spreadsheet (CSV) ---------- */
+function parseCSV(t){
+  const rows=[]; let row=[], cell="", q=false;
+  t=t.replace(/^\ufeff/,"");
+  for(let i=0;i<t.length;i++){ const c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){ cell+='"'; i++; } else q=false; } else cell+=c; }
+    else if(c==='"') q=true; else if(c===","){ row.push(cell); cell=""; }
+    else if(c==="\n"||c==="\r"){ if(c==="\r"&&t[i+1]==="\n") i++; row.push(cell); rows.push(row); row=[]; cell=""; }
+    else cell+=c; }
+  if(cell||row.length){ row.push(cell); rows.push(row); }
+  return rows.filter(r=>r.some(x=>x.trim()));
+}
+const COLS={date:["日期","交易日期","date"],type:["收支","類型","type"],amount:["金額","金額（含稅）","amount"],cat:["類別","分類","category"],
+  party:["店家／對象","對象","店家","商家","客戶"],note:["備註","note"],desc:["原始輸入","交易內容","內容","說明","品項"],book:["主體","帳本","公司"],
+  pay:["支付方式","付款方式"],acct:["帳戶／卡片","匯款銀行／刷卡卡片","卡片","帳戶"],inv:["發票號碼"],ubn:["統編","對方統編"],tax:["營業稅","稅額"],
+  id:["記帳ID","ID","id"],status:["AI判定狀態","狀態"]};
+function importCSV(text){
+  const rows=parseCSV(text); if(rows.length<2) throw new Error("檔案裡沒有資料");
+  const head=rows[0].map(h=>h.trim()), col={};
+  for(const [k,names] of Object.entries(COLS)){ const i=head.findIndex(h=>names.includes(h)); if(i>=0) col[k]=i; }
+  if(col.date==null||col.amount==null) throw new Error("找不到「日期」和「金額」欄");
+  const get=(r,k)=>col[k]!=null?String(r[col[k]]??"").trim():"";
+  const bookByName={}; books().forEach(b=>bookByName[b.data.name]=b.id);
+  const cur=curBook(); let n=0, skip=0, newBooks=0;
+  for(const r of rows.slice(1)){
+    const amt=intOf(get(r,"amount")), dm=get(r,"date").match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+    if(!amt||!dm||/作廢/.test(get(r,"status")+get(r,"amount"))){ skip++; continue; }
+    let bookId=cur?.id; const bn=get(r,"book");
+    if(bn){ if(!bookByName[bn]){ const id=uid(); put("book",id,{kind:/個人|家/.test(bn)?"me":"biz",name:bn,ubn:"",order:books().length}); bookByName[bn]=id; newBooks++; } bookId=bookByName[bn]; }
+    if(!bookId){ const id=uid(); put("book",id,{kind:"biz",name:"匯入的帳",ubn:"",order:0}); bookId=id; bookByName["匯入的帳"]=id; newBooks++; }
+    const kind=DB.items[bookId].data.kind, type=/收/.test(get(r,"type"))?"in":"out";
+    let cat=get(r,"cat"); if(!cat||cat==="待確認") cat="其他"; if(kind==="me"&&cat==="租金"&&type==="out") cat="房租";
+    const pay0=get(r,"pay"), pay=PAYS.find(p=>pay0.includes(p.slice(0,2)))||(pay0.includes("轉帳")?"轉帳":"");
+    const srcId=get(r,"id").replace(/[^\w-]/g,"");
+    const id=srcId?("imp-"+srcId).slice(0,64):uid();
+    const inv=get(r,"inv").toUpperCase(), ubn=get(r,"ubn");
+    const note=[get(r,"desc"),get(r,"note")].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join("・");
+    put("entry",id,{book:bookId,type,date:`${dm[1]}-${pad(dm[2])}-${pad(dm[3])}`,cat,amount:amt,party:get(r,"party"),note,
+      doc:inv?"inv":"none",inv,ubn,tax:intOf(get(r,"tax")),wh:0,nhi:0,pay,acct:get(r,"acct")}); n++;
+  }
+  return {n,skip,newBooks};
+}
+
 /* ---------- wiring ---------- */
+$("impCsv").onclick=()=>$("csvFile").click();
+$("csvFile").onchange=async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+  try{ const r=importCSV(await f.text()); render();
+    toast(`已匯入 ${r.n} 筆${r.newBooks?`，新增 ${r.newBooks} 本帳`:""}${r.skip?`（略過 ${r.skip} 筆作廢或空白）`:""}`); }
+  catch(err){ toast(err.message||"這個檔案讀不出來，請確認是 CSV"); } };
 $("prev").onclick=()=>{ V.m--; if(V.m<0){ V.m=11; V.y--; } render(); };
 $("next").onclick=()=>{ V.m++; if(V.m>11){ V.m=0; V.y++; } render(); };
 $("add").onclick=()=>openEntry(null);
@@ -482,7 +600,7 @@ document.addEventListener("visibilitychange",()=>{ if(!document.hidden) sync(); 
 setInterval(()=>{ if(!document.hidden) sync(); },60000);
 window.addEventListener("online",()=>sync());
 
-renderAcct(); render();
+renderAcct(); if(!DB.owner) runRecurring(); render();
 api("/api/auth/me").then(r=>r.ok?r.json():null).then(j=>{
   if(!j) return;   // server unreachable: keep working locally
   if(j.user){ if(DB.owner&&DB.owner!==j.user.id){ DB={items:{},srv:0,dirty:{},owner:null}; persist(); } USER=j.user; renderAcct(); sync(); }

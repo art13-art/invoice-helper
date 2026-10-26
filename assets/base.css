@@ -87,3 +87,7 @@ details.more .inner{padding:0 14px 14px;display:grid;gap:12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* Inline links inside helper text get a taller hit area without changing the line height. */
 .hint a,.faq p a{display:inline-block;padding-block:12px;margin-block:-12px;color:var(--accent);font-weight:500}
+.foot-links{display:flex;flex-wrap:wrap;gap:0 18px;margin:-12px 0 0;font-size:14px;color:var(--muted)}
+.foot-links a{display:inline-flex;align-items:center;min-height:40px;color:var(--muted)}
+.foot-links a:hover{color:var(--accent)}
+.foot-links span{display:inline-flex;align-items:center;min-height:40px}

@@ -3,7 +3,7 @@
 import { json, currentUser, sameSite } from "../../lib/auth.js";
 
 const MAX_CHANGES = 500, MAX_ITEM = 16000, MAX_ITEMS = 50000;
-const KINDS = new Set(["entry", "book", "pref"]);
+const KINDS = new Set(["entry", "book", "recur", "pref"]);
 
 export async function onRequestPost({ request, env }) {
   if (!sameSite(request)) return json({ error: "forbidden" }, 403);

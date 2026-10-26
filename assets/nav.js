@@ -5,4 +5,11 @@
   const here=location.pathname.replace(/index\.html$/,"");
   nav.innerHTML=TOOLS.map(([h,t])=>`<a href="${h}"${here===h?' aria-current="page"':""}>${t}</a>`).join("");
   const cur=nav.querySelector('[aria-current="page"]'); if(cur&&nav.scrollWidth>nav.clientWidth) nav.scrollLeft=cur.offsetLeft-16;
+  // shared links under every page's footer note
+  const foot=document.querySelector(".site-foot");
+  if(foot&&!document.querySelector(".foot-links")){
+    const p=document.createElement("p"); p.className="foot-links";
+    p.innerHTML=`<a href="/">所有工具</a><a href="/privacy/">隱私權政策與使用條款</a><span>非政府官方網站</span>`;
+    foot.after(p);
+  }
 })();
