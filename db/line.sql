@@ -35,6 +35,6 @@ CREATE TABLE IF NOT EXISTS line_memory (                                        
 
 -- 訂單流程：監看來源表（客服表）每一列的處理狀態
 CREATE TABLE IF NOT EXISTS line_flow_rows (
-  flow TEXT NOT NULL, row INTEGER NOT NULL, hash TEXT, first_seen INTEGER, status TEXT, ts INTEGER,
+  flow TEXT NOT NULL, row INTEGER NOT NULL, hash TEXT, first_seen INTEGER, status TEXT, ts INTEGER, dst_row INTEGER,
   PRIMARY KEY (flow, row)
 );
