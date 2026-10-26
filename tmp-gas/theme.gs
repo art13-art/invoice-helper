@@ -84,6 +84,7 @@ textarea{height:72px;min-height:72px}
 /* 每月訂閱 */
 .sub-box{border:1px solid var(--line);border-radius:16px;background:var(--soft);color:var(--ink)}
 #subscriptionPanel{margin-top:12px}
+.sub-box input,.sub-box select{background-color:var(--card)}
 .sub-box strong{font-size:16px}
 #subscriptionList>strong,.history h2{display:block;font-size:18px;font-weight:800;letter-spacing:.02em}
 .sub-box label{font-size:14px;color:var(--ink)}
