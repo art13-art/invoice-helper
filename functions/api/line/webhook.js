@@ -4,8 +4,8 @@ import { verifySignature, lineClient, textMessage, say, postback } from "../../.
 import { chat, member, isGroup, kv, todoText, completeByText, briefSettings, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 
-const GROUP_CHIPS = [say("/待辦"), say("/總結"), say("/說明")];
-const USER_CHIPS = [say("/待辦"), say("這個月有什麼要報的"), say("我的提醒"), say("說明")];
+const GROUP_CHIPS = [];
+const USER_CHIPS = [];
 
 export async function onRequestPost({ request, env, waitUntil }) {
   const body = await request.text();
@@ -46,11 +46,11 @@ async function handle(env, ev, origin) {
       return reply(JOIN_NOTICE);
     }
     case "leave": return forgetChat(db, chatId);
-    case "memberJoined": return reply(`歡迎加入！我是群組小助理，會記錄群組文字訊息 ${KEEP_DAYS} 天來做總結和待辦；不想被記錄可以輸入「/不要記錄我」。輸入「/說明」看我能做什麼。`);
+    case "memberJoined": return reply(`歡迎加入！我是小助理，有事 @我 就好。我會記住群組討論 ${KEEP_DAYS} 天，不想被記錄跟我說「不要記錄我」。`);
     case "memberLeft":
       for (const m of ev.left?.members || []) await db.prepare("DELETE FROM line_members WHERE chat_id=? AND user_id=?").bind(chatId, m.userId).run();
       return;
-    case "follow": return reply("你好！\n\n" + HELP_USER);
+    case "follow": return reply("你好，我是小助理！" + HELP_USER.replace("有事直接跟我說就好", "\n有事直接跟我說就好"));
     case "unfollow": return;
     case "postback": {
       const d = String(ev.postback?.data || "");
@@ -97,18 +97,18 @@ async function handle(env, ev, origin) {
   // ---- 快速指令（不用 AI、不計費）----
   const c = command ?? text;
   if (/^(說明|help|怎麼用|\?|？)$/i.test(c)) return reply(group ? HELP_GROUP : HELP_USER);
-  if (/^待辦(清單)?$/.test(c)) return reply(await todoText(db, chatId));
+  if (/^(待辦(清單|事項)?|有哪些待辦[?？]?)$/.test(c)) return reply(await todoText(db, chatId));
   if (/^完成\s*[0-9a-f]{4}/i.test(c)) return reply(await completeByText(db, chatId, c));
-  if (group && c === "不要記錄我") {
+  if (group && /^(請)?(不要|別|停止)(再)?(記錄|紀錄)我(的訊息)?$/.test(c)) {
     await db.prepare("UPDATE line_members SET optout=1 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
     await db.prepare("DELETE FROM line_msgs WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
-    return reply(`好的，${who.name} 之後的訊息不會被記錄，之前的紀錄也已刪除。想恢復請輸入「/恢復記錄」。`);
+    return reply(`好的，${who.name} 之後的訊息不會被記錄，之前的紀錄也已刪除。想恢復跟我說「恢復記錄」。`);
   }
-  if (group && c === "恢復記錄") {
+  if (group && /^(恢復|重新)(記錄|紀錄)(我)?$/.test(c)) {
     await db.prepare("UPDATE line_members SET optout=0 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
     return reply(`好的，${who.name} 的訊息會再開始記錄。`);
   }
-  if (group && c === "清除紀錄") return reply("確定要清除這個群組的所有聊天紀錄、待辦和提醒嗎？", [postback("✓ 確定清除", "wipe:" + chatId, "確定清除"), postback("✕ 保留", "keep", "保留")]);
+  if (group && /^(清除|刪除|清空)(群組|這裡的|所有)?(聊天)?(紀錄|記錄)$/.test(c)) return reply("確定要清除這個群組的所有聊天紀錄、待辦和提醒嗎？", [postback("✓ 確定清除", "wipe:" + chatId, "確定清除"), postback("✕ 保留", "keep", "保留")]);
   if (c === "不用") return reply("好的。");
   // ---- 記帳確認（打字也可以）----
   if (/^(確認|取消)(記帳)?$/.test(c)) {
@@ -119,14 +119,14 @@ async function handle(env, ev, origin) {
   if (!group && c === "我是管理員") {
     const list = await admins(db);
     if (list.includes(userId)) return reply("你已經是管理員了。");
-    if (list.length) return reply("已經有管理員了；需要的話請現有管理員在私訊輸入「/新增管理員」並轉給你代碼。");
+    if (list.length) return reply("已經有管理員了；需要的話請現有管理員私訊我「新增管理員」，再把代碼轉給你。");
     await kv.set(db, "admins", JSON.stringify([userId]));
-    return reply("✓ 你是管理員了。可以在廠商群組輸入「/設定記帳」建立或綁定記帳表。");
+    return reply("✓ 你是管理員了。在廠商群組 @我 說「設定記帳表」就能建立記帳表。");
   }
   if (!group && c === "新增管理員" && (await isAdmin(db, userId))) {
     const code = Math.random().toString().slice(2, 8);
     await kv.set(db, "admincode", JSON.stringify({ code, exp: Date.now() + 10 * 60e3 }));
-    return reply(`請把這段話轉給要當管理員的人，請他私訊我（10 分鐘內有效）：\n/管理員代碼 ${code}`);
+    return reply(`請把這段話轉給要當管理員的人，請他私訊我（10 分鐘內有效）：\n管理員代碼 ${code}`);
   }
   if (!group && /^管理員代碼\s*\d{6}$/.test(c)) {
     const want = await kv.json(db, "admincode", null), code = c.replace(/\D/g, "");
@@ -137,7 +137,7 @@ async function handle(env, ev, origin) {
   }
   if (group && /^記帳表$/.test(c)) {
     const b = await getBook(db, chatId);
-    return reply(b ? `這個群組的記帳表：${b.name}\n${b.url}\n（要有 Google 共用權限才打得開）` : "這個群組還沒有記帳表，管理員可以輸入「/設定記帳」。");
+    return reply(b ? `這個群組的記帳表：${b.name}\n${b.url}\n（要有 Google 共用權限才打得開）` : "這個群組還沒有記帳表，管理員可以 @我 說「設定記帳表」。");
   }
   if (group && /^(設定記帳|取消記帳)/.test(c)) {
     if (!(await isAdmin(db, userId))) return reply("只有管理員可以設定記帳表。");
@@ -146,10 +146,10 @@ async function handle(env, ev, origin) {
     const tab = (c.match(/分頁[:：]?\s*(\S+)/) || [])[1];
     try {
       const old = await getBook(db, chatId);
-      if (old && !url) return reply(`這個群組已經綁定「${old.name}」。\n${old.url}\n要換表格：「/設定記帳 試算表網址」；要取消：「/取消記帳」。`);
+      if (old && !url) return reply(`這個群組已經綁定「${old.name}」。\n${old.url}\n要換表格：@我 說「設定記帳表」加上試算表網址；要取消：說「取消記帳」。`);
       const info = url ? await gas(env, "linkBook", url, tab || null) : await gas(env, "createBook", (await kv.get(db, "name:" + chatId)) || "廠商群組");
       await saveBook(db, chatId, info, userId);
-      return reply(`✓ ${url ? "已綁定" : "已建立"}記帳表「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n大家可以說「@小助理 記帳：…」或傳單據照片後說「@小助理 記這張」。` + (url ? "" : "\n要改成廠商原本的欄位，直接改第一列的欄位名稱就好。"));
+      return reply(`✓ ${url ? "已綁定" : "已建立"}記帳表「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n大家可以 @我 說「記帳：碳粉 2 盒 3,200」，或傳單據照片後 @我 說「記這張」。` + (url ? "" : "\n要改成廠商原本的欄位，直接改第一列的欄位名稱就好。"));
     } catch (e) { return reply("設定沒有成功：" + e.message); }
   }
   if (c === "早報") {
@@ -160,7 +160,7 @@ async function handle(env, ev, origin) {
 
   // ---- 交給 AI ----
   const ask = c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
-  if (!ask) return reply(group ? "有什麼需要幫忙的嗎？輸入「/說明」看我能做什麼。" : HELP_USER);
+  if (!ask) return reply(group ? HELP_GROUP : HELP_USER);
   return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask);
 }
 
@@ -171,7 +171,7 @@ async function record(db, chatId, userId, name, text, media) {
 async function answer(ctx, text, logText, imageId) {
   const { env, db, line, ev, chatId, userId, chips } = ctx;
   const send = t => line.reply(ev.replyToken, [textMessage(t, chips)]).catch(e => console.log("reply failed", e.message));
-  if (!env.ANTHROPIC_API_KEY) return send("AI 還沒設定好，目前可以用「/待辦」「/說明」。");
+  if (!env.ANTHROPIC_API_KEY) return send("我還在設定中，請稍後再試。");
   if (!isGroup(chatId)) await line.loading(userId, 30);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
   let content = [{ type: "text", text }];

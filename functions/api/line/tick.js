@@ -23,7 +23,7 @@ export async function onRequestPost({ request, env }) {
     const late = now - r.due > 30 * 60e3 ? `（原定 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     const who = r.mention_id && isGroup(r.chat_id) ? "{who} " : "";
     const text = `⏰ ${who}提醒${late}\n${r.text}` + (next ? `\n\n下次：${md(ymd(next))} ${hm(next)}` : "");
-    try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id, [say(isGroup(r.chat_id) ? "/待辦" : "我的提醒")])]); sent.reminders++; }
+    try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id)]); sent.reminders++; }
     catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
   }
 
@@ -34,7 +34,7 @@ export async function onRequestPost({ request, env }) {
     const chatId = b.k.slice(6), at = parseLocal(`${today}T${s.time || "08:00"}`);
     if (!s.on || s.last === today || now < at || now > at + 3 * 3600e3) continue;
     s.last = today; await kv.set(db, b.k, JSON.stringify(s));
-    try { await line.push(chatId, [textMessage(await composeBrief(env, db, chatId, origin), [say("/待辦")])]); sent.briefs++; }
+    try { await line.push(chatId, [textMessage(await composeBrief(env, db, chatId, origin))]); sent.briefs++; }
     catch (e) { sent.failed++; console.log("brief push failed", chatId, e.message); }
   }
 
