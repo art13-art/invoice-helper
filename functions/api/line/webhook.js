@@ -116,7 +116,7 @@ async function handle(env, ev, origin) {
     if (p) return reply(await settlePending(env, db, chatId, userId, p.id, c.startsWith("確認"), who.name));
   }
   // ---- 管理員：本月用量 ----
-  if (!group && /^(本月|這個月)?(用量|花費|開銷|費用)(報表)?[?？]?$/.test(c) && (await isAdmin(db, userId)))
+  if (!group && c.length <= 20 && /(用量|花費|開銷|費用|花了多少|花多少|帳單|token)/i.test(c) && !/記帳|報價|運費|單價/.test(c) && (await isAdmin(db, userId)))
     return reply(reportText(await buildReport(env, db, new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 7))).replace("開銷報表", "開銷（到目前為止）"));
   // ---- 管理員與記帳表 ----
   if (!group && c === "我是管理員") {
