@@ -1,7 +1,7 @@
 // POST /api/line/tick — 定時（約每 1 分鐘）呼叫：送出到期提醒，並清掉過期紀錄。
 // 不需要金鑰：重複呼叫也只會送出已到期且尚未送出的提醒（先標記再送，不會重複）。
 import { lineClient, mentionMessage, textMessage, say } from "../../../lib/line.js";
-import { recordPush, monthlyReport } from "../../../lib/usage.js";
+import { recordPush, monthlyReport, checkQuota } from "../../../lib/usage.js";
 import { gas, gasConf } from "../../../lib/books.js";
 import { runFlows } from "../../../lib/orders.js";
 import { kv, nextDue, ymd, hm, md, parseLocal, isGroup, KEEP_DAYS } from "../../../lib/assistant.js";
@@ -31,6 +31,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   try { if (await gasConf(env)) { const f = await runFlows(env, db, now); if (f.length) sent.flows = f; } } catch (e) { console.log("flows failed", e.message); }
+
+  try { await checkQuota(env, db, line, now); } catch (e) { console.log("quota failed", e.message); }
 
   const today = ymd(now);
   try { if (await monthlyReport(env, db, gas)) sent.report = true; } catch (e) { console.log("report failed", e.message); }

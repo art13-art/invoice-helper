@@ -1,5 +1,6 @@
 // POST /api/line/webhook — LINE 官方帳號 Webhook（群組小助理，每個人都能用）。
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
+import { vendorReply } from "../../../lib/orders.js";
 import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
 import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
@@ -92,6 +93,7 @@ async function handle(env, ev, origin) {
 
   // 群組裡的一般訊息只記錄，不回應
   if (group && !who.optout && !(command && /^(不要記錄我|恢復記錄|清除紀錄)$/.test(command))) await record(db, chatId, userId, who.name, raw);
+  if (group) await vendorReply(env, db, line, chatId, userId, who.name, text).catch(e => console.log("vendor reply", e.message));
   if (!addressed) return;
 
   // ---- 快速指令（不用 AI、不計費）----
