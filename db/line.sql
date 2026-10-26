@@ -24,3 +24,9 @@ CREATE TABLE IF NOT EXISTS line_pending (                                       
   created INTEGER NOT NULL, status TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS line_books (                                                  -- 廠商群組綁定的雲端記帳表
   chat_id TEXT PRIMARY KEY, sheet_id TEXT NOT NULL, url TEXT, name TEXT, tab TEXT, headers TEXT, created_by TEXT, created INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS line_usage (                                                  -- AI token 用量與費用、LINE 主動訊息
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, month TEXT NOT NULL, kind TEXT NOT NULL, chat_id TEXT, user_id TEXT,
+  model TEXT, input INTEGER DEFAULT 0, output INTEGER DEFAULT 0, cache_read INTEGER DEFAULT 0, cache_write INTEGER DEFAULT 0,
+  recipients INTEGER DEFAULT 0, usd REAL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS line_usage_month ON line_usage(month, kind);
+CREATE TABLE IF NOT EXISTS line_reports (month TEXT PRIMARY KEY, data TEXT NOT NULL, created INTEGER NOT NULL);   -- 每月開銷報表

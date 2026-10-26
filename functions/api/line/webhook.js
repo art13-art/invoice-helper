@@ -3,6 +3,7 @@
 import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
 import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
+import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 
 const GROUP_CHIPS = [];
 const USER_CHIPS = [];
@@ -114,13 +115,16 @@ async function handle(env, ev, origin) {
     const p = await db.prepare("SELECT id FROM line_pending WHERE chat_id=? AND user_id=? AND status='open' ORDER BY created DESC LIMIT 1").bind(chatId, userId).first();
     if (p) return reply(await settlePending(env, db, chatId, userId, p.id, c.startsWith("確認"), who.name));
   }
+  // ---- 管理員：本月用量 ----
+  if (!group && /^(本月|這個月)?(用量|花費|開銷|費用)(報表)?[?？]?$/.test(c) && (await isAdmin(db, userId)))
+    return reply(reportText(await buildReport(env, db, new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 7))).replace("開銷報表", "開銷（到目前為止）"));
   // ---- 管理員與記帳表 ----
   if (!group && c === "我是管理員") {
     const list = await admins(db);
     if (list.includes(userId)) return reply("你已經是管理員了。");
     if (list.length) return reply("已經有管理員了；需要的話請現有管理員私訊我「新增管理員」，再把代碼轉給你。");
     await kv.set(db, "admins", JSON.stringify([userId]));
-    return reply("✓ 你是管理員了。在廠商群組 @我 說「設定記帳表」就能建立記帳表。");
+    return reply("✓ 你是管理員了。\n・費用快用到預算時我會通知你\n・每月 1 號會傳上個月的開銷報表給你\n・想看目前花費，私訊我「本月用量」");
   }
   if (!group && c === "新增管理員" && (await isAdmin(db, userId))) {
     const code = Math.random().toString().slice(2, 8);
@@ -184,6 +188,6 @@ async function answer(ctx, text, logText, imageId) {
   const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
   await line.reply(ev.replyToken, [textMessage(out, quick)]).catch(async e => {
     console.log("reply failed, pushing", e.message);
-    await line.push(chatId, [textMessage(out, quick)]).catch(() => null);
+    await line.push(chatId, [textMessage(out, quick)]).then(() => recordPush(db, chatId, 1)).catch(() => null);
   });
 }

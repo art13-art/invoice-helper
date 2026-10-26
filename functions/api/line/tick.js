@@ -1,6 +1,8 @@
 // POST /api/line/tick — 定時（約每 1 分鐘）呼叫：送出到期提醒，並清掉過期紀錄。
 // 不需要金鑰：重複呼叫也只會送出已到期且尚未送出的提醒（先標記再送，不會重複）。
 import { lineClient, mentionMessage, textMessage, say } from "../../../lib/line.js";
+import { recordPush, monthlyReport } from "../../../lib/usage.js";
+import { gas } from "../../../lib/books.js";
 import { kv, nextDue, ymd, hm, md, parseLocal, isGroup, KEEP_DAYS } from "../../../lib/assistant.js";
 
 export async function onRequestPost({ request, env }) {
@@ -23,11 +25,12 @@ export async function onRequestPost({ request, env }) {
     const late = now - r.due > 30 * 60e3 ? `（原定 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     const who = r.mention_id && isGroup(r.chat_id) ? "{who} " : "";
     const text = `⏰ ${who}提醒${late}\n${r.text}` + (next ? `\n\n下次：${md(ymd(next))} ${hm(next)}` : "");
-    try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id)]); sent.reminders++; }
+    try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
     catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
   }
 
   const today = ymd(now);
+  try { if (await monthlyReport(env, db, gas)) sent.report = true; } catch (e) { console.log("report failed", e.message); }
   // 保存期限：群組訊息與對話紀錄 30 天、處理過的事件 7 天
   if (tp_hour(now) === 3 && (await kv.get(db, "cleanup:last")) !== today) {
     await kv.set(db, "cleanup:last", today);
