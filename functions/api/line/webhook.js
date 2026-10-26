@@ -124,7 +124,7 @@ async function handle(env, ev, origin) {
     if (list.includes(userId)) return reply("你已經是管理員了。");
     if (list.length) return reply("已經有管理員了；需要的話請現有管理員私訊我「新增管理員」，再把代碼轉給你。");
     await kv.set(db, "admins", JSON.stringify([userId]));
-    return reply("✓ 你是管理員了。\n・費用快用到預算時我會通知你\n・每月 1 號會傳上個月的開銷報表給你\n・想看目前花費，私訊我「本月用量」");
+    return reply("✓ 你是管理員了。\n・本月費用用到 90% 時我會通知你一次\n・每月 1 號會傳上個月的開銷報表給你\n・想看目前花費，私訊我「本月用量」");
   }
   if (!group && c === "新增管理員" && (await isAdmin(db, userId))) {
     const code = Math.random().toString().slice(2, 8);
