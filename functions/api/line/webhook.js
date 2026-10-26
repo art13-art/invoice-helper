@@ -158,7 +158,11 @@ async function handle(env, ev, origin) {
 
   // ---- 交給 AI ----
   const ask = c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
-  if (!ask) return reply("在，什麼事？");
+  if (!ask) {
+    // 只 @ 沒說事：通常是要它處理前面剛說過的內容，交給 AI 從最近的對話判斷
+    const q = `（${who.name} 只 @ 了你，沒有另外說內容。看最近的群組對話，特別是 ${who.name} 剛才說的話，判斷他要你做什麼並直接處理；真的看不出來才簡短問一句。）`;
+    return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, q, "（@了小助理）");
+  }
   return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask);
 }
 
