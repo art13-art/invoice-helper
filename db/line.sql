@@ -30,3 +30,5 @@ CREATE TABLE IF NOT EXISTS line_usage (                                         
   recipients INTEGER DEFAULT 0, usd REAL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS line_usage_month ON line_usage(month, kind);
 CREATE TABLE IF NOT EXISTS line_reports (month TEXT PRIMARY KEY, data TEXT NOT NULL, created INTEGER NOT NULL);   -- 每月開銷報表
+CREATE TABLE IF NOT EXISTS line_memory (                                                 -- 管理員教小助理的事（所有群組共用）
+  id TEXT PRIMARY KEY, text TEXT NOT NULL, created_by TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL);
