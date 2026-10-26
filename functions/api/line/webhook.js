@@ -1,9 +1,10 @@
-// POST /api/line/webhook — LINE 官方帳號的 Webhook。
-// 只服務綁定的擁有者；先回 200 給 LINE，再在背景呼叫 Claude 和帳本。
+// POST /api/line/webhook — LINE 官方帳號 Webhook（群組小助理，每個人都能用）。
+// 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
-import { chat, confirmPending, composeBrief, kv, HELP } from "../../../lib/assistant.js";
+import { chat, allowAI, member, isGroup, kv, todoText, completeByText, briefSettings, rid, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 
-const CHIPS = [say("本月支出"), say("待確認的帳"), say("今日重點"), say("我的提醒"), say("說明")];
+const GROUP_CHIPS = [say("/待辦"), say("/總結"), say("/說明")];
+const USER_CHIPS = [say("/待辦"), say("這個月有什麼要報的"), say("我的提醒"), say("說明")];
 
 export async function onRequestPost({ request, env, waitUntil }) {
   const body = await request.text();
@@ -17,96 +18,131 @@ export async function onRequestPost({ request, env, waitUntil }) {
   return new Response("ok");
 }
 
+export async function forgetChat(db, chatId) {
+  for (const t of ["line_msgs", "line_members", "line_todos", "line_reminders", "line_history"])
+    await db.prepare(`DELETE FROM ${t} WHERE chat_id=?`).bind(chatId).run();
+  await db.prepare("DELETE FROM line_kv WHERE k=?").bind("brief:" + chatId).run();
+}
+
 async function handle(env, ev, origin) {
   const db = env.DB, line = lineClient(env.LINE_CHANNEL_TOKEN);
-  // LINE 可能重送同一個事件
   if (ev.webhookEventId) {
     const r = await db.prepare("INSERT OR IGNORE INTO line_events(id,ts) VALUES(?,?)").bind(ev.webhookEventId, Date.now()).run();
     if ((r.meta?.changes ?? 1) === 0) return;
-    if (Math.random() < 0.02) await db.prepare("DELETE FROM line_events WHERE ts<?").bind(Date.now() - 7 * 864e5).run();
   }
   const src = ev.source || {};
-  const reply = msgs => ev.replyToken ? line.reply(ev.replyToken, Array.isArray(msgs) ? msgs : [msgs]) : null;
-
-  // 第一版只做個人助理：被拉進群組就說明後離開
-  if (src.type === "group" || src.type === "room") {
-    if (ev.type === "join") {
-      await reply(textMessage("嗨！我目前是私人記帳助理，還沒開放群組功能，先離開囉。"));
-      if (src.type === "group") await line.leaveGroup(src.groupId); else await line.leaveRoom(src.roomId);
-    }
-    return;
-  }
+  const chatId = src.groupId || src.roomId || src.userId;
   const userId = src.userId;
-  if (!userId) return;
-  const owner = await kv.get(db, "owner");
-  const text = ev.type === "message" && ev.message?.type === "text" ? ev.message.text.trim() : "";
+  if (!chatId) return;
+  const group = isGroup(chatId);
+  const chips = group ? GROUP_CHIPS : USER_CHIPS;
+  const reply = (text, quick = chips) => ev.replyToken ? line.reply(ev.replyToken, [textMessage(text, quick)]).catch(e => console.log("reply failed", e.message)) : null;
 
-  if (!owner) {
-    if (text === "綁定") {
-      await kv.set(db, "owner", userId);
-      return reply(textMessage("綁定完成，之後我只會服務你。\n\n" + HELP, CHIPS));
+  switch (ev.type) {
+    case "join": {
+      const n = await line.groupName(chatId);
+      if (n) await kv.set(db, "name:" + chatId, n);
+      return reply(JOIN_NOTICE);
     }
-    if (ev.type === "follow" || ev.type === "message") return reply(textMessage("你好！第一次使用請輸入「綁定」，把這個助理設定成你專屬的。"));
-    return;
-  }
-  if (userId !== owner) {
-    if (ev.type === "follow" || ev.type === "message") return reply(textMessage("這是私人助理，目前只服務擁有者，謝謝你。"));
-    return;
+    case "leave": return forgetChat(db, chatId);
+    case "memberJoined": return reply(`歡迎加入！我是群組小助理，會記錄群組文字訊息 ${KEEP_DAYS} 天來做總結和待辦；不想被記錄可以輸入「/不要記錄我」。輸入「/說明」看我能做什麼。`);
+    case "memberLeft":
+      for (const m of ev.left?.members || []) await db.prepare("DELETE FROM line_members WHERE chat_id=? AND user_id=?").bind(chatId, m.userId).run();
+      return;
+    case "follow": return reply("你好！\n\n" + HELP_USER);
+    case "unfollow": return;
+    case "postback": {
+      const d = String(ev.postback?.data || "");
+      if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("✓ 已清除這個群組的所有紀錄、待辦和提醒。"); }
+      if (d === "keep") return reply("好，紀錄保留。");
+      return;
+    }
+    case "message": break;
+    default: return;
   }
 
-  const ctx = { env, db, userId, origin, pending: null };
-  if (ev.type === "follow") return reply(textMessage("歡迎回來！\n\n" + HELP, CHIPS));
-  if (ev.type === "postback") {
-    const m = String(ev.postback?.data || "").match(/^(ok|no):(\w+)$/);
-    if (!m) return;
-    const msg = await confirmPending(ctx, m[2], m[1] === "ok");
-    return reply(textMessage(msg, CHIPS));
-  }
-  if (ev.type !== "message") return;
+  const msg = ev.message || {};
+  const who = group ? await member(db, line, chatId, userId) : { name: (await line.name(chatId, userId).catch(() => null)) || "你", optout: 0 };
 
-  const type = ev.message.type;
-  if (type === "text") {
-    if (/^(說明|help|\?|？|怎麼用)$/i.test(text)) return reply(textMessage(HELP, CHIPS));
-    if (text === "今日重點") {
-      await line.loading(userId, 15);
-      return reply(textMessage(await composeBrief(env, db, userId, origin), CHIPS));
+  if (msg.type !== "text") {
+    if (group) {
+      if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］");
+      return;   // 群組裡的貼圖、照片不回應
     }
-    if (/^(確認|好|ok|OK|對)$/.test(text)) {
-      const p = await db.prepare("SELECT id FROM line_pending WHERE user_id=? AND status='open' ORDER BY created DESC LIMIT 1").bind(userId).first();
-      if (p) return reply(textMessage(await confirmPending(ctx, p.id, true), CHIPS));
-    }
-    if (text === "取消") {
-      const p = await db.prepare("SELECT id FROM line_pending WHERE user_id=? AND status='open' ORDER BY created DESC LIMIT 1").bind(userId).first();
-      if (p) return reply(textMessage(await confirmPending(ctx, p.id, false), CHIPS));
-    }
-    return answer(ctx, line, ev, [{ type: "text", text }], text);
+    if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, null, "（傳了一張照片）", msg.id);
+    return reply(msg.type === "sticker" ? "😊 有需要直接打字問我就好。" : "這種訊息我還看不懂，可以用文字問我。");
   }
-  if (type === "image") {
-    await line.loading(userId, 30);
-    let img;
-    try { img = await line.image(ev.message.id); } catch (e) { return reply(textMessage("照片讀取失敗，可以再傳一次或直接打字告訴我。")); }
-    return answer(ctx, line, ev, [
-      { type: "image", source: { type: "base64", media_type: img.type, data: img.data } },
-      { type: "text", text: "（使用者傳來一張照片。如果是發票或收據，整理成帳並準備記帳；不是的話就簡短說明看到什麼、問要怎麼處理。）" },
-    ], "（傳了一張照片）");
+
+  const raw = msg.text || "";
+  const self = (msg.mention?.mentionees || []).filter(m => m.isSelf);
+  // 拿掉 @小助理 本身，剩下的才是要問的內容
+  let text = raw;
+  for (const m of [...self].sort((a, b) => b.index - a.index)) text = text.slice(0, m.index) + text.slice(m.index + m.length);
+  text = text.trim();
+  const named = /^(小助理|助理)[，,:：\s]/.test(text);
+  if (named) text = text.replace(/^(小助理|助理)[，,:：\s]+/, "").trim();
+  const command = text.startsWith("/") || text.startsWith("／") ? text.replace(/^[/／]\s*/, "") : null;
+  const addressed = !group || self.length > 0 || command !== null || named;
+
+  // 群組裡的一般訊息只記錄，不回應
+  if (group && !who.optout && !(command && /^(不要記錄我|恢復記錄|清除紀錄)$/.test(command))) await record(db, chatId, userId, who.name, raw);
+  if (!addressed) return;
+
+  // ---- 快速指令（不用 AI、不計費）----
+  const c = command ?? text;
+  if (/^(說明|help|怎麼用|\?|？)$/i.test(c)) return reply(group ? HELP_GROUP : HELP_USER);
+  if (/^待辦(清單)?$/.test(c)) return reply(await todoText(db, chatId));
+  if (/^完成\s*[0-9a-f]{4}/i.test(c)) return reply(await completeByText(db, chatId, c));
+  if (group && c === "不要記錄我") {
+    await db.prepare("UPDATE line_members SET optout=1 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
+    await db.prepare("DELETE FROM line_msgs WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
+    return reply(`好的，${who.name} 之後的訊息不會被記錄，之前的紀錄也已刪除。想恢復請輸入「/恢復記錄」。`);
   }
-  if (type === "sticker") return reply(textMessage("😊 有需要記帳或提醒，直接打字跟我說就好。", CHIPS));
-  if (type === "audio") return reply(textMessage("語音訊息之後會支援，現在先用打字告訴我好嗎？"));
-  return reply(textMessage("這種訊息我還看不懂，可以用文字或照片告訴我。"));
+  if (group && c === "恢復記錄") {
+    await db.prepare("UPDATE line_members SET optout=0 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
+    return reply(`好的，${who.name} 的訊息會再開始記錄。`);
+  }
+  if (group && c === "清除紀錄") return reply("確定要清除這個群組的所有聊天紀錄、待辦和提醒嗎？", [postback("✓ 確定清除", "wipe:" + chatId, "確定清除"), postback("✕ 保留", "keep", "保留")]);
+  if (c === "不用") return reply("好的。");
+  if (c === "早報") {
+    const s = await briefSettings(db, chatId); s.on = !s.on;
+    await kv.set(db, "brief:" + chatId, JSON.stringify(s));
+    return reply(s.on ? `✓ 已開啟每日早報，每天 ${s.time} 傳報稅期限和到期待辦。想改時間可以說「@小助理 早報改 7:30」。` + (group ? "\n（群組早報會依人數計入官方帳號每月的訊息則數）" : "") : "✓ 已關閉每日早報。");
+  }
+
+  // ---- 交給 AI ----
+  const ask = c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
+  if (!ask) return reply(group ? "有什麼需要幫忙的嗎？輸入「/說明」看我能做什麼。" : HELP_USER);
+  return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, ask, ask);
 }
 
-async function answer(ctx, line, ev, content, logText) {
-  const { env } = ctx;
-  if (!env.ANTHROPIC_API_KEY) return line.reply(ev.replyToken, [textMessage("AI 金鑰還沒設定好，目前只能用「說明」「今日重點」。", CHIPS)]);
-  await line.loading(ctx.userId, 30);
+async function record(db, chatId, userId, name, text) {
+  await db.prepare("INSERT INTO line_msgs(chat_id,user_id,name,text,ts) VALUES(?,?,?,?,?)").bind(chatId, userId || null, name, String(text).slice(0, 2000), Date.now()).run();
+}
+
+async function answer(ctx, text, logText, imageId) {
+  const { env, db, line, ev, chatId, userId, chips } = ctx;
+  const send = t => line.reply(ev.replyToken, [textMessage(t, chips)]).catch(e => console.log("reply failed", e.message));
+  if (!env.ANTHROPIC_API_KEY) return send("AI 還沒設定好，目前可以用「/待辦」「/說明」。");
+  if (!(await allowAI(db, userId))) return send("今天問題有點多，AI 額度用完了，明天再問我好嗎？「/待辦」等指令還是可以用。");
+  if (!isGroup(chatId)) await line.loading(userId, 30);
+  if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; }
+  let content = [{ type: "text", text }];
+  if (imageId) {
+    try {
+      const img = await line.image(imageId);
+      content = [{ type: "image", source: { type: "base64", media_type: img.type, data: img.data } }, { type: "text", text: "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）" }];
+    } catch (e) { return send("照片讀取失敗，可以再傳一次嗎？"); }
+  }
   let out;
   try { out = await chat(ctx, content, logText); }
   catch (e) {
     console.log("chat error", e.message);
-    out = { text: e.status === 401 ? "AI 金鑰不正確，請檢查 Cloudflare 設定。" : e.status === 429 || e.status === 529 ? "AI 現在比較忙，請過一分鐘再試。" : "我這邊出了點問題，請稍後再試一次。" };
+    out = e.status === 401 ? "AI 金鑰不正確，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "AI 現在比較忙，請過一分鐘再試。" : "我這邊出了點問題，請稍後再試一次。";
   }
-  const quick = out.pending ? [postback(out.pending.label, "ok:" + out.pending.id, "確認"), postback("✕ 取消", "no:" + out.pending.id, "取消")] : CHIPS;
-  const msg = textMessage(out.text, quick);
-  try { await line.reply(ev.replyToken, [msg]); }
-  catch (e) { await line.push(ctx.userId, [msg]); }   // 回覆權杖過期時改用推播（會計入每月則數）
+  const quick = /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
+  await line.reply(ev.replyToken, [textMessage(out, quick)]).catch(async e => {
+    console.log("reply failed, pushing", e.message);
+    await line.push(chatId, [textMessage(out, quick)]).catch(() => null);
+  });
 }
