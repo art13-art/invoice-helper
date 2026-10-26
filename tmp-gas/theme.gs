@@ -51,7 +51,7 @@ h1.t-title{display:flex;align-items:center;gap:10px;margin:2px 4px 2px;font-size
 /* 輸入欄位 */
 input,textarea,select{border:1.5px solid var(--fieldline);border-radius:14px;background:var(--field);color:var(--ink);font-size:17px;padding:12px 14px;transition:border-color .15s,box-shadow .15s,background .15s}
 input::placeholder,textarea::placeholder{color:var(--muted);opacity:.75}
-input:focus,textarea:focus,select:focus{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 4px var(--ring)}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);background-color:var(--card);box-shadow:0 0 0 4px var(--ring)}
 select{-webkit-appearance:none;appearance:none;padding-right:40px;background-image:var(--chev);background-repeat:no-repeat;background-position:right 14px center}
 input:disabled,textarea:disabled,select:disabled{opacity:.6}
 #amount{min-height:58px;font-size:28px;font-weight:800;letter-spacing:.01em;font-variant-numeric:tabular-nums}
@@ -78,7 +78,7 @@ textarea{height:72px;min-height:72px}
 .ok{background:var(--ok-bg);color:var(--ok-ink)}.warn{background:var(--warn-bg);color:var(--warn-ink)}.error{background:var(--err-bg);color:var(--err-ink)}
 #learnBox{margin-top:12px;padding:14px;border-radius:16px;background:var(--warn-bg)}
 #learnBox .label{margin-top:0;color:var(--warn-ink)}
-#learnBox input,#learnBox select{background:var(--card)}
+#learnBox input,#learnBox select{background-color:var(--card)}
 #learnButton{min-height:48px;margin-top:4px;font-size:16px;letter-spacing:.04em}
 
 /* 每月訂閱 */
