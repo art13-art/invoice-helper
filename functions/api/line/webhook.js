@@ -171,6 +171,7 @@ async function answer(ctx, text, logText, imageId) {
   const send = t => line.reply(ev.replyToken, [textMessage(t, chips)]).catch(e => console.log("reply failed", e.message));
   if (!env.ANTHROPIC_API_KEY) return send("我還在設定中，請稍後再試。");
   if (!isGroup(chatId)) await line.loading(userId, 30);
+  ctx.isAdmin = await isAdmin(db, userId);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
   let content = [{ type: "text", text }];
   if (imageId) {
