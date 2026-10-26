@@ -1,7 +1,7 @@
 // POST /api/line/webhook — LINE 官方帳號 Webhook（群組小助理，每個人都能用）。
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
-import { chat, member, isGroup, kv, todoText, completeByText, briefSettings, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
+import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 
 const GROUP_CHIPS = [];
@@ -22,7 +22,6 @@ export async function onRequestPost({ request, env, waitUntil }) {
 export async function forgetChat(db, chatId) {
   for (const t of ["line_msgs", "line_members", "line_todos", "line_reminders", "line_history", "line_pending", "line_books"])
     await db.prepare(`DELETE FROM ${t} WHERE chat_id=?`).bind(chatId).run();
-  await db.prepare("DELETE FROM line_kv WHERE k=?").bind("brief:" + chatId).run();
 }
 
 async function handle(env, ev, origin) {
@@ -151,11 +150,6 @@ async function handle(env, ev, origin) {
       await saveBook(db, chatId, info, userId);
       return reply(`✓ ${url ? "已綁定" : "已建立"}記帳表「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n大家可以 @我 說「記帳：碳粉 2 盒 3,200」，或傳單據照片後 @我 說「記這張」。` + (url ? "" : "\n要改成廠商原本的欄位，直接改第一列的欄位名稱就好。"));
     } catch (e) { return reply("設定沒有成功：" + e.message); }
-  }
-  if (c === "早報") {
-    const s = await briefSettings(db, chatId); s.on = !s.on;
-    await kv.set(db, "brief:" + chatId, JSON.stringify(s));
-    return reply(s.on ? `✓ 已開啟每日早報，每天 ${s.time} 傳報稅期限和到期待辦。想改時間可以說「@小助理 早報改 7:30」。` + (group ? "\n（群組早報會依人數計入官方帳號每月的訊息則數）" : "") : "✓ 已關閉每日早報。");
   }
 
   // ---- 交給 AI ----
