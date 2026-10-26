@@ -1,7 +1,7 @@
 // POST /api/line/webhook — LINE 官方帳號 Webhook（群組小助理，每個人都能用）。
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
-import { chat, allowAI, member, isGroup, kv, todoText, completeByText, briefSettings, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
+import { chat, member, isGroup, kv, todoText, completeByText, briefSettings, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 
 const GROUP_CHIPS = [say("/待辦"), say("/總結"), say("/說明")];
@@ -172,7 +172,6 @@ async function answer(ctx, text, logText, imageId) {
   const { env, db, line, ev, chatId, userId, chips } = ctx;
   const send = t => line.reply(ev.replyToken, [textMessage(t, chips)]).catch(e => console.log("reply failed", e.message));
   if (!env.ANTHROPIC_API_KEY) return send("AI 還沒設定好，目前可以用「/待辦」「/說明」。");
-  if (!(await allowAI(db, userId))) return send("今天問題有點多，AI 額度用完了，明天再問我好嗎？「/待辦」等指令還是可以用。");
   if (!isGroup(chatId)) await line.loading(userId, 30);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
   let content = [{ type: "text", text }];
