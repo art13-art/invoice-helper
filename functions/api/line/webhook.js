@@ -6,7 +6,7 @@ import { verifySignature, lineClient, textMessage, say, postback, meetingCard, d
 import { chat, member, isGroup, kv, when, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
-import { adminFor, decisionCard, newDecision, toAdmin } from "../../../lib/escalate.js";
+import { adminFor, decisionCard, newDecision, toAdmin, watchAdmin } from "../../../lib/escalate.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
 const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
@@ -70,6 +70,7 @@ async function handle(env, ev, origin) {
     case "unfollow": return;
     case "postback": {
       const d = String(ev.postback?.data || "");
+      if (group) await watchAdmin(env, db, { chatId, userId, name: "", text: "" }).catch(() => null);
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
       const ad = d.match(/^adm:(ok|all|no):(\w+)$/);
@@ -91,6 +92,8 @@ async function handle(env, ev, origin) {
 
   const msg = ev.message || {};
   const who = group ? await member(db, line, chatId, userId) : { name: (await line.name(chatId, userId).catch(() => null)) || "你", optout: 0 };
+  // 有人找管理員：3 小時沒回就再 @ 他一次（管理員自己在群組說話就算回了）
+  if (group) await watchAdmin(env, db, { chatId, userId, name: who.name, text: msg.type === "text" ? msg.text : "", mentionees: msg.mention?.mentionees }).catch(e => console.log("watchAdmin", e.message));
 
   if (msg.type !== "text") {
     const audio = msg.type === "audio" || (msg.type === "file" && isAudioName(msg.fileName));

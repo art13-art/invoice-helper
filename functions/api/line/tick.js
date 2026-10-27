@@ -43,7 +43,7 @@ export async function onRequestPost({ request, env }) {
     // 群組裡的提醒一律 @人：指定的人／全體（all）；沒指定就 @設提醒的人
     const tag = isGroup(r.chat_id) ? (r.mention_id || r.created_by || null) : null;
     const who = tag ? "{who} " : "";
-    const text = r.kind === "msg" ? `${who}${r.text}` : `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
+    const text = r.kind === "msg" || r.kind === "chase" ? `${who}${r.text}` : `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
     try { await line.push(r.chat_id, card ? [mentionMessage(text, tag), card] : [mentionMessage(text, tag)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
     catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
   }
