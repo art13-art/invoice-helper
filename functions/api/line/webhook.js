@@ -9,7 +9,7 @@ import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
 const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
-const REMIND_ASK = "（使用者在會議錄音整理的卡片上按了「要，設提醒」。依你剛剛那則整理裡「可提醒」的建議，用 set_reminder 把提醒設好：會議預設提前 30 分鐘提醒，只有日期的預設當天早上 9 點；已經過了的時間跳過。設完簡短列出設了哪些。沒有可提醒的事就直接說沒有，問他要提醒什麼。）";
+const REMIND_ASK = "（使用者在會議錄音整理的卡片上按了「要，設提醒」。依你剛剛那則整理裡「可提醒」的建議設好提醒：會議照開會提醒的規則（前一天 18:00 請大家先提出要討論的事項＋會議前 30 分鐘，都用 set_reminder、auto=true）；有人要完成的事（截止日）用 add_todos 加成待辦，系統會自動在前一天和到期時提醒，對話紀錄裡已經加過的待辦不要重複加；已經過了的時間跳過。設完用「時間＋內容」簡短列出。沒有可提醒的事就直接說沒有，問他要提醒什麼。）";
 
 const GROUP_CHIPS = [];
 const USER_CHIPS = [];
@@ -226,12 +226,22 @@ async function remindButton(env, db, line, ev, chatId, userId, txId, want, origi
   if (cur === "busy") return reply("正在設提醒，等我一下。");
   if (want ? cur.startsWith("yes") : cur === "no") return reply(want ? "提醒已經設好了。要改直接跟我說。" : "已經是不設提醒了。");
   if (!want) {
-    let ids = []; try { ids = JSON.parse(cur.slice(4) || "[]"); } catch (e) {}
+    let got = {}; try { got = JSON.parse(cur.slice(4) || "{}"); } catch (e) {}
+    const ids = Array.isArray(got) ? got : got.r || [], todos = Array.isArray(got) ? [] : got.t || [];
     await kv.set(db, k, "no");
-    if (!ids.length) return reply("好，不設提醒。");
-    const { results } = await db.prepare(`SELECT id,due,text FROM line_reminders WHERE status='open' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids).all();
-    for (const r of results) await db.prepare("UPDATE line_reminders SET status='cancelled' WHERE id=? AND status='open'").bind(r.id).run();
-    return reply(results.length ? "好，剛剛設的提醒都取消了：\n" + results.map(r => `・${when(r.due)} ${r.text}`).join("\n") : "好，不設提醒。");
+    const lines = [];
+    if (ids.length) {
+      const { results } = await db.prepare(`SELECT id,due,text FROM line_reminders WHERE status='open' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids).all();
+      for (const r of results) { await db.prepare("UPDATE line_reminders SET status='cancelled' WHERE id=? AND status='open'").bind(r.id).run(); lines.push(`・${when(r.due)} ${r.text}`); }
+    }
+    for (const id of todos) {
+      const t = await db.prepare("SELECT task FROM line_todos WHERE id=? AND status='open'").bind(id).first();
+      if (!t) continue;
+      await db.prepare("UPDATE line_todos SET status='cancelled' WHERE id=?").bind(id).run();
+      await db.prepare("UPDATE line_reminders SET status='cancelled' WHERE todo_id=? AND status='open'").bind(id).run();
+      lines.push(`・待辦：${t.task}`);
+    }
+    return reply(lines.length ? "好，剛剛設的提醒都取消了：\n" + lines.join("\n") : "好，不設提醒。");
   }
   await kv.set(db, k, "busy");
   const t0 = Date.now();
@@ -239,7 +249,8 @@ async function remindButton(env, db, line, ev, chatId, userId, txId, want, origi
   try { await answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, REMIND_ASK, "（按了：要，幫我設提醒）"); }
   finally {
     const { results } = await db.prepare("SELECT id FROM line_reminders WHERE (chat_id=? OR chat_id=?) AND created_by=? AND created>=? AND todo_id IS NULL AND status='open'").bind(chatId, userId, userId, t0).all();
-    await kv.set(db, k, "yes:" + JSON.stringify(results.map(r => r.id)));
+    const { results: td } = await db.prepare("SELECT id FROM line_todos WHERE chat_id=? AND created_by=? AND created>=? AND status='open'").bind(chatId, userId, t0).all();
+    await kv.set(db, k, "yes:" + JSON.stringify({ r: results.map(r => r.id), t: td.map(r => r.id) }));
   }
 }
 

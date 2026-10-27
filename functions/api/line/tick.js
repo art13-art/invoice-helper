@@ -28,14 +28,16 @@ export async function onRequestPost({ request, env }) {
     // 待辦的到期／逾期提醒：已經完成就不發；到期那次發完，隔天早上 9 點還沒完成再提醒一次
     let card = null;
     if (r.todo_id) {
-      const t = await db.prepare("SELECT status,task FROM line_todos WHERE id=?").bind(r.todo_id).first();
+      const t = await db.prepare("SELECT status,task,due FROM line_todos WHERE id=?").bind(r.todo_id).first();
       if (!t || t.status !== "open") continue;
       card = doneCard(r.todo_id, t.task);   // 同一次推播多一張卡，不多算則數
-      if (!r.text.startsWith("逾期還沒完成：")) {
-        const d = new Date(r.due + 8 * 3600e3 + 864e5), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 1, 0);   // 隔天台北 09:00
-        await db.prepare("INSERT INTO line_reminders(id,chat_id,due,text,repeat,mention_id,mention_name,todo_id,created,created_by,status) VALUES(?,?,?,?,'none',?,?,?,?,?,'open')")
-          .bind(r.id + "o", r.chat_id, next, "逾期還沒完成：" + t.task, r.mention_id, r.mention_name, r.todo_id, now, r.created_by).run().catch(() => null);
+      // 到期或逾期提醒發完：隔天早上 9:00 再追一次，一直到有人按「已完成」（前一天的預告不算）
+      if (!r.text.startsWith("明天到期：")) {
+        const d = new Date(Math.max(r.due, now) + 8 * 3600e3 + 864e5), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 1, 0);   // 隔天台北 09:00
+        await db.prepare("INSERT OR IGNORE INTO line_reminders(id,chat_id,due,text,repeat,mention_id,mention_name,todo_id,created,created_by,status) VALUES(?,?,?,?,'none',?,?,?,?,?,'open')")
+          .bind(r.todo_id + "o" + crypto.randomUUID().slice(0, 6), r.chat_id, next, "逾期還沒完成：" + t.task, r.mention_id, r.mention_name, r.todo_id, now, r.created_by).run().catch(() => null);
       }
+      if (r.text.startsWith("逾期還沒完成：") && t.due) r.text = r.text.replace("逾期還沒完成：", `逾期 ${Math.max(1, Math.round((now - t.due) / 864e5))} 天還沒完成：`);
     }
     const late = now - r.due > 30 * 60e3 ? `（原訂 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     const who = r.mention_id && isGroup(r.chat_id) ? "{who} " : "";
