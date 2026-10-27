@@ -30,8 +30,9 @@ CREATE TABLE IF NOT EXISTS line_usage (                                         
   recipients INTEGER DEFAULT 0, usd REAL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS line_usage_month ON line_usage(month, kind);
 CREATE TABLE IF NOT EXISTS line_reports (month TEXT PRIMARY KEY, data TEXT NOT NULL, created INTEGER NOT NULL);   -- 每月開銷報表
-CREATE TABLE IF NOT EXISTS line_memory (                                                 -- 管理員教小助理的事（所有群組共用）
-  id TEXT PRIMARY KEY, text TEXT NOT NULL, created_by TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS line_memory (                                                 -- 大家教小助理的事：chat_id 空＝所有群組（管理員教的），有值＝只用在那個聊天室
+  id TEXT PRIMARY KEY, text TEXT NOT NULL, created_by TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL, chat_id TEXT);
+-- 舊資料庫補欄位（2026-10-27 已在正式環境執行）：ALTER TABLE line_memory ADD COLUMN chat_id TEXT;
 
 -- 訂單流程：監看來源表（客服表）每一列的處理狀態
 CREATE TABLE IF NOT EXISTS line_flow_rows (

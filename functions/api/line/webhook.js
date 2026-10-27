@@ -6,6 +6,7 @@ import { verifySignature, lineClient, textMessage, say, postback, meetingCard } 
 import { chat, member, isGroup, kv, when, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
+import { adminFor, decisionCard, newDecision, toAdmin } from "../../../lib/escalate.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
 const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
@@ -70,6 +71,8 @@ async function handle(env, ev, origin) {
       const d = String(ev.postback?.data || "");
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
+      const ad = d.match(/^adm:(ok|all|no):(\w+)$/);
+      if (ad) return reply(await adminDecision(env, db, line, chatId, userId, ad[2], ad[1]));
       const tr = d.match(/^txr:(yes|no):(\w+)$/);
       if (tr) return remindButton(env, db, line, ev, chatId, userId, tr[2], tr[1] === "yes", origin, chips, reply);
       const dn = d.match(/^done:([0-9a-f]{4})$/);
@@ -165,20 +168,17 @@ async function handle(env, ev, origin) {
   }
   if (group && /^記帳表$/.test(c)) {
     const b = await getBook(db, chatId);
-    return reply(b ? `這個群組的記帳表：${b.name}\n${b.url}\n（要有 Google 共用權限才打得開）` : "這個群組還沒有記帳表，管理員可以 @我 說「設定記帳表」。");
+    return reply(b ? `這個群組的記帳表：${b.name}\n${b.url}\n（要有 Google 共用權限才打得開）` : "這個群組還沒有記帳表，要的話 @我 說「設定記帳表」。");
   }
   if (group && /^(設定記帳|取消記帳)/.test(c)) {
-    if (!(await isAdmin(db, userId))) return reply("只有管理員可以設定記帳表。");
-    if (c === "取消記帳") { await db.prepare("DELETE FROM line_books WHERE chat_id=?").bind(chatId).run(); return reply("✓ 已取消綁定，之後不會再寫入。表格本身和裡面的資料都保留在雲端硬碟。"); }
-    const url = (c.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+[^\s]*/) || [])[0];
-    const tab = (c.match(/分頁[:：]?\s*(\S+)/) || [])[1];
-    try {
-      const old = await getBook(db, chatId);
-      if (old && !url) return reply(`這個群組已經綁定「${old.name}」。\n${old.url}\n要換表格：@我 說「設定記帳表」加上試算表網址；要取消：說「取消記帳」。`);
-      const info = url ? await gas(env, "linkBook", url, tab || null) : await gas(env, "createBook", (await kv.get(db, "name:" + chatId)) || "廠商群組");
-      await saveBook(db, chatId, info, userId);
-      return reply(`✓ ${url ? "已綁定" : "已建立"}記帳表「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n大家可以 @我 說「記帳：碳粉 2 盒 3,200」，或傳單據照片後 @我 說「記這張」。` + (url ? "" : "\n要改成廠商原本的欄位，直接改第一列的欄位名稱就好。"));
-    } catch (e) { return reply("設定沒有成功：" + e.message); }
+    if (await isAdmin(db, userId)) return reply(await bookCommand(env, db, chatId, c, userId));
+    // 不是管理員：直接 @管理員，附按鈕讓他決定
+    const adm = await adminFor(env, db, chatId);
+    const id = await newDecision(db, { chatId, userId, kind: "book", payload: { c }, summary: c });
+    const ask = c.startsWith("取消") ? "取消這個群組的記帳表" : "幫這個群組設定記帳表";
+    const r = await toAdmin(env, db, { chatId, chatName: await kv.get(db, "name:" + chatId), adm, text: `${who.name} 想${ask}：「${c}」`, card: decisionCard(ask + "？", c, id, { yes: c.startsWith("取消") ? "取消記帳" : "設定" }) });
+    const head = textMessage(r.how === "none" ? "這個要設定的人確認，目前還沒有人能確認。" : `好，我請 ${adm.name} 確認一下。`);
+    return ev.replyToken ? line.reply(ev.replyToken, [head, ...r.msgs].slice(0, 5)).catch(e => console.log("reply failed", e.message)) : null;
   }
 
   // ---- 交給 AI ----
@@ -217,6 +217,45 @@ async function doneByButton(db, line, chatId, userId, id) {
   const who = isGroup(chatId) ? await member(db, line, chatId, userId) : { name: "你", optout: 0 };
   if (isGroup(chatId) && !who.optout) await record(db, chatId, userId, who.name, `［按了已完成：${t.task}］`);
   return `✓ ${isGroup(chatId) ? who.name + " " : ""}完成了：${t.task}\n之後不會再提醒這件。`;
+}
+
+/* 記帳表設定／取消（管理員本人，或管理員按了「設定」之後） */
+async function bookCommand(env, db, chatId, c, userId) {
+  if (c === "取消記帳") { await db.prepare("DELETE FROM line_books WHERE chat_id=?").bind(chatId).run(); return "✓ 已取消綁定，之後不會再寫入。表格本身和裡面的資料都保留在雲端硬碟。"; }
+  const url = (c.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+[^\s]*/) || [])[0];
+  const tab = (c.match(/分頁[:：]?\s*(\S+)/) || [])[1];
+  try {
+    const old = await getBook(db, chatId);
+    if (old && !url) return `這個群組已經綁定「${old.name}」。\n${old.url}\n要換表格：@我 說「設定記帳表」加上試算表網址；要取消：說「取消記帳」。`;
+    const info = url ? await gas(env, "linkBook", url, tab || null) : await gas(env, "createBook", (await kv.get(db, "name:" + chatId)) || "廠商群組");
+    await saveBook(db, chatId, info, userId);
+    return `✓ ${url ? "已綁定" : "已建立"}記帳表「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n大家可以 @我 說「記帳：碳粉 2 盒 3,200」，或傳單據照片後 @我 說「記這張」。` + (url ? "" : "\n要改成廠商原本的欄位，直接改第一列的欄位名稱就好。");
+  } catch (e) { return "設定沒有成功：" + e.message; }
+}
+
+/* 管理員在卡片上按「設定／所有群組都套用／不設定」 */
+async function adminDecision(env, db, line, chatId, userId, id, act) {
+  const p = await db.prepare("SELECT * FROM line_pending WHERE id=? AND kind IN ('memory','forget','book')").bind(id).first();
+  if (!p) return "找不到這件事，可能已經過期了。";
+  if (!(await isAdmin(db, userId))) { const adm = await adminFor(env, db, chatId); return `這個要等 ${adm?.name || "負責的人"} 決定。`; }
+  if (p.status !== "open") return p.status === "done" ? "這件已經設定好了。" : "這件已經決定不設定了。";
+  const lock = await db.prepare("UPDATE line_pending SET status=? WHERE id=? AND status='open'").bind(act === "no" ? "cancelled" : "done", id).run();
+  if ((lock.meta?.changes ?? 1) === 0) return "這件正在處理中。";
+  const pl = JSON.parse(p.payload || "{}"), asker = p.user_id ? (await member(db, line, p.chat_id, p.user_id).catch(() => null))?.name || "對方" : "對方";
+  let out;
+  if (act === "no") out = `好，不設定。`;
+  else if (p.kind === "memory") {
+    const now = Date.now(), scope = act === "all" ? null : p.chat_id;
+    if (pl.replaces) await db.prepare("UPDATE line_memory SET text=?, updated=?, created_by=?, chat_id=? WHERE id=?").bind(pl.text, now, p.user_id, scope, pl.replaces).run();
+    else await db.prepare("INSERT INTO line_memory(id,text,created_by,created,updated,chat_id) VALUES(?,?,?,?,?,?)").bind(crypto.randomUUID().slice(0, 4), pl.text, p.user_id, now, now, scope).run();
+    out = `✓ 記住了（${scope ? "只用在這個群組" : "所有群組都套用"}）：${pl.text}`;
+  } else if (p.kind === "forget") { await db.prepare("DELETE FROM line_memory WHERE id=?").bind(pl.id).run(); out = `✓ 刪掉了：${p.summary}`; }
+  else out = await bookCommand(env, db, p.chat_id, pl.c, p.user_id);
+  // 管理員是在私訊裡按的：也讓原本的群組知道結果
+  if (p.chat_id !== chatId) {
+    await line.push(p.chat_id, [textMessage(act === "no" ? `${asker} 提的「${p.summary.slice(0, 60)}」先不設定。` : out)]).then(() => recordPush(db, p.chat_id, 1)).catch(e => console.log("push failed", e.message));
+  }
+  return out;
 }
 
 /* 會議卡片的「要，設提醒／不用」：可以改主意。
@@ -275,7 +314,7 @@ async function answer(ctx, text, logText, attach) {
   if (attach?.audio) {
     // 同一段錄音轉過就直接用存好的逐字稿，不重複花錢
     const prev = (await findTranscripts(db, chatId)).find(x => x.src === attach.id);
-    if (!prev && !(await budgetLeft(env, db))) return send("這個月的費用已經到上限，錄音先不轉。請管理員調整預算。");
+    if (!prev && !(await budgetLeft(env, db))) return tellAdmin(ctx, "這個月的費用已經到上限，錄音先不轉。", `${ctx.userName || "有人"} 傳了錄音，但這個月的預算已經用完，沒有轉。要調高預算嗎？`);
     if (!isGroup(chatId)) await line.loading(userId, 60);
     try {
       let t, saved;
@@ -292,7 +331,10 @@ async function answer(ctx, text, logText, attach) {
       content = [{ type: "text", text: `（以下是那段錄音的逐字稿，約 ${min} 分鐘。${t.speakers ? "「說話者 A、B…」是系統自動分辨的不同人，不知道真名；對話裡聽得出名字就對應起來，聽不出就照代號寫。" : ""}）\n${body}` }, { type: "text", text }];
       tail = saved.url ? `\n\n完整逐字稿（約 ${min} 分鐘）：${saved.url}` : `\n\n（${saved.docErr || "雲端備份沒存成功"}；逐字稿我先留 ${KEEP_DAYS} 天，可以直接問我）`;
       card = meetingCard({ txId: saved.id, minutes: t.seconds / 60, speakers: t.speakers, url: saved.url });
-    } catch (e) { return send(/^content \d/.test(e.message) ? "錄音沒讀到，可能已經過期了，再傳一次？" : e.message); }
+    } catch (e) {
+      if (e.admin) return tellAdmin(ctx, "錄音轉文字暫時不能用。", e.message);
+      return send(/^content \d/.test(e.message) ? "錄音沒讀到，可能已經過期了，再傳一次？" : e.message);
+    }
   } else if (attach) {
     try {
       const f = await line.content(attach.id);
@@ -304,17 +346,36 @@ async function answer(ctx, text, logText, attach) {
   catch (e) {
     console.log("chat error", e.message);
     card = null;
-    out = (e.status === 401 ? "我現在沒辦法回覆，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。") + (tail ? "\n錄音已經轉好了，晚點叫我整理就好。" + tail : "");
+    if (e.status === 401) { await escalateErr(ctx, "Claude 金鑰好像失效了（401），我現在回不了話。"); }
+    out = (e.status === 401 ? "我這邊連線出了問題，暫時回不了。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。") + (tail ? "\n錄音已經轉好了，晚點叫我整理就好。" + tail : "");
   }
   const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
-  const parts = splitText(out, 4800).slice(0, card ? 4 : 5);
+  const extra = [...(card ? [card] : []), ...(ctx.adminMsgs || [])].slice(0, 3);
+  const parts = splitText(out, 4800).slice(0, 5 - extra.length);
   const msgs = parts.map((p, i) => textMessage(p, i === parts.length - 1 ? quick : undefined));
-  if (card) msgs.push(card);
+  msgs.push(...extra);
   await line.reply(ev.replyToken, msgs).catch(async e => {
     console.log("reply failed, pushing", e.message);
     await line.push(chatId, msgs).then(() => recordPush(db, chatId, 1)).catch(() => null);
   });
+}
+
+/* 出了要管理員處理的問題：在群組就 @他，不在就私訊他（同一種問題一小時只通知一次） */
+async function escalateErr(ctx, adminText) {
+  const { env, db, chatId } = ctx, k = "admwarn:" + adminText.slice(0, 20) + ":" + Math.floor(Date.now() / 3600e3);
+  ctx.adm = ctx.adm !== undefined ? ctx.adm : await adminFor(env, db, chatId).catch(() => null);
+  if (!ctx.adm) return;
+  if (!ctx.adm.inChat) { if (await kv.get(db, k)) return; await kv.set(db, k, "1"); }
+  const r = await toAdmin(env, db, { chatId, chatName: ctx.chatName, adm: ctx.adm, text: adminText });
+  (ctx.adminMsgs ||= []).push(...r.msgs);
+}
+async function tellAdmin(ctx, userText, adminText) {
+  const { line, ev, chatId } = ctx;
+  await escalateErr(ctx, adminText);
+  const isAdm = ctx.adm && ctx.adm.id === ctx.userId;
+  const msgs = [textMessage(isAdm ? userText + "\n" + adminText : userText + (ctx.adm ? (ctx.adm.inChat ? "" : `我已經跟 ${ctx.adm.name} 說了。`) : "")), ...(isAdm ? [] : ctx.adminMsgs || [])];
+  return line.reply(ev.replyToken, msgs.slice(0, 5)).catch(e => console.log("reply failed", e.message));
 }
 
 function splitText(t, max) {
