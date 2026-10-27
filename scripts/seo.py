@@ -10,16 +10,16 @@ import datetime as dt, html, json, pathlib, re
 SITE = "https://taxtools.tw"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TODAY = dt.date.today().isoformat()
-NOT_TOOLS = {"", "privacy", "join"}
+NOT_TOOLS = {"", "privacy", "join", "guide"}
 
 def text(s):
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", s))).strip()
 
 pages = []
-for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html")]):
+for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("guide/*/index.html")]):
     rel = f.parent.relative_to(ROOT).as_posix()
     rel = "" if rel == "." else rel
-    if rel.startswith(("scripts", "functions", "lib", "assets", "join", "db")):
+    if rel.startswith(("scripts", "functions", "lib", "assets", "join", "db", "admin", "worker", "tests")):
         continue
     src = f.read_text()
     title = text(re.search(r"<title>(.*?)</title>", src, re.S).group(1))
@@ -27,7 +27,7 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html")]):
     desc = html.unescape(m.group(1)) if m else ""
     url = f"{SITE}/{rel}/" if rel else f"{SITE}/"
     blocks = [
-        f'<meta property="og:type" content="website">',
+        f'<meta property="og:type" content="{"article" if rel.startswith("guide/") else "website"}">',
         f'<meta property="og:site_name" content="稅務小工具">',
         f'<meta property="og:locale" content="zh_TW">',
         f'<meta property="og:title" content="{html.escape(title)}">',
@@ -38,7 +38,20 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html")]):
         f'<meta name="twitter:card" content="summary_large_image">',
     ]
     ld = []
-    if rel and rel not in NOT_TOOLS:
+    if rel.startswith("guide/"):
+        pub = re.search(r'<meta property="article:published_time" content="([^"]+)"', src)
+        mod = re.search(r'<meta property="article:modified_time" content="([^"]+)"', src)
+        h1 = text(re.search(r"<h1>(.*?)</h1>", src, re.S).group(1))
+        org = {"@type": "Organization", "name": "稅務小工具", "url": f"{SITE}/"}
+        ld.append({"@context": "https://schema.org", "@type": "Article", "headline": h1, "description": desc, "url": url,
+                   "mainEntityOfPage": url, "inLanguage": "zh-Hant-TW", "image": f"{SITE}/og.png",
+                   "datePublished": pub.group(1) if pub else TODAY, "dateModified": mod.group(1) if mod else TODAY,
+                   "author": org, "publisher": org})
+        ld.append({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "稅務小工具", "item": f"{SITE}/"},
+            {"@type": "ListItem", "position": 2, "name": "報稅解答", "item": f"{SITE}/guide/"},
+            {"@type": "ListItem", "position": 3, "name": h1, "item": url}]})
+    if rel and rel not in NOT_TOOLS and not rel.startswith("guide/"):
         ld.append({"@context": "https://schema.org", "@type": "WebApplication", "name": title.split("｜")[0],
                    "url": url, "description": desc, "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication",
                    "operatingSystem": "Any", "isAccessibleForFree": True, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}})
@@ -58,10 +71,10 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html")]):
     else:
         src = src.replace("</head>", seo + "\n</head>", 1)
     f.write_text(src)
-    pages.append((url, 1.0 if not rel else 0.5 if rel in NOT_TOOLS else 0.8))
+    pages.append((url, 1.0 if not rel else 0.7 if rel.startswith("guide") else 0.5 if rel in NOT_TOOLS else 0.8))
     print(f"{url:45} faq={len(qa) if faq else 0}")
 
 (ROOT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
     "".join(f"  <url><loc>{u}</loc><lastmod>{TODAY}</lastmod><priority>{p}</priority></url>\n" for u, p in pages) + "</urlset>\n")
-(ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /scripts/\nDisallow: /lib/\nDisallow: /db/\nDisallow: /join/\n\nSitemap: {SITE}/sitemap.xml\n")
+(ROOT / "robots.txt").write_text(f"User-agent: *\nDisallow: /admin/\nAllow: /\nDisallow: /api/\nDisallow: /scripts/\nDisallow: /lib/\nDisallow: /db/\nDisallow: /join/\n\nSitemap: {SITE}/sitemap.xml\n")
 print(len(pages), "pages")

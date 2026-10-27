@@ -91,3 +91,7 @@ details.more .inner{padding:0 14px 14px;display:grid;gap:12px}
 .foot-links a{display:inline-flex;align-items:center;min-height:40px;color:var(--muted)}
 .foot-links a:hover{color:var(--accent)}
 .foot-links span{display:inline-flex;align-items:center;min-height:40px}
+/* 工具頁底部「相關解答」連結 */
+.guide-links{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;font-size:15px}
+.guide-links span{color:var(--muted);font-weight:700}
+.guide-links a{display:inline-flex;align-items:center;min-height:40px;color:var(--accent)}

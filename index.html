@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<link rel="stylesheet" href="/assets/base.css?v=2026102702">
-<link rel="stylesheet" href="/assets/nav.css?v=2026102702">
+<link rel="stylesheet" href="/assets/base.css?v=2026102703">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102703">
 <style>
 /* Home: promise, next deadline, one grid of every tool, then quick links by who you are. */
 .hero{display:grid;gap:10px;max-width:46em;padding-block:8px 4px}
@@ -122,6 +122,17 @@
     </div>
   </section>
 
+  <section>
+    <h2 class="sec-h">報稅解答</h2>
+    <div class="who">
+      <div><h3>營業稅・發票</h3><ul>
+        <li><a href="/guide/vat-filing/">營業稅怎麼報、期限和罰則</a></li>
+        <li><a href="/guide/tax-included/">含稅、未稅怎麼算</a></li>
+        <li><a href="/guide/invoice-mistake/">手開發票寫錯怎麼辦</a></li>
+      </ul></div>
+    </div>
+  </section>
+
   <ul class="promise" aria-label="我們的原則">
     <li><span><b>依現行法規</b>・每月對照財政部、健保署公告更新</span></li>
     <li><span><b>算法寫清楚</b>・告訴你為什麼要扣、為什麼免扣</span></li>
@@ -131,7 +142,7 @@
   <p class="site-foot">本站為民間提供的免費工具，非政府官方網站。計算結果僅供參考，實際以財政部、國稅局、地方稅務局、健保署及勞保局規定為準。</p>
 </div>
 
-<script src="/assets/nav.js?v=2026102702"></script>
+<script src="/assets/nav.js?v=2026102703"></script>
 <script>
 fetch("/assets/deadlines.json").then(r=>r.json()).then(d=>{
   const n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate());

@@ -1,0 +1,44 @@
+/* 報稅解答文章：單欄閱讀版面，表格可橫向捲動，工具連結用醒目卡片。 */
+.crumb{display:flex;flex-wrap:wrap;align-items:center;gap:0 8px;font-size:14px;color:var(--muted);margin:0}
+.crumb a{color:var(--muted);display:inline-flex;align-items:center;min-height:40px}
+.crumb a:hover{color:var(--accent)}
+.meta{font-size:14px;color:var(--muted);margin:0}
+.art{max-width:46em;display:grid;gap:6px;min-width:0}
+.art h2{font-family:var(--f-head);font-size:clamp(20px,2.4vw,23px);letter-spacing:.04em;line-height:1.4;margin:30px 0 4px}
+.art p,.art li{font-size:16.5px;line-height:1.9}
+.art p{margin:0 0 8px}
+.art ul,.art ol{margin:0 0 8px;padding-left:1.4em}
+.art li{margin-bottom:4px}
+.art a{color:var(--accent)}
+.art p a,.art li a{text-underline-offset:3px}
+.answer{background:var(--accent-soft);border-radius:12px;padding:16px 18px;margin:4px 0 6px}
+.answer p{margin:0}
+.answer b:first-child{color:var(--accent)}
+.tbl{overflow-x:auto;margin:4px 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tbl table{border-collapse:collapse;width:100%;font-size:15.5px;line-height:1.65}
+.tbl th,.tbl td{text-align:left;vertical-align:top;padding:10px 12px;border-top:1px solid var(--line)}
+.tbl thead th{border-top:0;background:var(--sunk);color:var(--muted);font-weight:700;font-size:14px;white-space:nowrap}
+.tbl td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.formula{font-size:18px;font-weight:700;padding:12px 16px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;margin:4px 0 10px}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:8px 0}
+.tools a{display:grid;gap:2px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-decoration:none;color:var(--fg);min-height:var(--tap)}
+.tools a:hover{border-color:var(--accent)}
+.tools a b{color:var(--accent);font-size:16px}
+.tools a span{color:var(--muted);font-size:14.5px;line-height:1.6}
+.faq details{border-top:1px solid var(--line);padding:2px 0}
+.faq details:first-of-type{border-top:0}
+.faq summary{cursor:pointer;list-style:none;padding:12px 0;font-weight:500;font-size:16.5px;display:flex;gap:8px;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"＋";margin-left:auto;color:var(--muted)}
+.faq details[open] summary::after{content:"－"}
+.faq p{margin:0 0 12px;color:var(--muted)}
+.law{font-size:14.5px;color:var(--muted)}
+.law li{font-size:14.5px;line-height:1.7}
+.art .more{display:grid;gap:0;padding:0;list-style:none}
+.more a{display:inline-flex;align-items:center;min-height:40px}
+.guide-list{display:grid;gap:12px;max-width:46em;padding:0;margin:0;list-style:none}
+.guide-list a{display:grid;gap:4px;padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--surface);text-decoration:none;color:var(--fg)}
+.guide-list a:hover{border-color:var(--accent)}
+.guide-list b{font-family:var(--f-head);font-size:19px;color:var(--accent)}
+.guide-list span{color:var(--muted);font-size:15px}
+@media print{.tools,.crumb{display:none}}
