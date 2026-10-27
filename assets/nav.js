@@ -23,9 +23,10 @@
     }
   }catch(e){}
 
-  // 意見回饋：右下角小按鈕＋頁尾連結，打開同一個表單
-  const fb=document.createElement("button"); fb.type="button"; fb.className="fb-fab"; fb.setAttribute("data-feedback",""); fb.textContent="意見回饋";
-  document.body.appendChild(fb);
+  // 意見回饋：頁首按鈕＋頁尾連結，打開同一個表單
+  // 頁首右側的「意見回饋」（不用浮動按鈕，避免蓋住計算結果）
+  const head=document.querySelector(".site-head");
+  if(head&&!head.querySelector(".fb-head")){ const fb=document.createElement("button"); fb.type="button"; fb.className="fb-head"; fb.setAttribute("data-feedback",""); fb.textContent="意見回饋"; head.appendChild(fb); }
   let dlg=null;
   function open(){
     if(!dlg){

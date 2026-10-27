@@ -3,6 +3,7 @@ window.TT_AUTH=(function(){
   const GOOGLE_CLIENT_ID="1066981930870-e9u1ju6mnqmrtocmat5ullg6dtpcodkv.apps.googleusercontent.com";
   const ready=!/^PENDING/.test(GOOGLE_CLIENT_ID);
   const api=(p,body)=>fetch(p,{method:body?"POST":"GET",headers:body?{"content-type":"application/json","x-tt":"1"}:{},body:body?JSON.stringify(body):undefined,credentials:"same-origin"})
+    .catch(()=>{ throw new Error("連線失敗，請檢查網路後再試一次"); })
     .then(async r=>{ let j={}; try{ j=await r.json(); }catch(e){} if(!r.ok){ const e=new Error(j.error||"連線失敗，請稍後再試"); e.status=r.status; throw e; } return j; });
   let gsi=null;
   function loadGsi(){ if(gsi) return gsi; gsi=new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.async=true; s.onload=()=>res(window.google); s.onerror=()=>{ gsi=null; rej(new Error("Google 登入載入失敗，請檢查網路後重新整理")); }; document.head.appendChild(s); }); return gsi; }
