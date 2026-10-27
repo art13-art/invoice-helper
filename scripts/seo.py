@@ -56,7 +56,8 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
                    "url": url, "description": desc, "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication",
                    "operatingSystem": "Any", "isAccessibleForFree": True, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}})
     if not rel:
-        ld.append({"@context": "https://schema.org", "@type": "WebSite", "name": "稅務小工具", "url": f"{SITE}/", "inLanguage": "zh-Hant-TW"})
+        ld.append({"@context": "https://schema.org", "@type": "WebSite", "name": "稅務小工具", "alternateName": "taxtools.tw", "url": f"{SITE}/", "inLanguage": "zh-Hant-TW"})
+        ld.append({"@context": "https://schema.org", "@type": "Organization", "name": "稅務小工具", "url": f"{SITE}/", "logo": f"{SITE}/icon-512.png", "email": "art13@doesart13.com"})
     faq = re.search(r'<section class="card faq">(.*?)</section>', src, re.S)
     if faq:
         qa = re.findall(r"<summary>(.*?)</summary>\s*<p>(.*?)</p>", faq.group(1), re.S)
