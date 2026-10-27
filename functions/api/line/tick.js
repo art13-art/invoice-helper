@@ -45,7 +45,13 @@ export async function onRequestPost({ request, env }) {
     const who = tag ? "{who} " : "";
     const text = r.kind === "msg" || r.kind === "chase" ? `${who}${r.text}` : `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
     try { await line.push(r.chat_id, card ? [mentionMessage(text, tag), card] : [mentionMessage(text, tag)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
-    catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
+    catch (e) {
+      // @ 或卡片被 LINE 拒收（例如被 @ 的人已經退群）：改成純文字再送一次，提醒不能丟
+      console.log("reminder push failed, retry plain", r.id, e.message);
+      const plain = text.replace("{who} ", r.mention_id === "all" ? "@All " : r.mention_name ? "@" + String(r.mention_name).split("、").join(" @") + " " : "");
+      try { await line.push(r.chat_id, [textMessage(plain)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
+      catch (e2) { sent.failed++; console.log("reminder push failed", r.id, e2.message); }
+    }
   }
 
   try { if (await gasConf(env)) { const f = await runFlows(env, db, now); if (f.length) sent.flows = f; } } catch (e) { console.log("flows failed", e.message); }

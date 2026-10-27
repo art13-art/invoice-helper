@@ -403,7 +403,10 @@ async function answer(ctx, text, logText, attach) {
   msgs.push(...extra);
   await line.reply(ev.replyToken, msgs).catch(async e => {
     console.log("reply failed, pushing", e.message);
-    await line.push(chatId, msgs).then(() => recordPush(db, chatId, 1)).catch(() => null);
+    // 回覆權杖過期 → 用推播；卡片或 @ 被拒 → 只送文字
+    const plain = msgs.filter(m => m.type === "text");
+    const ok = await line.reply(ev.replyToken, plain).then(() => true).catch(() => false);
+    if (!ok) await line.push(chatId, msgs).catch(() => line.push(chatId, plain)).then(() => recordPush(db, chatId, 1)).catch(() => null);
   });
 }
 
