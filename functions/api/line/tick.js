@@ -1,6 +1,6 @@
 // POST /api/line/tick — 定時（約每 1 分鐘）呼叫：送出到期提醒，並清掉過期紀錄。
 // 不需要金鑰：重複呼叫也只會送出已到期且尚未送出的提醒（先標記再送，不會重複）。
-import { lineClient, mentionMessage, textMessage, say } from "../../../lib/line.js";
+import { lineClient, mentionMessage, textMessage, say, doneCard } from "../../../lib/line.js";
 import { recordPush, monthlyReport, checkQuota } from "../../../lib/usage.js";
 import { gas, gasConf } from "../../../lib/books.js";
 import { runFlows } from "../../../lib/orders.js";
@@ -25,9 +25,11 @@ export async function onRequestPost({ request, env }) {
       : await db.prepare("UPDATE line_reminders SET status='sent' WHERE id=? AND status='open'").bind(r.id).run();
     if ((claim.meta?.changes ?? 1) === 0) continue;
     // 待辦的到期／逾期提醒：已經完成就不發；到期那次發完，隔天早上 9 點還沒完成再提醒一次
+    let card = null;
     if (r.todo_id) {
       const t = await db.prepare("SELECT status,task FROM line_todos WHERE id=?").bind(r.todo_id).first();
       if (!t || t.status !== "open") continue;
+      card = doneCard(r.todo_id, t.task);   // 同一次推播多一張卡，不多算則數
       if (!r.text.startsWith("逾期還沒完成：")) {
         const d = new Date(r.due + 8 * 3600e3 + 864e5), next = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 1, 0);   // 隔天台北 09:00
         await db.prepare("INSERT INTO line_reminders(id,chat_id,due,text,repeat,mention_id,mention_name,todo_id,created,created_by,status) VALUES(?,?,?,?,'none',?,?,?,?,?,'open')")
@@ -37,7 +39,7 @@ export async function onRequestPost({ request, env }) {
     const late = now - r.due > 30 * 60e3 ? `（原訂 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     const who = r.mention_id && isGroup(r.chat_id) ? "{who} " : "";
     const text = `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
-    try { await line.push(r.chat_id, [mentionMessage(text, r.mention_id)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
+    try { await line.push(r.chat_id, card ? [mentionMessage(text, r.mention_id), card] : [mentionMessage(text, r.mention_id)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
     catch (e) { sent.failed++; console.log("reminder push failed", r.id, e.message); }
   }
 

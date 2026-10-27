@@ -66,6 +66,8 @@ async function handle(env, ev, origin) {
       const d = String(ev.postback?.data || "");
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
+      const dn = d.match(/^done:([0-9a-f]{4})$/);
+      if (dn) return reply(await doneByButton(db, line, chatId, userId, dn[1]));
       const m = d.match(/^(ok|no):(\w+)$/);
       if (m) {
         const nm = group ? (await member(db, line, chatId, userId)).name : "你";
@@ -110,7 +112,7 @@ async function handle(env, ev, origin) {
   // ---- 快速指令（不用 AI、不計費）----
   const c = command ?? text;
   if (/^(說明|help|怎麼用|\?|？)$/i.test(c)) return reply(group ? HELP_GROUP : HELP_USER);
-  if (/^(待辦(清單|事項)?|有哪些待辦[?？]?)$/.test(c)) return reply(await todoText(db, chatId));
+  if (/^(待辦(清單|事項)?|有哪些待辦[?？]?)$/.test(c)) return reply(await todoText(db, chatId), await todoChips(db, chatId));
   if (/^完成\s*[0-9a-f]{4}/i.test(c)) return reply(await completeByText(db, chatId, c));
   if (group && /^(請)?(不要|別|停止)(再)?(記錄|紀錄)我(的訊息)?$/.test(c)) {
     await db.prepare("UPDATE line_members SET optout=1 WHERE chat_id=? AND user_id=?").bind(chatId, userId).run();
@@ -183,6 +185,27 @@ async function handle(env, ev, origin) {
     if (q) attach = { id: msg.quotedMessageId, name: q.media.startsWith("file:") ? (q.text.match(/檔案：(.*)］/) || [])[1] || "" : "照片.jpg" };
   }
   return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask, attach);
+}
+
+/* 提醒卡或待辦清單上按「✓ 已完成」：負責人、交辦的人或管理員按了就劃掉，之後不再提醒 */
+async function doneByButton(db, line, chatId, userId, id) {
+  const t = await db.prepare("SELECT * FROM line_todos WHERE id=? AND chat_id=?").bind(id, chatId).first();
+  if (!t) return "找不到這件待辦，可能已經刪掉了。";
+  if (t.status !== "open") return `這件已經完成了：${t.task}`;
+  if (t.assignee_id && t.assignee_id !== userId && t.created_by !== userId && !(await isAdmin(db, userId)))
+    return `這件是 ${t.assignee_name || "負責人"} 的，請本人按「已完成」，或跟我說一聲。`;
+  const r = await db.prepare("UPDATE line_todos SET status='done' WHERE id=? AND status='open'").bind(id).run();
+  if ((r.meta?.changes ?? 1) === 0) return `這件已經完成了：${t.task}`;
+  await db.prepare("UPDATE line_reminders SET status='cancelled' WHERE todo_id=? AND status='open'").bind(id).run();
+  const who = isGroup(chatId) ? await member(db, line, chatId, userId) : { name: "你", optout: 0 };
+  if (isGroup(chatId) && !who.optout) await record(db, chatId, userId, who.name, `［按了已完成：${t.task}］`);
+  return `✓ ${isGroup(chatId) ? who.name + " " : ""}完成了：${t.task}\n之後不會再提醒這件。`;
+}
+
+/* 待辦清單下面的「✓ 完成」快速按鈕（最多 10 件） */
+async function todoChips(db, chatId) {
+  const { results } = await db.prepare("SELECT id,task FROM line_todos WHERE chat_id=? AND status='open' ORDER BY due IS NULL, due LIMIT 10").bind(chatId).all();
+  return results.map(t => postback("✓ " + t.task, "done:" + t.id, "✓ 已完成：" + String(t.task).slice(0, 40)));
 }
 
 async function record(db, chatId, userId, name, text, media) {
