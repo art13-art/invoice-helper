@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>統一發票對獎｜最新中獎號碼、輸入末 3 碼快速對獎</title>
+<link rel="canonical" href="https://taxtools.tw/invoice-lottery/">
+<meta name="description" content="統一發票最新中獎號碼，輸入發票末 3 碼或完整 8 碼馬上對獎。特別獎 1,000 萬、特獎 200 萬、頭獎 20 萬到六獎 200 元的對獎規則、領獎期限一次看。依財政部公告。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js?v=2026102707"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102707">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102707">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102707">
+<style>
+.num-in{font-size:30px!important;font-weight:700;letter-spacing:.3em;text-align:center;font-variant-numeric:tabular-nums;min-height:60px!important}
+.verdict{display:grid;gap:6px;padding:18px;border-radius:12px;background:var(--sunk);text-align:center}
+.verdict b{font-size:26px;font-family:var(--f-head);letter-spacing:.06em}
+.verdict.win{background:var(--warm-soft)}
+.verdict.win b{color:var(--warn)}
+.verdict.maybe{background:var(--accent-soft)}
+.verdict.maybe b{color:var(--accent)}
+.verdict span{color:var(--muted);font-size:15px}
+.nums{display:grid;gap:0;margin:0;padding:0;list-style:none}
+.nums li{display:grid;grid-template-columns:5.5em minmax(0,1fr);gap:4px 12px;padding:12px 0;border-top:1px solid var(--line);align-items:baseline}
+.nums li:first-child{border-top:0}
+.nums .k{color:var(--muted);font-size:15px}
+.nums .k small{display:block;font-size:13px}
+.nums .v{font-size:24px;font-weight:700;letter-spacing:.12em;font-variant-numeric:tabular-nums;line-height:1.5;word-break:break-all}
+.nums .v em{font-style:normal;color:var(--warn)}
+.per{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="統一發票對獎｜最新中獎號碼、輸入末 3 碼快速對獎">
+<meta property="og:description" content="統一發票最新中獎號碼，輸入發票末 3 碼或完整 8 碼馬上對獎。特別獎 1,000 萬、特獎 200 萬、頭獎 20 萬到六獎 200 元的對獎規則、領獎期限一次看。依財政部公告。">
+<meta property="og:url" content="https://taxtools.tw/invoice-lottery/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "統一發票對獎", "url": "https://taxtools.tw/invoice-lottery/", "description": "統一發票最新中獎號碼，輸入發票末 3 碼或完整 8 碼馬上對獎。特別獎 1,000 萬、特獎 200 萬、頭獎 20 萬到六獎 200 元的對獎規則、領獎期限一次看。依財政部公告。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "統一發票怎麼對獎？", "acceptedAnswer": {"@type": "Answer", "text": "特別獎、特獎要 8 碼全部相同。頭獎 8 碼全部相同得 20 萬元；末 7 碼和頭獎相同得二獎 4 萬元，末 6 碼三獎 1 萬元，末 5 碼四獎 4,000 元，末 4 碼五獎 1,000 元，末 3 碼六獎 200 元。"}}, {"@type": "Question", "name": "什麼時候開獎？領獎期限多久？", "acceptedAnswer": {"@type": "Answer", "text": "每單數月 25 日開出前兩個月的獎號，例如 11 月 25 日開 9–10 月。中獎發票從開獎後次月 6 日起，可以領 3 個月。"}}, {"@type": "Question", "name": "中獎要繳稅嗎？", "acceptedAnswer": {"@type": "Answer", "text": "每聯獎額超過 5,000 元的（頭獎、二獎、三獎），要扣 20% 所得稅；四獎 4,000 元以下免扣。領獎收據另外要貼 0.4% 印花稅，適用的獎別以領獎單位說明為準。"}}, {"@type": "Question", "name": "雲端發票也是這樣對嗎？", "acceptedAnswer": {"@type": "Answer", "text": "雲端發票的一般獎號一樣這樣對，另外還有「雲端發票專屬獎」要到財政部電子發票整合服務平台查詢；有設定領獎帳戶的，中獎會自動匯款。"}}, {"@type": "Question", "name": "公司買東西的發票可以對獎嗎？", "acceptedAnswer": {"@type": "Answer", "text": "不行。買受人是營業人（打了公司統編）、政府機關、公營事業、公立學校或部隊的統一發票，不能領獎。"}}]}</script>
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap" role="main">
+  <div class="page-head">
+    <h1>統一發票對獎</h1>
+    <p>最新一期中獎號碼，輸入發票末 3 碼先快速對，有機會中獎再輸入完整 8 碼確認。號碼依財政部公告。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>選擇期別</h2>
+        <div class="seg per" role="group" aria-label="期別" id="per"></div>
+        <p class="hint" id="claim"></p>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>輸入發票號碼</h2>
+        <div class="field">
+          <label for="no">發票號碼的數字（輸入末 3 碼就能先對）</label>
+          <input id="no" class="num-in" inputmode="numeric" maxlength="8" placeholder="例如 835" enterkeyhint="done">
+          <p class="hint">英文字軌不用輸入。對完會自動清空，可以一張接一張輸入。</p>
+        </div>
+        <div class="verdict" id="verdict" aria-live="polite"><b>輸入號碼開始對獎</b><span>六獎只要末 3 碼和頭獎相同就中 200 元</span></div>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card" id="numbers"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>統一發票怎麼對獎？</summary><p>特別獎、特獎要 8 碼全部相同。頭獎 8 碼全部相同得 20 萬元；末 7 碼和頭獎相同得二獎 4 萬元，末 6 碼三獎 1 萬元，末 5 碼四獎 4,000 元，末 4 碼五獎 1,000 元，末 3 碼六獎 200 元。</p></details>
+        <details><summary>什麼時候開獎？領獎期限多久？</summary><p>每單數月 25 日開出前兩個月的獎號，例如 11 月 25 日開 9–10 月。中獎發票從開獎後次月 6 日起，可以領 3 個月。</p></details>
+        <details><summary>中獎要繳稅嗎？</summary><p>每聯獎額超過 5,000 元的（頭獎、二獎、三獎），要扣 20% 所得稅；四獎 4,000 元以下免扣。領獎收據另外要貼 0.4% 印花稅，適用的獎別以領獎單位說明為準。</p></details>
+        <details><summary>雲端發票也是這樣對嗎？</summary><p>雲端發票的一般獎號一樣這樣對，另外還有「雲端發票專屬獎」要到財政部電子發票整合服務平台查詢；有設定領獎帳戶的，中獎會自動匯款。</p></details>
+        <details><summary>公司買東西的發票可以對獎嗎？</summary><p>不行。買受人是營業人（打了公司統編）、政府機關、公營事業、公立學校或部隊的統一發票，不能領獎。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/invoice-helper/">手開發票小幫手</a><a href="/guide/invoice-mistake/">發票開錯怎麼辦？</a><a href="/tax-included/">含稅未稅計算機</a></nav>
+  <p class="site-foot">中獎號碼依財政部稅務入口網公告，<span id="src"></span>。本站為民間提供的對獎工具，實際以財政部公告及領獎單位核對為準。</p>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/nav.js?v=2026102707"></script>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>n.toLocaleString("zh-TW");
+let D=null, P=null;
+const fmtD=s=>{ const [y,m,d]=s.split("-").map(Number); return `${y-1911}/${m}/${d}`; };
+function hl(full,tail){ return tail?full.slice(0,8-tail.length)+`<em>${tail}</em>`:full; }
+
+function check(n){
+  const p=P, out=[];
+  if(n.length<3) return null;
+  if(n.length<8){
+    const tail=n.slice(-3), hit=[...p.first.filter(f=>f.endsWith(tail)), ...p.extra6.filter(x=>x===tail)];
+    const near=[p.special,p.grand,...p.first].some(f=>f.endsWith(tail));
+    if(p.extra6.includes(tail)) return {cls:"win",t:"中六獎 200 元！",s:"增開六獎：末 3 碼相同就中。"};
+    if(hit.length) return {cls:"maybe",t:"有機會中獎！",s:`末 3 碼 ${tail} 和頭獎相同，至少中六獎 200 元。輸入完整 8 碼看看能不能中更多。`};
+    if(near) return {cls:"maybe",t:"再輸入完整 8 碼確認",s:`末 3 碼和特別獎或特獎相同，要 8 碼全部相同才中。`};
+    return {cls:"",t:"沒有中獎",s:`末 3 碼 ${tail} 沒有中，換下一張。`};
+  }
+  if(n===p.special) return {cls:"win",t:"中特別獎 1,000 萬元！",s:"8 碼和特別獎完全相同。"};
+  if(n===p.grand) return {cls:"win",t:"中特獎 200 萬元！",s:"8 碼和特獎完全相同。"};
+  let best=0;
+  p.first.forEach(f=>{ for(let k=8;k>=3;k--){ if(n.slice(-k)===f.slice(-k)){ best=Math.max(best,k); break; } } });
+  if(p.extra6.includes(n.slice(-3))) best=Math.max(best,3);
+  if(best>=3){ const name=["","","","六獎","五獎","四獎","三獎","二獎","頭獎"][best], amt=[0,0,0,200,1000,4000,10000,40000,200000][best];
+    return {cls:"win",t:`中${name} ${money(amt)} 元！`,s:`末 ${best} 碼和頭獎相同。${amt>5000?"獎額超過 5,000 元要扣 20% 所得稅。":""}`}; }
+  return {cls:"",t:"沒有中獎",s:"換下一張試試。"};
+}
+
+function renderNumbers(){
+  $("per").innerHTML=D.periods.slice(0,2).map(p=>`<button type="button" data-id="${p.id}" aria-pressed="${p===P}"><b>${p.label}</b><small>${p===D.periods[0]?"最新一期":"上一期"}</small></button>`).join("");
+  $("per").querySelectorAll("button").forEach(b=>b.onclick=()=>{ P=D.periods.find(p=>p.id===b.dataset.id); renderNumbers(); onInput(); });
+  const today=new Date(); today.setHours(0,0,0,0); const end=new Date(P.claim[1]+"T00:00");
+  $("claim").textContent=`領獎期間：${fmtD(P.claim[0])}～${fmtD(P.claim[1])}${end<today?"（已過期）":""}`;
+  $("numbers").innerHTML=`<h2>${P.label}中獎號碼</h2><ul class="nums">
+    <li><span class="k">特別獎<small>1,000 萬元</small></span><span class="v">${P.special}</span></li>
+    <li><span class="k">特獎<small>200 萬元</small></span><span class="v">${P.grand}</span></li>
+    <li><span class="k">頭獎<small>20 萬元</small></span><span class="v">${P.first.map(f=>hl(f,f.slice(-3))).join("<br>")}</span></li>
+    ${P.extra6.length?`<li><span class="k">增開六獎<small>200 元</small></span><span class="v"><em>${P.extra6.join("、")}</em></span></li>`:""}
+  </ul><p class="hint" style="margin-top:10px">橘色數字是頭獎末 3 碼：發票末 3 碼和它相同就至少中六獎 200 元。</p>
+  <div class="actions" style="margin-top:12px"><button type="button" class="btn" id="cp">複製中獎號碼</button></div>`;
+  $("cp").onclick=()=>copyText(`統一發票 ${P.label}中獎號碼\n特別獎（1,000 萬）：${P.special}\n特獎（200 萬）：${P.grand}\n頭獎（20 萬）：${P.first.join("、")}\n${P.extra6.length?`增開六獎：${P.extra6.join("、")}\n`:""}領獎期間：${fmtD(P.claim[0])}～${fmtD(P.claim[1])}\n快速對獎：https://taxtools.tw/invoice-lottery/`,"已複製中獎號碼");
+  $("src").innerHTML=`<a href="${P.source}" rel="noopener">財政部公告（${P.label}）</a>`;
+}
+let clearT;
+function onInput(){
+  const v=$("no"), n=v.value.replace(/\D/g,"").slice(0,8); if(v.value!==n) v.value=n;
+  const r=check(n), V=$("verdict");
+  clearTimeout(clearT);
+  if(!r){ V.className="verdict"; V.innerHTML=`<b>輸入號碼開始對獎</b><span>六獎只要末 3 碼和頭獎相同就中 200 元</span>`; return; }
+  V.className="verdict "+r.cls; V.innerHTML=`<b>${r.t}</b><span>${r.s}</span>`;
+  // 末 3 碼沒中的話 1.2 秒後自動清空，方便一張接一張輸入
+  if(!r.cls && n.length===3) clearT=setTimeout(()=>{ if(v.value===n){ v.value=""; v.focus(); } },1200);
+}
+$("no").addEventListener("input",onInput);
+$("f").addEventListener("submit",e=>e.preventDefault());
+fetch("/assets/lottery.json?v="+Date.now().toString().slice(0,7)).then(r=>r.json()).then(d=>{ D=d; P=d.periods[0]; renderNumbers(); }).catch(()=>{ $("numbers").innerHTML=`<p class="note warm">中獎號碼載入失敗，請重新整理頁面。</p>`; });
+</script>
+</body>
+</html>

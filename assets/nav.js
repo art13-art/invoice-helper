@@ -14,7 +14,7 @@
   if(document.readyState==="complete") afterLoad(); else addEventListener("load",afterLoad);
 })();
 (function(){
-  const TOOLS=[["/invoice-helper/","手開發票"],["/rent-withholding/","租金扣繳"],["/labor-report/","勞報扣繳"],["/tax-included/","含稅換算"],["/company-lookup/","統編查詢"],["/labor-health/","勞健保"],["/overtime-pay/","加班費"],["/annual-leave/","特休"],["/severance-pay/","資遣費"],["/income-tax/","綜所稅"],["/landlord-tax/","房東報稅"],["/tax-calendar/","報稅行事曆"],["/ledger/","帳本"]];
+  const TOOLS=[["/invoice-helper/","手開發票"],["/rent-withholding/","租金扣繳"],["/labor-report/","勞報扣繳"],["/tax-included/","含稅換算"],["/company-lookup/","統編查詢"],["/labor-health/","勞健保"],["/overtime-pay/","加班費"],["/annual-leave/","特休"],["/severance-pay/","資遣費"],["/income-tax/","綜所稅"],["/landlord-tax/","房東報稅"],["/invoice-lottery/","發票對獎"],["/tax-calendar/","報稅行事曆"],["/ledger/","帳本"]];
   const nav=document.querySelector(".site-nav"); if(!nav) return;
   const here=location.pathname.replace(/index\.html$/,"");
   nav.innerHTML=TOOLS.map(([h,t])=>`<a href="${h}"${here===h?' aria-current="page"':""}>${t}</a>`).join("");

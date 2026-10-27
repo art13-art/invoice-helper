@@ -21,5 +21,6 @@
 - [資遣費計算機](https://taxtools.tw/severance-pay/)：勞退新制每滿 1 年 0.5 個月平均工資（最高 6 個月）、舊制每滿 1 年 1 個月，含預告期間。
 - [綜所稅試算](https://taxtools.tw/income-tax/)：最新年度免稅額、扣除額與級距試算。
 - [房東租金報稅](https://taxtools.tw/landlord-tax/)：租賃所得計算，含公益出租人與包租代管。
+- [統一發票對獎](https://taxtools.tw/invoice-lottery/)：最新一期統一發票中獎號碼與快速對獎（依財政部公告，單數月 25 日開獎後更新）。
 - [報稅行事曆](https://taxtools.tw/tax-calendar/)：營業稅、扣繳、綜所稅、房屋稅等期限，已依假日順延，可訂閱。
 - [報稅帳本](https://taxtools.tw/ledger/)：記帳並自動整理每期營業稅、代扣紀錄與可扣除支出。
