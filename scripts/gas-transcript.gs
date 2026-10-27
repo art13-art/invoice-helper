@@ -1,7 +1,9 @@
 // LINE 小助理（Apps Script）— 會議逐字稿備份
-// 貼到 Apps Script 專案「LINE 小助理」裡，新增一個檔案（例如「逐字稿」），內容就是這整段。
-// 另外把「程式碼」檔案裡的 API_ 那一行，在最後的 setCell: setCell_ 後面加上：, saveTranscript: saveTranscript_
+// 貼到 Apps Script 專案「LINE 小助理」裡，新增一個檔案（例如「逐字稿」），內容就是這整段；原本的「程式碼」不用動。
 // 存檔後執行一次 authorizeDocs（會要求 Google 文件權限），再「部署 → 管理部署作業 → 編輯 → 版本：新版本 → 部署」。
+
+// 把 saveTranscript 登記到「程式碼」裡的 API_（這個檔案要排在「程式碼」後面，新增的檔案預設就在後面）
+try { API_.saveTranscript = saveTranscript_; } catch (e) { Logger.log('請把這個檔案拖到「程式碼」下面'); }
 
 /* 逐字稿存成 Google 文件，放在「LINE 小助理｜廠商帳 / 會議逐字稿」資料夾 */
 function saveTranscript_(title, text) {
