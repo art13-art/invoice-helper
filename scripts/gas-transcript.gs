@@ -7,6 +7,7 @@ try {
   API_.saveTranscript = saveTranscript_;
   API_.saveDoc = saveDoc_;
   API_.createLog = createLog_;
+  API_.readFile = readFile_;
 } catch (e) { Logger.log('請把這個檔案拖到「程式碼」下面'); }
 
 function subFolder_(name) {
@@ -73,6 +74,33 @@ function createLog_(title, headers) {
   s.getRange('A2:A').setNumberFormat('yyyy/MM/dd');
   DriveApp.getFileById(ss.getId()).moveTo(folder_());
   return info_(ss, s);
+}
+
+/* 讀 Google 雲端的檔案（文件、試算表、簡報、上傳的 Word／Excel／PDF…）。
+   onlyShared＝true 時只讀「知道連結的人都能檢視」的檔案（非管理員叫小幫手讀時） */
+function readFile_(idOrUrl, onlyShared) {
+  var m = String(idOrUrl || '').match(/[-\w]{25,}/);
+  if (!m) throw new Error('連結格式不對');
+  var f;
+  try { f = DriveApp.getFileById(m[0]); } catch (e) { throw new Error('NO_ACCESS'); }
+  if (onlyShared) {
+    var a = f.getSharingAccess();
+    if (a !== DriveApp.Access.ANYONE && a !== DriveApp.Access.ANYONE_WITH_LINK) throw new Error('NOT_SHARED');
+  }
+  var mt = f.getMimeType(), name = f.getName();
+  if (mt === MimeType.GOOGLE_DOCS) return { name: name, kind: 'text', text: DocumentApp.openById(f.getId()).getBody().getText().slice(0, 200000) };
+  if (mt === MimeType.GOOGLE_SHEETS) {
+    var ss = SpreadsheetApp.openById(f.getId());
+    return { name: name, kind: 'sheets', sheets: ss.getSheets().slice(0, 10).map(function (s) {
+      var r = Math.min(s.getLastRow(), 5000), c = Math.min(s.getLastColumn(), 60);
+      return { name: s.getName(), rows: r && c ? s.getRange(1, 1, r, c).getDisplayValues() : [] };
+    }) };
+  }
+  var blob = (mt === MimeType.GOOGLE_SLIDES || mt === MimeType.GOOGLE_DRAWINGS) ? f.getAs('application/pdf') : f.getBlob();
+  var bytes = blob.getBytes();
+  if (bytes.length > 15 * 1024 * 1024) throw new Error('TOO_BIG');
+  var fname = (mt === MimeType.GOOGLE_SLIDES || mt === MimeType.GOOGLE_DRAWINGS) ? name + '.pdf' : name;
+  return { name: fname, kind: 'blob', mime: blob.getContentType(), data: Utilities.base64Encode(bytes) };
 }
 
 /* 第一次貼上後執行一次，讓 Google 要求「建立文件」的權限 */
