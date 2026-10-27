@@ -469,7 +469,16 @@ function renderRecur(b){
 }
 
 /* ---------- rendering ---------- */
-function vatPeriod(y,m){ const s=m-(m%2); return {y,s,e:s+1,due:new Date(y,s+2,15)}; }   // months 0-based: Jan–Feb, Mar–Apr …
+/* 營業稅申報期限：單月 15 日；遇假日順延（以報稅行事曆的資料為準，沒有資料時至少避開週末） */
+let VATDUE={};
+fetch("/assets/deadlines.json").then(r=>r.json()).then(d=>{ (d.items||[]).forEach(i=>{ if(/^vat-/.test(i.id)) VATDUE[i.id.slice(4)]=i.due; }); if(typeof render==="function") try{ render(); }catch(e){} }).catch(()=>{});
+function vatPeriod(y,m){   // months 0-based: Jan–Feb, Mar–Apr …
+  const s=m-(m%2), d=new Date(y,s+2,15), key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-15`;
+  let due=d;
+  if(VATDUE[key]){ const [a,b,c]=VATDUE[key].split("-").map(Number); due=new Date(a,b-1,c); }
+  else { while(due.getDay()===0||due.getDay()===6) due=new Date(due.getFullYear(),due.getMonth(),due.getDate()+1); }
+  return {y,s,e:s+1,due,moved:due.getDate()!==15};
+}
 function render(){
   const bs=books(), b=curBook(), sp=SPACE(), co=isCo();
   if(b) V.book=b.id;
@@ -515,7 +524,7 @@ function render(){
     const inTax=inP.filter(e=>e.data.type==="out"&&e.data.doc==="inv"&&e.data.cat!=="交際").reduce((a,e)=>a+(e.data.tax||0),0);
     const sales=inP.filter(e=>e.data.type==="in"&&e.data.doc==="inv").reduce((a,e)=>a+e.data.amount-(e.data.tax||0),0);
     const due=outTax-inTax, days=Math.round((p.due-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/864e5);
-    T.innerHTML=`<h2>營業稅（${p.y-1911} 年 ${p.s+1}–${p.e+1} 月）</h2><p class="sub">${p.due.getMonth()+1}/${p.due.getDate()} 前申報繳納${days>=0&&days<=45?`，還有 ${days} 天`:""}（遇假日順延）</p>
+    T.innerHTML=`<h2>營業稅（${p.y-1911} 年 ${p.s+1}–${p.e+1} 月）</h2><p class="sub">${p.due.getMonth()+1}/${p.due.getDate()} 前申報繳納${days>=0&&days<=45?`，還有 ${days} 天`:""}${p.moved?"（15 日遇假日，順延到這天）":""}</p>
       <div class="kv"><span>銷售額（未稅）</span><b>${money(sales)}</b><span>銷項稅額</span><b>${money(outTax)}</b><span>可扣抵進項稅額</span><b>− ${money(inTax)}</b><i class="line"></i>
       <span>${due>=0?"應繳營業稅":"留抵稅額（下期再扣）"}</span><b class="big2">${money(Math.abs(due))}</b></div>
       <p class="hint" style="margin-top:10px">只算有開統一發票的收入，和有打你統編的進貨、費用發票；交際費的進項不能扣抵。</p>
