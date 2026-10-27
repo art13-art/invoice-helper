@@ -41,16 +41,26 @@ export async function onRequestPost({ request, env }) {
     }
     const late = now - r.due > 30 * 60e3 ? `（原訂 ${md(ymd(r.due))} ${hm(r.due)}）` : "";
     // 群組裡的提醒一律 @人：指定的人／全體（all）；沒指定就 @設提醒的人
-    const tag = isGroup(r.chat_id) ? (r.mention_id || r.created_by || null) : null;
+    let tag = isGroup(r.chat_id) ? (r.mention_id || r.created_by || null) : null;
+    // 發送前確認被 @ 的人還在群組（查詢免費）：指定的人都不在了就不發；部分不在就只 @ 還在的
+    if (tag && tag !== "all") {
+      const still = [];
+      for (const u of String(tag).split(",").filter(Boolean)) if ((await line.isMember(r.chat_id, u).catch(() => null)) !== false) still.push(u);
+      if (!still.length && r.mention_id) { console.log("reminder skipped: mentioned people left", r.id); continue; }
+      tag = still.join(",") || null;
+    }
     const who = tag ? "{who} " : "";
     const text = r.kind === "msg" || r.kind === "chase" ? `${who}${r.text}` : `⏰ ${who}${r.text.replace(/^待辦到期：/, "")}${late}` + (next ? `\n（下次 ${md(ymd(next))} ${hm(next)}）` : "");
     try { await line.push(r.chat_id, card ? [mentionMessage(text, tag), card] : [mentionMessage(text, tag)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
     catch (e) {
       // @ 或卡片被 LINE 拒收（例如被 @ 的人已經退群）：改成純文字再送一次，提醒不能丟
-      console.log("reminder push failed, retry plain", r.id, e.message);
+      // 被拒收：先拿掉卡片、保留 @ 再送；還不行才用純文字（把名字寫出來）
+      console.log("reminder push failed, retry", r.id, e.message);
       const plain = text.replace("{who} ", r.mention_id === "all" ? "@All " : r.mention_name ? "@" + String(r.mention_name).split("、").join(" @") + " " : "");
-      try { await line.push(r.chat_id, [textMessage(plain)]); sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); }
-      catch (e2) { sent.failed++; console.log("reminder push failed", r.id, e2.message); }
+      const tries = [...(card ? [[mentionMessage(text, tag)]] : []), [textMessage(plain)]];
+      let okSent = false;
+      for (const m of tries) { try { await line.push(r.chat_id, m); okSent = true; break; } catch (e2) { console.log("retry failed", r.id, e2.message); } }
+      if (okSent) { sent.reminders++; await recordPush(db, r.chat_id, await line.memberCount(r.chat_id)); } else sent.failed++;
     }
   }
 

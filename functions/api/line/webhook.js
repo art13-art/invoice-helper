@@ -2,8 +2,8 @@
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
-import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard } from "../../../lib/line.js";
-import { chat, member, isGroup, kv, when, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
+import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker } from "../../../lib/line.js";
+import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 import { adminFor, decisionCard, newDecision, toAdmin, watchAdmin } from "../../../lib/escalate.js";
@@ -73,6 +73,8 @@ async function handle(env, ev, origin) {
       if (group) await watchAdmin(env, db, { chatId, userId, name: "", text: "" }).catch(() => null);
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
+      const gp = d.match(/^grp:(\w+):([CR]\w+)$/);
+      if (gp) return reply(await applyGroupPick(env, db, { pid: gp[1], groupId: gp[2], userId, isAdmin: await isAdmin(db, userId) }));
       const ad = d.match(/^adm:(ok|all|no):(\w+)$/);
       if (ad) return reply(await adminDecision(env, db, line, chatId, userId, ad[2], ad[1]));
       const tr = d.match(/^txr:(yes|no):(\w+)$/);
@@ -395,9 +397,9 @@ async function answer(ctx, text, logText, attach) {
   // 存了文件：網址從文字拿掉（放進卡片）
   const docs = (ctx.savedDocs || []).slice(0, 2);
   if (docs.length) out = out.replace(/[：:]?[ \t]*\n?[ \t]*https:\/\/docs\.google\.com\/\S+/g, "").replace(/\n{3,}/g, "\n\n").trim() || "好了。";
-  if (!pending && !ctx.deep && !card && !docs.length && out.length > 60 && !/^(好|收到|OK)/i.test(out)) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
+  if (!pending && !ctx.deep && !card && !docs.length && !ctx.groupPick && out.length > 60 && !/^(好|收到|OK)/i.test(out)) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
-  const extra = [...(card ? [card] : []), ...docs.map(d => docCard(d.title, d.url)), ...(ctx.adminMsgs || [])].slice(0, 3);
+  const extra = [...(card ? [card] : []), ...(ctx.groupPick ? [groupPicker(ctx.groupPick.id, ctx.groupPick.groups, ctx.groupPick.best)] : []), ...docs.map(d => docCard(d.title, d.url)), ...(ctx.adminMsgs || [])].slice(0, 3);
   const parts = splitText(out, 4800).slice(0, 5 - extra.length);
   const msgs = parts.map((p, i) => textMessage(p, i === parts.length - 1 ? quick : undefined));
   msgs.push(...extra);
