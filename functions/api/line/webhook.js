@@ -421,7 +421,7 @@ async function escalateErr(ctx, adminText) {
   ctx.adm = ctx.adm !== undefined ? ctx.adm : await adminFor(env, db, chatId).catch(() => null);
   if (!ctx.adm) return;
   if (!ctx.adm.inChat) { if (await kv.get(db, k)) return; await kv.set(db, k, "1"); }
-  const r = await toAdmin(env, db, { chatId, chatName: ctx.chatName, adm: ctx.adm, text: adminText });
+  const r = await toAdmin(env, db, { chatId, chatName: ctx.chatName, adm: ctx.adm, text: adminText, chase: true });
   (ctx.adminMsgs ||= []).push(...r.msgs);
 }
 async function tellAdmin(ctx, userText, adminText) {

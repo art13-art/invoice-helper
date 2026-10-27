@@ -50,7 +50,9 @@ await msg("U_amy", "@小幫手 記住以後不要提醒 Tom", [{ index: 0, lengt
 // (Claude mock answers plain; escalate via ask path tested elsewhere) — call toAdmin directly
 const { toAdmin } = await import(R + "/lib/escalate.js");
 await toAdmin(env, db, { chatId: "Cg", adm: { id: "U_ben", name: "Ben", inChat: true }, text: "Amy 想讓我記住：「x」" });
-c = chases(); t(c.length === 1 && /小幫手 .* 找你/.test(c[0].text), "bot's own @ chased");
+c = chases(); t(c.length === 0, "plain relay to admin is not chased");
+await toAdmin(env, db, { chatId: "Cg", adm: { id: "U_ben", name: "Ben", inChat: true }, text: "Amy 想讓我記住：「x」", card: { type: "flex" } });
+c = chases(); t(c.length === 1 && /小幫手 .* 找你/.test(c[0].text), "decision card is chased");
 await msg("U_amy", "助理，明天的資料幫我準備一下");
 t(!calls.some(c => c.url.endsWith("/message/reply")), "「助理，」no longer triggers a reply");
 await msg("U_amy", "小助理 幫我記一下");
