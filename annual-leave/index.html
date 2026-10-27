@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>特休天數計算機｜年資幾天特休、何時生效、沒休完怎麼算錢（勞基法第 38 條）</title>
+<link rel="canonical" href="https://taxtools.tw/annual-leave/">
+<meta name="description" content="輸入到職日，馬上算出現在有幾天特休、下一次什麼時候增加，並列出每一年的特休天數。依勞動基準法第 38 條：滿半年 3 天、滿 1 年 7 天、滿 2 年 10 天、滿 3 年 14 天、滿 5 年 15 天，滿 10 年起每年加 1 天到 30 天。也能算沒休完的特休要折算多少錢。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js?v=2026102706"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102706">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102706">
+<style>
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+.tbl table{border-collapse:collapse;width:100%;font-size:15px;font-variant-numeric:tabular-nums}
+.tbl th,.tbl td{text-align:left;padding:9px 12px;border-top:1px solid var(--line);white-space:nowrap}
+.tbl thead th{border-top:0;background:var(--sunk);color:var(--muted);font-size:14px}
+.tbl tr.now td{background:var(--accent-soft);font-weight:700}
+.tbl td.n{text-align:right}
+</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="特休天數計算機｜年資幾天特休、何時生效、沒休完怎麼算錢（勞基法第 38 條）">
+<meta property="og:description" content="輸入到職日，馬上算出現在有幾天特休、下一次什麼時候增加，並列出每一年的特休天數。依勞動基準法第 38 條：滿半年 3 天、滿 1 年 7 天、滿 2 年 10 天、滿 3 年 14 天、滿 5 年 15 天，滿 10 年起每年加 1 天到 30 天。也能算沒休完的特休要折算多少錢。">
+<meta property="og:url" content="https://taxtools.tw/annual-leave/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "特休天數計算機", "url": "https://taxtools.tw/annual-leave/", "description": "輸入到職日，馬上算出現在有幾天特休、下一次什麼時候增加，並列出每一年的特休天數。依勞動基準法第 38 條：滿半年 3 天、滿 1 年 7 天、滿 2 年 10 天、滿 3 年 14 天、滿 5 年 15 天，滿 10 年起每年加 1 天到 30 天。也能算沒休完的特休要折算多少錢。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "特休天數怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "依勞動基準法第 38 條，在同一公司工作滿 6 個月有 3 天，滿 1 年 7 天，滿 2 年 10 天，滿 3 年起每年 14 天，滿 5 年起每年 15 天，滿 10 年起每多 1 年加 1 天，最多 30 天。"}}, {"@type": "Question", "name": "週年制和曆年制有什麼不同？", "acceptedAnswer": {"@type": "Answer", "text": "週年制是從到職日起算，每滿一個年資階段就給一次特休，這頁是用週年制計算。曆年制是公司為了方便管理，統一以每年 1 月 1 日到 12 月 31 日計算，到職未滿一年的部分按比例給；採曆年制時，給的天數不能少於週年制。"}}, {"@type": "Question", "name": "特休沒休完怎麼辦？", "acceptedAnswer": {"@type": "Answer", "text": "特休年度結束或離職時還沒休完的天數，公司要發給工資，以日薪（月薪 ÷ 30）乘以未休天數計算。勞資雙方也可以協商把未休的天數遞延到下一年度，下一年度結束還沒休完的，一樣要折算工資（勞動基準法第 38 條第 4 項）。"}}, {"@type": "Question", "name": "特休要怎麼排？公司可以指定嗎？", "acceptedAnswer": {"@type": "Answer", "text": "特休日期由員工自己排定。公司因為經營上的急迫需求，或員工因為個人原因，才可以和對方協商調整（勞動基準法第 38 條第 2 項）。"}}, {"@type": "Question", "name": "部分工時也有特休嗎？", "acceptedAnswer": {"@type": "Answer", "text": "有。部分工時員工的年資一樣照到職日計算，特休天數依工作時數按比例給，詳細可以參考勞動部的部分工時勞工權益保障指導原則。"}}]}</script>
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap" role="main">
+  <div class="page-head">
+    <h1>特休天數計算機</h1>
+    <p>輸入到職日，馬上知道現在有幾天特休、下一次什麼時候增加。依勞動基準法第 38 條「週年制」計算，也能算沒休完的特休要折算多少錢。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>到職日</h2>
+        <div class="field">
+          <label for="start">到職日（第一天上班的日期）</label>
+          <input id="start" type="date">
+        </div>
+        <div class="field">
+          <label for="today">計算到哪一天</label>
+          <input id="today" type="date">
+          <p class="hint">預設是今天。想知道離職那天的年資，可以改成離職日。</p>
+        </div>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>沒休完的特休（選填）</h2>
+        <div class="field">
+          <label for="sal">月薪</label>
+          <div class="money"><input id="sal" inputmode="numeric" placeholder="例如 36000"></div>
+        </div>
+        <div class="field">
+          <label for="left">還沒休的天數</label>
+          <input id="left" inputmode="decimal" placeholder="例如 3">
+          <p class="hint">特休年度結束或離職時還沒休完的天數，公司要折算工資：日薪（月薪 ÷ 30）× 未休天數。</p>
+        </div>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card" id="tableCard"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>特休天數怎麼算？</summary><p>依勞動基準法第 38 條，在同一公司工作滿 6 個月有 3 天，滿 1 年 7 天，滿 2 年 10 天，滿 3 年起每年 14 天，滿 5 年起每年 15 天，滿 10 年起每多 1 年加 1 天，最多 30 天。</p></details>
+        <details><summary>週年制和曆年制有什麼不同？</summary><p>週年制是從到職日起算，每滿一個年資階段就給一次特休，這頁是用週年制計算。曆年制是公司為了方便管理，統一以每年 1 月 1 日到 12 月 31 日計算，到職未滿一年的部分按比例給；採曆年制時，給的天數不能少於週年制。</p></details>
+        <details><summary>特休沒休完怎麼辦？</summary><p>特休年度結束或離職時還沒休完的天數，公司要發給工資，以日薪（月薪 ÷ 30）乘以未休天數計算。勞資雙方也可以協商把未休的天數遞延到下一年度，下一年度結束還沒休完的，一樣要折算工資（勞動基準法第 38 條第 4 項）。</p></details>
+        <details><summary>特休要怎麼排？公司可以指定嗎？</summary><p>特休日期由員工自己排定。公司因為經營上的急迫需求，或員工因為個人原因，才可以和對方協商調整（勞動基準法第 38 條第 2 項）。</p></details>
+        <details><summary>部分工時也有特休嗎？</summary><p>有。部分工時員工的年資一樣照到職日計算，特休天數依工作時數按比例給，詳細可以參考勞動部的部分工時勞工權益保障指導原則。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/overtime-pay/">加班費計算機</a><a href="/severance-pay/">資遣費計算機</a><a href="/labor-health/">勞健保計算機</a></nav>
+  <p class="site-foot">依勞動基準法第 38 條（特別休假）及同法施行細則第 24 條之 1（未休特休工資＝一日工資 × 未休日數，月薪制一日工資為月薪 ÷ 30）以週年制計算。公司給的特休優於法令的，依公司約定。僅供參考，實際以勞動部及地方勞工主管機關解釋為準。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small>現在的特休</small><b id="barVal">0 天</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js?v=2026102706"></script>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const roc=d=>`${d.getFullYear()-1911}/${d.getMonth()+1}/${d.getDate()}`;
+const addM=(d,m)=>{ const x=new Date(d.getFullYear(),d.getMonth()+m,d.getDate()); if(x.getDate()!==d.getDate()) x.setDate(0); return x; };
+
+/* 第 38 條：滿 n 個月時給的天數 */
+const STAGES=[[6,3],[12,7],[24,10],[36,14],[48,14],[60,15],[72,15],[84,15],[96,15],[108,15]];
+for(let y=10;y<=24;y++) STAGES.push([y*12,Math.min(30,y+6)]);
+function stages(start){ return STAGES.map(([m,d])=>({at:addM(start,m),days:d,m})); }
+function tenure(start,end){
+  let y=end.getFullYear()-start.getFullYear(), m=end.getMonth()-start.getMonth(), d=end.getDate()-start.getDate();
+  if(d<0){ m--; d+=new Date(end.getFullYear(),end.getMonth(),0).getDate(); } if(m<0){ y--; m+=12; }
+  return {y,m,d};
+}
+const label=m=>m<12?"滿 6 個月":`滿 ${m/12} 年`;
+
+function render(){
+  const sv=$("start").value, tv=$("today").value;
+  const R=$("result"), T=$("tableCard");
+  if(!sv){ R.innerHTML=`<p class="note">輸入到職日，就會算出現在有幾天特休。</p>`; T.hidden=true; $("barVal").textContent="0 天"; save(); return; }
+  const start=new Date(sv+"T00:00"), today=tv?new Date(tv+"T00:00"):new Date();
+  if(today<start){ R.innerHTML=`<p class="note warm">計算日期早於到職日，請檢查日期。</p>`; T.hidden=true; save(); return; }
+  const st=stages(start), past=st.filter(s=>s.at<=today), cur=past[past.length-1], next=st.find(s=>s.at>today);
+  const t=tenure(start,today), days=cur?cur.days:0;
+  const sal=parseInt(String($("sal").value).replace(/[^\d]/g,""),10)||0, left=parseFloat($("left").value)||0;
+  const daily=sal/30, pay=Math.round(daily*left);
+
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">${cur?`${label(cur.m)}起這一年的特休`:"目前還沒有特休"}</span><div class="big">${days}<small>天</small></div></div>
+      <div class="gross">年資<b>${t.y} 年 ${t.m} 個月 ${t.d} 天</b>到職日 ${roc(start)}</div>
+    </div>
+    <ul class="legend">
+      ${cur?`<li><i style="background:var(--c1)"></i><span class="t">這一段特休的期間<small>${roc(cur.at)} 起，到下一次特休生效前一天</small></span><span class="v">${days} 天</span></li>`:""}
+      ${next?`<li><i style="background:var(--c2)"></i><span class="t">下一次特休<small>${roc(next.at)}（${label(next.m)}）起，還有 ${Math.ceil((next.at-today)/864e5)} 天</small></span><span class="v">${next.days} 天</span></li>`:`<li><i style="background:var(--c2)"></i><span class="t">已達上限<small>滿 24 年起每年 30 天</small></span><span class="v">30 天</span></li>`}
+      ${sal&&left?`<li><i style="background:var(--c3)"></i><span class="t">沒休完 ${left} 天要折算的工資<small>日薪 ${money(daily)}（月薪 ÷ 30）× ${left} 天</small></span><span class="v">${money(pay)}</span></li>`:""}
+    </ul>
+    ${!cur?`<p class="note">到職滿 6 個月（${roc(st[0].at)}）起才有特休，第一次是 3 天。</p>`:""}
+    <div class="actions"><button type="button" class="btn" id="share">分享結果</button>${cur||next?`<button type="button" class="btn" id="ics">把特休生效日加入行事曆</button>`:""}</div>`;
+  $("share").onclick=()=>shareResult({s:sv,t:tv,a:sal||"",l:left||""},"特休天數試算",`到職 ${roc(start)}，現在有 ${days} 天特休`);
+  if($("ics")) $("ics").onclick=()=>downloadICS(st.filter(s=>s.at>today).slice(0,5).map(s=>[s.at,`特休 ${s.days} 天生效`,`${label(s.m)}，這一年有 ${s.days} 天特休`]),"特休","特休生效日.ics");
+
+  T.hidden=false;
+  T.innerHTML=`<h2>每一年的特休</h2><div class="tbl"><table><thead><tr><th>年資</th><th>生效日</th><th class="n">天數</th></tr></thead><tbody>${
+    st.slice(0,Math.max(8,past.length+3)).map(s=>`<tr class="${cur&&s===cur?"now":""}"><td>${label(s.m)}</td><td>${roc(s.at)}</td><td class="n">${s.days} 天</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint" style="margin-top:10px">滿 10 年起每多 1 年加 1 天，滿 24 年達上限 30 天。公司如果採曆年制，天數不能少於這張表。</p>`;
+  $("barVal").textContent=`${days} 天`;
+  save();
+}
+const KEY="taxtools.leave.v1";
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({s:$("start").value,sal:$("sal").value,left:$("left").value})); }catch(e){} }
+function load(){
+  const p=shareParams();
+  if(p.s){ $("start").value=p.s; if(p.t) $("today").value=p.t; if(p.a) $("sal").value=(+p.a).toLocaleString("zh-TW"); if(p.l) $("left").value=p.l; return true; }
+  try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return false; $("start").value=d.s||""; $("sal").value=d.sal||""; $("left").value=d.left||""; return !!d.s; }catch(e){ return false; }
+}
+["start","today","left"].forEach(i=>$(i).addEventListener("input",render));
+$("sal").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n) e.target.value=n; render(); });
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+if(!$("today").value) $("today").value=iso(new Date());
+if(!load()){ const d=new Date(); d.setFullYear(d.getFullYear()-3); d.setMonth(d.getMonth()-2); $("start").value=iso(d); }
+render();
+</script>
+</body>
+</html>

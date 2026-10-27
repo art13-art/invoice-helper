@@ -56,3 +56,13 @@ function cnUpper(n){
   }
   return "新臺幣"+s.replace(/零+/g,"零").replace(/零$/,"")+"元整";
 }
+/* 分享結果：把輸入值寫進網址，對方打開就看到同樣的計算。params: {key: value}；讀取用 shareParams() */
+function shareParams(){ try{ return Object.fromEntries(new URLSearchParams(location.search)); }catch(e){ return {}; } }
+function shareLink(params){
+  const u=new URL(location.origin+location.pathname); Object.entries(params).forEach(([k,v])=>{ if(v!==""&&v!=null) u.searchParams.set(k,v); }); return u.toString();
+}
+function shareResult(params,title,text){
+  const url=shareLink(params);
+  if(navigator.share){ navigator.share({title,text,url}).catch(()=>{}); return; }
+  copyText((text?text+"\n":"")+url,"已複製結果連結，可以貼到 LINE 或訊息");
+}

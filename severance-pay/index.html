@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>資遣費計算機｜勞退新制、舊制資遣費怎麼算，預告期間幾天</title>
+<link rel="canonical" href="https://taxtools.tw/severance-pay/">
+<meta name="description" content="輸入到職日、離職日和平均工資，馬上算出資遣費和預告期間。勞退新制每滿 1 年給 0.5 個月平均工資、最多 6 個月；94 年 7 月 1 日前的舊制年資每滿 1 年給 1 個月。依勞工退休金條例第 12 條、勞動基準法第 16、17 條計算。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js?v=2026102706"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102706">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102706">
+<style>.how{margin:0;padding:12px 14px;border-radius:10px;background:var(--sunk);font-size:15px;line-height:1.75;color:var(--muted);font-variant-numeric:tabular-nums}.how b{color:var(--fg)}</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="資遣費計算機｜勞退新制、舊制資遣費怎麼算，預告期間幾天">
+<meta property="og:description" content="輸入到職日、離職日和平均工資，馬上算出資遣費和預告期間。勞退新制每滿 1 年給 0.5 個月平均工資、最多 6 個月；94 年 7 月 1 日前的舊制年資每滿 1 年給 1 個月。依勞工退休金條例第 12 條、勞動基準法第 16、17 條計算。">
+<meta property="og:url" content="https://taxtools.tw/severance-pay/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "資遣費計算機", "url": "https://taxtools.tw/severance-pay/", "description": "輸入到職日、離職日和平均工資，馬上算出資遣費和預告期間。勞退新制每滿 1 年給 0.5 個月平均工資、最多 6 個月；94 年 7 月 1 日前的舊制年資每滿 1 年給 1 個月。依勞工退休金條例第 12 條、勞動基準法第 16、17 條計算。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "勞退新制的資遣費怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "每滿 1 年給 0.5 個月平均工資，未滿 1 年的部分按比例計算，最多給 6 個月平均工資（勞工退休金條例第 12 條）。例如平均工資 30,000 元、年資 3 年 6 個月 15 天，資遣費約 30,000 × 0.5 ×（3 ＋ 6.5 ÷ 12）≒ 53,125 元。"}}, {"@type": "Question", "name": "舊制的資遣費怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "94 年 7 月 1 日以前保留的舊制年資，每滿 1 年給 1 個月平均工資，剩餘月數按比例計算，未滿 1 個月以 1 個月計（勞動基準法第 17 條），沒有 6 個月的上限。"}}, {"@type": "Question", "name": "公司要提前多久通知？", "acceptedAnswer": {"@type": "Answer", "text": "年資 3 個月以上未滿 1 年，要在 10 天前通知；1 年以上未滿 3 年，20 天前；3 年以上，30 天前。沒有提前通知的，要發給預告期間的工資。預告期間員工每週可以請 2 天有薪的謀職假（勞動基準法第 16 條）。"}}, {"@type": "Question", "name": "什麼情況可以拿資遣費？", "acceptedAnswer": {"@type": "Answer", "text": "公司歇業、虧損或業務緊縮、業務性質變更、員工確實不能勝任工作等原因資遣員工（勞動基準法第 11 條），或公司違法、未依約給付工資等原因由員工主動終止契約（第 14 條），都可以拿資遣費。自己離職或因重大違規被開除則沒有。"}}, {"@type": "Question", "name": "資遣費多久內要給？", "acceptedAnswer": {"@type": "Answer", "text": "終止勞動契約後 30 日內要發給（勞工退休金條例第 12 條第 2 項）。公司也要在員工離職 10 日前向當地主管機關和公立就業服務機構通報（就業服務法第 33 條）。"}}]}</script>
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap" role="main">
+  <div class="page-head">
+    <h1>資遣費計算機</h1>
+    <p>被資遣時可以拿多少資遣費、公司要提前多久通知？輸入到職日、離職日和平均工資，依勞退新制、舊制一次算好。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>年資</h2>
+        <div class="field"><label for="start">到職日</label><input id="start" type="date"></div>
+        <div class="field"><label for="end">離職日（最後工作日）</label><input id="end" type="date"></div>
+        <div class="field" id="oldField" hidden>
+          <span class="lbl">94 年 7 月 1 日以前的年資</span>
+          <div class="chips" role="radiogroup" aria-label="舊制年資">
+            <label><input type="radio" name="old" value="1" checked>有保留舊制年資</label>
+            <label><input type="radio" name="old" value="0">全部適用新制</label>
+          </div>
+          <p class="hint">94 年 7 月 1 日勞退新制上路前就在同一家公司工作、之後選擇新制的人，之前的年資保留舊制，照舊制算資遣費；之後的年資照新制算。</p>
+        </div>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>平均工資</h2>
+        <div class="field">
+          <label for="avg">每月平均工資</label>
+          <div class="money"><input id="avg" inputmode="numeric" placeholder="例如 40000"></div>
+          <p class="hint">離職前 6 個月的工資總額 ÷ 這段期間的總日數 × 30。工資包括本薪、固定津貼、加班費等經常性給與；不確定的話先填月薪。</p>
+        </div>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>勞退新制的資遣費怎麼算？</summary><p>每滿 1 年給 0.5 個月平均工資，未滿 1 年的部分按比例計算，最多給 6 個月平均工資（勞工退休金條例第 12 條）。例如平均工資 30,000 元、年資 3 年 6 個月 15 天，資遣費約 30,000 × 0.5 ×（3 ＋ 6.5 ÷ 12）≒ 53,125 元。</p></details>
+        <details><summary>舊制的資遣費怎麼算？</summary><p>94 年 7 月 1 日以前保留的舊制年資，每滿 1 年給 1 個月平均工資，剩餘月數按比例計算，未滿 1 個月以 1 個月計（勞動基準法第 17 條），沒有 6 個月的上限。</p></details>
+        <details><summary>公司要提前多久通知？</summary><p>年資 3 個月以上未滿 1 年，要在 10 天前通知；1 年以上未滿 3 年，20 天前；3 年以上，30 天前。沒有提前通知的，要發給預告期間的工資。預告期間員工每週可以請 2 天有薪的謀職假（勞動基準法第 16 條）。</p></details>
+        <details><summary>什麼情況可以拿資遣費？</summary><p>公司歇業、虧損或業務緊縮、業務性質變更、員工確實不能勝任工作等原因資遣員工（勞動基準法第 11 條），或公司違法、未依約給付工資等原因由員工主動終止契約（第 14 條），都可以拿資遣費。自己離職或因重大違規被開除則沒有。</p></details>
+        <details><summary>資遣費多久內要給？</summary><p>終止勞動契約後 30 日內要發給（勞工退休金條例第 12 條第 2 項）。公司也要在員工離職 10 日前向當地主管機關和公立就業服務機構通報（就業服務法第 33 條）。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/annual-leave/">特休天數計算機（離職時沒休完的特休也要折算）</a><a href="/overtime-pay/">加班費計算機</a></nav>
+  <p class="site-foot">依勞工退休金條例第 12 條（新制：每滿 1 年 0.5 個月平均工資，最高 6 個月）、勞動基準法第 2 條（平均工資）、第 16 條（預告期間）、第 17 條（舊制：每滿 1 年 1 個月平均工資）計算，元以下四捨五入。年資以到職日到離職日計算，實際以勞動部及地方勞工主管機關認定為準。僅供參考。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small>資遣費</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js?v=2026102706"></script>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const roc=d=>`${d.getFullYear()-1911}/${d.getMonth()+1}/${d.getDate()}`;
+const NEW_START=new Date(2005,6,1);   // 94/7/1 勞退新制施行
+/* 年資：到職日起算到離職日（含當天）→ {y,m,d} */
+function span(a,b){
+  const e=new Date(b.getFullYear(),b.getMonth(),b.getDate()+1);
+  let y=e.getFullYear()-a.getFullYear(), m=e.getMonth()-a.getMonth(), d=e.getDate()-a.getDate();
+  if(d<0){ m--; d+=new Date(e.getFullYear(),e.getMonth(),0).getDate(); } if(m<0){ y--; m+=12; }
+  return {y:Math.max(0,y),m:Math.max(0,m),d:Math.max(0,d)};
+}
+const show=t=>`${t.y} 年 ${t.m} 個月 ${t.d} 天`;
+
+function render(){
+  const sv=$("start").value, ev=$("end").value, R=$("result");
+  const avg=parseInt(String($("avg").value).replace(/[^\d]/g,""),10)||0;
+  if(!sv||!ev){ R.innerHTML=`<p class="note">輸入到職日和離職日，就會算出資遣費。</p>`; save(); return; }
+  const start=new Date(sv+"T00:00"), end=new Date(ev+"T00:00");
+  if(end<start){ R.innerHTML=`<p class="note warm">離職日早於到職日，請檢查日期。</p>`; save(); return; }
+  const hasOld=start<NEW_START && end>=NEW_START;
+  $("oldField").hidden=!hasOld;
+  const keepOld=hasOld && document.querySelector("input[name=old]:checked").value==="1";
+  const oldOnly=end<NEW_START;   // 全部年資都在新制之前（理論上已不適用，仍以舊制計）
+
+  // 舊制年資：到職日～94/6/30；新制年資：之後到離職日
+  let oldT=null, newT;
+  if(oldOnly){ oldT=span(start,end); newT={y:0,m:0,d:0}; }
+  else if(keepOld){ oldT=span(start,new Date(2005,5,30)); newT=span(NEW_START,end); }
+  else newT=span(start,end);
+
+  const newYears=newT.y+(newT.m+newT.d/30)/12;
+  const newMonths=Math.min(6,newYears*0.5);
+  let oldMonths=0;
+  if(oldT){ const m=oldT.m+(oldT.d>0?1:0); oldMonths=oldT.y+Math.min(m,12)/12; }
+  const newPay=Math.round(avg*newMonths), oldPay=Math.round(avg*oldMonths), total=newPay+oldPay;
+
+  const all=span(start,end), allMonths=all.y*12+all.m+(all.d?all.d/30:0);
+  const notice=allMonths<3?0:allMonths<12?10:allMonths<36?20:30;
+
+  R.innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">資遣費</span><div class="big">${money(total)}<small>元</small></div></div>
+      <div class="gross">總年資<b>${show(all)}</b>${roc(start)}～${roc(end)}</div>
+    </div>
+    <ul class="legend">
+      <li class="${newPay?"":"zero"}"><i style="background:var(--c1)"></i><span class="t">勞退新制 ${show(newT)}<small>平均工資 × 0.5 × ${newYears.toFixed(3)} 年${newYears*0.5>6?"，已達上限 6 個月":""}＝ ${(Math.round(newMonths*1000)/1000)} 個月</small></span><span class="v">${money(newPay)}</span></li>
+      ${oldT?`<li><i style="background:var(--c2)"></i><span class="t">舊制 ${show(oldT)}<small>每滿 1 年 1 個月，剩餘月數按比例、未滿 1 個月以 1 個月計＝ ${(Math.round(oldMonths*1000)/1000)} 個月</small></span><span class="v">${money(oldPay)}</span></li>`:""}
+      <li><i style="background:var(--c3)"></i><span class="t">預告期間<small>${notice?`年資${allMonths<12?"3 個月以上未滿 1 年":allMonths<36?"1 年以上未滿 3 年":"3 年以上"}，公司要在 ${notice} 天前通知；沒通知要發 ${notice} 天工資（約 ${money(avg/30*notice)} 元）`:"年資未滿 3 個月，法律沒有規定預告期間"}</small></span><span class="v">${notice} 天</span></li>
+    </ul>
+    ${!avg?`<p class="note">輸入平均工資，就會算出金額。</p>`:`<p class="how">資遣費要在離職後 <b>30 天內</b>發給。另外，離職時還沒休完的特休也要折算工資，可以用<a href="/annual-leave/">特休天數計算機</a>計算。</p>
+    <div class="actions"><button type="button" class="btn" id="share">分享結果</button><button type="button" class="btn" id="copy">複製明細</button></div>`}`;
+  if(avg){
+    $("share").onclick=()=>shareResult({s:sv,e:ev,a:avg,o:keepOld?1:0},"資遣費試算",`資遣費試算：${money(total)} 元`);
+    $("copy").onclick=()=>copyText(`資遣費試算（平均工資 ${money(avg)} 元，年資 ${show(all)}）\n新制 ${show(newT)}：${money(newPay)} 元\n`+(oldT?`舊制 ${show(oldT)}：${money(oldPay)} 元\n`:"")+`合計：${money(total)} 元\n預告期間：${notice} 天\n（依勞工退休金條例第 12 條、勞動基準法第 16、17 條試算・taxtools.tw）`,"已複製明細");
+  }
+  $("barVal").textContent="NT$ "+money(total);
+  save();
+}
+const KEY="taxtools.severance.v1";
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({s:$("start").value,e:$("end").value,a:$("avg").value})); }catch(e){} }
+function load(){
+  const p=shareParams();
+  if(p.s&&p.e){ $("start").value=p.s; $("end").value=p.e; if(p.a) $("avg").value=(+p.a).toLocaleString("zh-TW"); if(p.o==="0") document.querySelector("input[name=old][value='0']").checked=true; return true; }
+  try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d||!d.s) return false; $("start").value=d.s; $("end").value=d.e||""; $("avg").value=d.a||""; return true; }catch(e){ return false; }
+}
+["start","end"].forEach(i=>$(i).addEventListener("input",render));
+document.querySelectorAll("input[name=old]").forEach(e=>e.addEventListener("change",render));
+$("avg").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n) e.target.value=n; render(); });
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+if(!load()){ const n=new Date(), s=new Date(n.getFullYear()-3,n.getMonth()-6,n.getDate()-15); $("start").value=iso(s); $("end").value=iso(n); $("avg").value="30,000"; }
+render();
+</script>
+</body>
+</html>

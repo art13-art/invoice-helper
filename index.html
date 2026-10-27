@@ -13,8 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<link rel="stylesheet" href="/assets/base.css?v=2026102705">
-<link rel="stylesheet" href="/assets/nav.css?v=2026102705">
+<link rel="stylesheet" href="/assets/base.css?v=2026102706">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
 <style>
 /* Home: promise, next deadline, one grid of every tool, then quick links by who you are. */
 .hero{display:grid;gap:10px;max-width:46em;padding-block:8px 4px}
@@ -93,6 +93,9 @@
       <a class="tile" href="/tax-included/"><span class="mark">稅</span><span><b>含稅未稅計算機</b><span class="d">5% 營業稅換算，尾數怎麼算一目了然，附發票用中文大寫。</span></span></a>
       <a class="tile" href="/company-lookup/"><span class="mark">編</span><span><b>統編查詢</b><span class="d">用統編或公司名稱查全名、狀態和地址，一鍵帶進手開發票。</span></span></a>
       <a class="tile" href="/labor-health/"><span class="mark">保</span><span><b>勞健保計算機</b><span class="d">月薪扣多少勞保健保、老闆另外負擔多少，一個人每月的人事成本。</span></span></a>
+      <a class="tile" href="/overtime-pay/"><span class="mark">加</span><span><b>加班費計算機<span class="new">新</span></b><span class="d">平日、休息日、國定假日加班費怎麼算，依勞基法逐小時列出。</span></span></a>
+      <a class="tile" href="/annual-leave/"><span class="mark">休</span><span><b>特休天數計算機<span class="new">新</span></b><span class="d">輸入到職日，算出現在幾天特休、下次何時增加、沒休完折算多少。</span></span></a>
+      <a class="tile" href="/severance-pay/"><span class="mark">遣</span><span><b>資遣費計算機<span class="new">新</span></b><span class="d">勞退新制、舊制資遣費和預告期間，一次算好。</span></span></a>
       <a class="tile" href="/income-tax/"><span class="mark">綜</span><span><b>綜所稅試算</b><span class="d">115 年度最新扣除額，自動挑最省的扣除和計稅方式，算出補稅或退稅。</span></span></a>
       <a class="tile" href="/landlord-tax/"><span class="mark">房</span><span><b>房東租金報稅</b><span class="d">租賃所得怎麼算、押金也要算，公益出租人和包租代管免稅額一起算。</span></span></a>
       <a class="tile" href="/tax-calendar/"><span class="mark">曆</span><span><b>報稅行事曆</b><span class="d">依身分列出每個報稅、繳費期限，可訂閱到手機提醒。</span></span></a>
@@ -112,6 +115,8 @@
       <div><h3>接案者・上班族</h3><ul>
         <li><a href="/labor-report/#payee">報價 3 萬實拿多少</a></li>
         <li><a href="/labor-health/">月薪實領多少</a></li>
+        <li><a href="/overtime-pay/">加班費怎麼算</a></li>
+        <li><a href="/annual-leave/">我有幾天特休</a></li>
         <li><a href="/income-tax/">今年要繳多少稅、能退多少</a></li>
         <li><a href="/tax-calendar/#person">扣繳憑單、5 月報稅</a></li>
       </ul></div>
@@ -143,7 +148,7 @@
   <p class="site-foot">本站為民間提供的免費工具，非政府官方網站。計算結果僅供參考，實際以財政部、國稅局、地方稅務局、健保署及勞保局規定為準。</p>
 </div>
 
-<script src="/assets/nav.js?v=2026102705"></script>
+<script src="/assets/nav.js?v=2026102706"></script>
 <script>
 fetch("/assets/deadlines.json").then(r=>r.json()).then(d=>{
   const n=new Date(), t=new Date(n.getFullYear(),n.getMonth(),n.getDate());

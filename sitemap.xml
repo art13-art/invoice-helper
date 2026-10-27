@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://taxtools.tw/annual-leave/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/company-lookup/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/firm/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/guide/</loc><lastmod>2026-10-27</lastmod><priority>0.7</priority></url>
@@ -13,8 +14,10 @@
   <url><loc>https://taxtools.tw/labor-report/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/landlord-tax/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/ledger/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/overtime-pay/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/privacy/</loc><lastmod>2026-10-27</lastmod><priority>0.5</priority></url>
   <url><loc>https://taxtools.tw/rent-withholding/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/severance-pay/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/tax-calendar/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
   <url><loc>https://taxtools.tw/tax-included/</loc><lastmod>2026-10-27</lastmod><priority>0.8</priority></url>
 </urlset>

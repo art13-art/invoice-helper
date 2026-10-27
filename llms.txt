@@ -16,6 +16,9 @@
 - [租金扣繳計算機](https://taxtools.tw/rent-withholding/)：公司付房租給個人房東的扣繳稅額與二代健保補充保費。
 - [勞報單扣繳計算機](https://taxtools.tw/labor-report/)：接案、稿費、兼職的扣繳稅額與補充保費。
 - [勞健保計算機](https://taxtools.tw/labor-health/)：月薪的勞保、健保、勞退自付額與雇主負擔。
+- [加班費計算機](https://taxtools.tw/overtime-pay/)：依勞動基準法第 24、39 條計算平日、休息日、國定假日加班費（平日每小時工資＝月薪÷30÷8）。
+- [特休天數計算機](https://taxtools.tw/annual-leave/)：依勞動基準法第 38 條，輸入到職日算出特休天數與生效日、未休特休折算工資。
+- [資遣費計算機](https://taxtools.tw/severance-pay/)：勞退新制每滿 1 年 0.5 個月平均工資（最高 6 個月）、舊制每滿 1 年 1 個月，含預告期間。
 - [綜所稅試算](https://taxtools.tw/income-tax/)：最新年度免稅額、扣除額與級距試算。
 - [房東租金報稅](https://taxtools.tw/landlord-tax/)：租賃所得計算，含公益出租人與包租代管。
 - [報稅行事曆](https://taxtools.tw/tax-calendar/)：營業稅、扣繳、綜所稅、房屋稅等期限，已依假日順延，可訂閱。

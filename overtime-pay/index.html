@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>加班費計算機｜平日、休息日、國定假日加班費怎麼算（勞基法）</title>
+<link rel="canonical" href="https://taxtools.tw/overtime-pay/">
+<meta name="description" content="輸入月薪或時薪和加班時數，馬上算出平日、休息日、國定假日加班費。依勞動基準法第 24、39 條：平日前 2 小時 1.34 倍、再 2 小時 1.67 倍，休息日前 2 小時 1⅓、之後 1⅔，國定假日加發一日工資。每一步怎麼算都寫清楚。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js?v=2026102706"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102706">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102706">
+<style>
+.ot{display:grid;gap:10px}
+.ot-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--sunk)}
+.ot-row b{font-size:16px}
+.ot-row small{display:block;color:var(--muted);font-size:13.5px;line-height:1.5;font-weight:400}
+.ot-in{display:flex;align-items:center;gap:6px;font-size:15px;color:var(--muted);white-space:nowrap}
+.ot-in input{width:64px;text-align:center;padding:0 6px}
+.how{margin:0;padding:12px 14px;border-radius:10px;background:var(--sunk);font-size:15px;line-height:1.75;color:var(--muted);font-variant-numeric:tabular-nums}
+.how b{color:var(--fg)}
+@media (max-width:420px){.ot-row{grid-template-columns:minmax(0,1fr)}}
+</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="加班費計算機｜平日、休息日、國定假日加班費怎麼算（勞基法）">
+<meta property="og:description" content="輸入月薪或時薪和加班時數，馬上算出平日、休息日、國定假日加班費。依勞動基準法第 24、39 條：平日前 2 小時 1.34 倍、再 2 小時 1.67 倍，休息日前 2 小時 1⅓、之後 1⅔，國定假日加發一日工資。每一步怎麼算都寫清楚。">
+<meta property="og:url" content="https://taxtools.tw/overtime-pay/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "加班費計算機", "url": "https://taxtools.tw/overtime-pay/", "description": "輸入月薪或時薪和加班時數，馬上算出平日、休息日、國定假日加班費。依勞動基準法第 24、39 條：平日前 2 小時 1.34 倍、再 2 小時 1.67 倍，休息日前 2 小時 1⅓、之後 1⅔，國定假日加發一日工資。每一步怎麼算都寫清楚。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "平日加班費怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "先算平日每小時工資（月薪 ÷ 30 ÷ 8），加班前 2 小時每小時給 1⅓ 倍（約 1.34 倍），第 3、4 小時給 1⅔ 倍（約 1.67 倍）。例如月薪 36,000 元，時薪 150 元，平日加班 2 小時是 150 × 1⅓ × 2 = 400 元（勞動基準法第 24 條第 1 項）。"}}, {"@type": "Question", "name": "休息日加班費怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "休息日出勤，前 2 小時每小時另給 1⅓ 倍，第 3 小時起每小時另給 1⅔ 倍，照實際出勤時數計算。月薪 36,000 元的人在休息日上班 8 小時，加班費是 150 × 1⅓ × 2 ＋ 150 × 1⅔ × 6 ＝ 1,900 元（勞動基準法第 24 條第 2 項）。"}}, {"@type": "Question", "name": "國定假日上班怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "國定假日經員工同意出勤，當天工資照給之外，8 小時以內再加發一日工資；超過 8 小時的部分，照平日延長工時的 1⅓、1⅔ 倍計算（勞動基準法第 39 條）。月薪 36,000 元的人國定假日上班 8 小時，另外多領 1,200 元。"}}, {"@type": "Question", "name": "一個月最多可以加班幾小時？", "acceptedAnswer": {"@type": "Answer", "text": "平日延長工時加上休息日出勤，一個月不能超過 46 小時；公司有工會或勞資會議同意的話，可以放寬到 54 小時，但每 3 個月不能超過 138 小時（勞動基準法第 32 條）。一天正常工時加加班不能超過 12 小時。"}}, {"@type": "Question", "name": "加班費要繳所得稅嗎？", "acceptedAnswer": {"@type": "Answer", "text": "在勞動基準法規定時數以內的加班費免稅，不用算進薪資所得；超過規定時數的部分才要課稅（所得稅法第 14 條）。"}}, {"@type": "Question", "name": "可以不給加班費，改成補休嗎？", "acceptedAnswer": {"@type": "Answer", "text": "可以，但要員工自己同意選擇補休，而且補休時數照加班時數 1:1 換算。補休期限內沒休完的，公司要照加班當時的標準發加班費（勞動基準法第 32 條之 1）。"}}]}</script>
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap" role="main">
+  <div class="page-head">
+    <h1>加班費計算機</h1>
+    <p>輸入薪資和這個月的加班時數，馬上算出平日、休息日、國定假日的加班費。依勞動基準法計算，員工對帳、老闆發薪都能用。</p>
+  </div>
+
+  <div class="grid">
+    <form class="panel" id="f" autocomplete="off">
+      <section class="sec">
+        <h2><b>1</b>薪資</h2>
+        <div class="seg" role="group" aria-label="計薪方式">
+          <button type="button" data-k="type" data-v="month" aria-pressed="true"><b>月薪</b><small>每月固定薪資</small></button>
+          <button type="button" data-k="type" data-v="hour" aria-pressed="false"><b>時薪</b><small>按小時計酬</small></button>
+        </div>
+        <div class="field">
+          <label for="amt" id="amtLbl">每月薪資（本薪加上每月固定的津貼、獎金）</label>
+          <div class="money"><input id="amt" inputmode="numeric" placeholder="例如 36000" enterkeyhint="done"></div>
+          <p class="hint" id="amtHint">平日每小時工資＝月薪 ÷ 30 ÷ 8。月薪要包括每個月固定領的職務加給、全勤獎金等經常性給與。</p>
+        </div>
+      </section>
+      <section class="sec">
+        <h2><b>2</b>這個月的加班</h2>
+        <div class="ot">
+          <div class="ot-row"><span><b>平日加班</b><small>上班日 8 小時之後，每天最多 4 小時</small></span>
+            <span class="ot-in"><input id="wh" inputmode="decimal" aria-label="平日每次加班小時">小時 ×<input id="wd" inputmode="numeric" aria-label="平日加班天數">天</span></div>
+          <div class="ot-row"><span><b>休息日出勤</b><small>週休二日的那個「休息日」（通常是週六），每天最多 12 小時</small></span>
+            <span class="ot-in"><input id="rh" inputmode="decimal" aria-label="休息日每次出勤小時">小時 ×<input id="rd" inputmode="numeric" aria-label="休息日出勤天數">天</span></div>
+          <div class="ot-row"><span><b>國定假日出勤</b><small>例如勞動節、國慶日，或特休那天被叫回來上班</small></span>
+            <span class="ot-in"><input id="hh" inputmode="decimal" aria-label="國定假日每次出勤小時">小時 ×<input id="hd" inputmode="numeric" aria-label="國定假日出勤天數">天</span></div>
+        </div>
+        <p class="hint">「例假」（通常是週日）除非天災、事變或突發事件，依法不能叫員工上班，這裡不列入。</p>
+      </section>
+    </form>
+
+    <div class="side">
+      <section class="card result" id="result" aria-live="polite"></section>
+      <section class="card faq">
+        <h2>常見問題</h2>
+        <details><summary>平日加班費怎麼算？</summary><p>先算平日每小時工資（月薪 ÷ 30 ÷ 8），加班前 2 小時每小時給 1⅓ 倍（約 1.34 倍），第 3、4 小時給 1⅔ 倍（約 1.67 倍）。例如月薪 36,000 元，時薪 150 元，平日加班 2 小時是 150 × 1⅓ × 2 = 400 元（勞動基準法第 24 條第 1 項）。</p></details>
+        <details><summary>休息日加班費怎麼算？</summary><p>休息日出勤，前 2 小時每小時另給 1⅓ 倍，第 3 小時起每小時另給 1⅔ 倍，照實際出勤時數計算。月薪 36,000 元的人在休息日上班 8 小時，加班費是 150 × 1⅓ × 2 ＋ 150 × 1⅔ × 6 ＝ 1,900 元（勞動基準法第 24 條第 2 項）。</p></details>
+        <details><summary>國定假日上班怎麼算？</summary><p>國定假日經員工同意出勤，當天工資照給之外，8 小時以內再加發一日工資；超過 8 小時的部分，照平日延長工時的 1⅓、1⅔ 倍計算（勞動基準法第 39 條）。月薪 36,000 元的人國定假日上班 8 小時，另外多領 1,200 元。</p></details>
+        <details><summary>一個月最多可以加班幾小時？</summary><p>平日延長工時加上休息日出勤，一個月不能超過 46 小時；公司有工會或勞資會議同意的話，可以放寬到 54 小時，但每 3 個月不能超過 138 小時（勞動基準法第 32 條）。一天正常工時加加班不能超過 12 小時。</p></details>
+        <details><summary>加班費要繳所得稅嗎？</summary><p>在勞動基準法規定時數以內的加班費免稅，不用算進薪資所得；超過規定時數的部分才要課稅（所得稅法第 14 條）。</p></details>
+        <details><summary>可以不給加班費，改成補休嗎？</summary><p>可以，但要員工自己同意選擇補休，而且補休時數照加班時數 1:1 換算。補休期限內沒休完的，公司要照加班當時的標準發加班費（勞動基準法第 32 條之 1）。</p></details>
+      </section>
+    </div>
+  </div>
+
+  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/annual-leave/">特休天數計算機</a><a href="/severance-pay/">資遣費計算機</a><a href="/labor-health/">勞健保計算機</a></nav>
+  <p class="site-foot">依勞動基準法第 24 條（延長工時與休息日工資）、第 32 條（加班時數上限）、第 39 條（休假日工資）及勞動部函釋（平日每小時工資額＝月薪 ÷ 30 ÷ 8；休假日出勤 8 小時以內加發一日工資）計算，元以下四捨五入。勞動條件優於法令的，依公司約定。僅供參考，實際以勞動部及地方勞工主管機關解釋為準。</p>
+</div>
+
+<div class="bar-m" id="barM">
+  <div class="t"><small>這個月的加班費</small><b id="barVal">NT$ 0</b></div>
+  <button type="button" class="btn primary" id="toRes">看明細</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/assets/nav.js?v=2026102706"></script>
+<script>
+const $=id=>document.getElementById(id);
+const S={type:"month"};
+const money=n=>Math.round(n).toLocaleString("zh-TW");
+const num=(id,max)=>{ const v=parseFloat(String($(id).value).replace(/[^\d.]/g,"")); return isFinite(v)&&v>0?Math.min(v,max):0; };
+const int=id=>{ const v=parseInt(String($(id).value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?Math.min(v,31):0; };
+const amt=()=>{ const v=parseInt(String($("amt").value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
+const F=n=>n===4/3?"1⅓":n===5/3?"1⅔":String(n);
+const hrs=n=>(Math.round(n*100)/100).toString();
+
+/* 一天的加班：回傳 [[時數, 倍率], ...] */
+function weekday(h){ h=Math.min(h,4); return [[Math.min(h,2),4/3],[Math.max(0,h-2),5/3]].filter(x=>x[0]>0); }
+function restday(h){ h=Math.min(h,12); return [[Math.min(h,2),4/3],[Math.max(0,h-2),5/3]].filter(x=>x[0]>0); }
+function holiday(h){ h=Math.min(h,12); const over=Math.max(0,h-8); return [[Math.min(over,2),4/3],[Math.max(0,over-2),5/3]].filter(x=>x[0]>0); }
+
+function render(){
+  document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",S[b.dataset.k]===b.dataset.v));
+  const month=S.type==="month", a=amt();
+  $("amtLbl").textContent=month?"每月薪資（本薪加上每月固定的津貼、獎金）":"時薪";
+  $("amtHint").textContent=month?"平日每小時工資＝月薪 ÷ 30 ÷ 8。月薪要包括每個月固定領的職務加給、全勤獎金等經常性給與。":"時薪不能低於最低工資（115 年每小時 196 元）。";
+  const hr=month?a/240:a;
+  const W={h:num("wh",4),d:int("wd")}, R={h:num("rh",12),d:int("rd")}, H={h:num("hh",12),d:int("hd")};
+
+  const sum=parts=>parts.reduce((s,[h,m])=>s+h*m,0);
+  const wPay=sum(weekday(W.h))*hr*W.d;
+  const rPay=sum(restday(R.h))*hr*R.d;
+  const hBase=H.h>0?(month?8*hr:Math.min(H.h,8)*hr*2):0;   // 月薪：加發一日工資；時薪：出勤時數工資加倍
+  const hPay=(hBase+sum(holiday(H.h))*hr)*H.d;
+  const total=Math.round(wPay)+Math.round(rPay)+Math.round(hPay);
+
+  const otHours=Math.min(W.h,4)*W.d+Math.min(R.h,12)*R.d+Math.max(0,Math.min(H.h,12)-8)*H.d;
+  const line=(parts,label)=>parts.map(([h,m])=>`${money(hr)} × ${F(m)} × ${hrs(h)} 小時`).join(" ＋ ");
+  const pct=x=>total?x/total*100:0;
+
+  let warn="";
+  if(otHours>54) warn=`<p class="note warm">這個月延長工時共 ${hrs(otHours)} 小時，超過法定上限（一般 46 小時，經工會或勞資會議同意最多 54 小時）。</p>`;
+  else if(otHours>46) warn=`<p class="note warm">這個月延長工時共 ${hrs(otHours)} 小時，超過一般上限 46 小時；只有經工會或勞資會議同意，才能放寬到 54 小時（每 3 個月最多 138 小時）。</p>`;
+  if(num("wh",99)>4) warn+=`<p class="note warm">平日一天最多只能加班 4 小時（正常 8 小時＋加班 4 小時＝12 小時），超過的部分已不列入計算。</p>`;
+
+  $("result").innerHTML=`
+    <div class="r-top">
+      <div><span class="lbl">這個月的加班費</span><div class="big">${money(total)}<small>元</small></div></div>
+      <div class="gross">平日每小時工資<b>NT$ ${hr%1?hr.toFixed(2):money(hr)}</b>${month?`月薪 ${money(a)} ÷ 30 ÷ 8`:"時薪"}</div>
+    </div>
+    ${total?`<div class="bar" aria-hidden="true">
+      <span class="s1" style="flex-basis:${pct(wPay)}%">${pct(wPay)>14?"平日":""}</span>
+      <span class="s2" style="flex-basis:${pct(rPay)}%">${pct(rPay)>14?"休息日":""}</span>
+      <span class="s3" style="flex-basis:${pct(hPay)}%">${pct(hPay)>14?"國定假日":""}</span>
+    </div>`:""}
+    <ul class="legend">
+      <li class="${wPay?"":"zero"}"><i style="background:var(--c1)"></i><span class="t">平日加班 ${W.d?`${hrs(Math.min(W.h,4))} 小時 × ${W.d} 天`:""}<small>${W.h&&W.d?`每天：${line(weekday(W.h))}`:"前 2 小時 1⅓ 倍，第 3、4 小時 1⅔ 倍"}</small></span><span class="v">${money(wPay)}</span></li>
+      <li class="${rPay?"":"zero"}"><i style="background:var(--c2)"></i><span class="t">休息日出勤 ${R.d?`${hrs(R.h)} 小時 × ${R.d} 天`:""}<small>${R.h&&R.d?`每天：${line(restday(R.h))}`:"前 2 小時 1⅓ 倍，第 3 小時起 1⅔ 倍"}</small></span><span class="v">${money(rPay)}</span></li>
+      <li class="${hPay?"":"zero"}"><i style="background:var(--c3)"></i><span class="t">國定假日出勤 ${H.d?`${hrs(H.h)} 小時 × ${H.d} 天`:""}<small>${H.h&&H.d?`每天：${month?`加發一日工資 ${money(hr)} × 8`:`出勤 ${hrs(Math.min(H.h,8))} 小時工資加倍 ${money(hr)} × 2 × ${hrs(Math.min(H.h,8))}`}${H.h>8?` ＋ 超過 8 小時：${line(holiday(H.h))}`:""}`:"8 小時內加發一日工資，超過 8 小時照平日加班倍數"}</small></span><span class="v">${money(hPay)}</span></li>
+    </ul>
+    ${warn}
+    ${a?`<p class="how">${month?`這些是<b>月薪以外</b>另外要拿到的錢。`:`時薪制的休息日、國定假日出勤也照同樣倍數計算。`}本月延長工時合計 <b>${hrs(otHours)}</b> 小時${otHours<=46?"，在法定上限內，加班費免繳所得稅":""}。</p>
+    <div class="actions"><button type="button" class="btn" id="share">分享結果</button><button type="button" class="btn" id="copy">複製明細</button></div>`:`<p class="note">輸入薪資和加班時數，就會算出加班費。</p>`}`;
+  if(a){
+    $("share").onclick=()=>shareResult({t:S.type,a,wh:W.h,wd:W.d,rh:R.h,rd:R.d,hh:H.h,hd:H.d},"加班費試算",`我的加班費試算：${money(total)} 元`);
+    $("copy").onclick=()=>copyText(`加班費試算（${month?`月薪 ${money(a)} 元`:`時薪 ${money(a)} 元`}，平日每小時工資 ${hr%1?hr.toFixed(2):money(hr)} 元）\n`+
+      (wPay?`平日加班 ${hrs(Math.min(W.h,4))} 小時 × ${W.d} 天：${money(wPay)} 元\n`:"")+(rPay?`休息日出勤 ${hrs(R.h)} 小時 × ${R.d} 天：${money(rPay)} 元\n`:"")+(hPay?`國定假日出勤 ${hrs(H.h)} 小時 × ${H.d} 天：${money(hPay)} 元\n`:"")+
+      `合計：${money(total)} 元\n（依勞動基準法第 24、39 條試算・taxtools.tw）`,"已複製明細");
+  }
+  $("barVal").textContent="NT$ "+money(total);
+  save();
+}
+
+const KEY="taxtools.overtime.v1", IDS=["amt","wh","wd","rh","rd","hh","hd"];
+function save(){ try{ const d={type:S.type}; IDS.forEach(i=>d[i]=$(i).value); localStorage.setItem(KEY,JSON.stringify(d)); }catch(e){} }
+function load(){
+  const p=shareParams();
+  if(p.a){ S.type=p.t==="hour"?"hour":"month"; $("amt").value=(+p.a||0).toLocaleString("zh-TW"); [["wh","wh"],["wd","wd"],["rh","rh"],["rd","rd"],["hh","hh"],["hd","hd"]].forEach(([k,i])=>$(i).value=p[k]||""); return true; }
+  try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return false; S.type=d.type||"month"; IDS.forEach(i=>$(i).value=d[i]??""); return true; }catch(e){ return false; }
+}
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{ S[b.dataset.k]=b.dataset.v; render(); });
+$("amt").addEventListener("input",e=>{ const raw=e.target.value.replace(/[^\d]/g,""); const n=raw?(+raw).toLocaleString("zh-TW"):""; if(e.target.value!==n) e.target.value=n; render(); });
+IDS.slice(1).forEach(i=>$(i).addEventListener("input",render));
+$("f").addEventListener("submit",e=>e.preventDefault());
+$("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
+if(!load()){ $("amt").value="36,000"; $("wh").value="2"; $("wd").value="5"; $("rh").value="8"; $("rd").value="1"; $("hh").value=""; $("hd").value=""; }
+render();
+</script>
+</body>
+</html>
