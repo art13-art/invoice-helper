@@ -5,6 +5,7 @@ import { recordPush, monthlyReport, checkQuota } from "../../../lib/usage.js";
 import { gas, gasConf } from "../../../lib/books.js";
 import { runFlows } from "../../../lib/orders.js";
 import { buildDigests } from "../../../lib/digest.js";
+import { cleanupTranscripts } from "../../../lib/audio.js";
 import { kv, nextDue, ymd, hm, md, parseLocal, isGroup, KEEP_DAYS } from "../../../lib/assistant.js";
 
 export async function onRequestPost({ request, env }) {
@@ -59,6 +60,7 @@ export async function onRequestPost({ request, env }) {
     await db.prepare("DELETE FROM line_events WHERE ts<?").bind(now - 7 * 864e5).run();
     await db.prepare("DELETE FROM line_reminders WHERE status!='open' AND created<?").bind(now - 90 * 864e5).run();
     await db.prepare("DELETE FROM line_kv WHERE k LIKE 'ai:%' AND k<?").bind("ai:" + ymd(now - 7 * 864e5)).run();
+    await cleanupTranscripts(db, now).catch(e => console.log("tx cleanup", e.message));
   }
   return Response.json({ ok: true, ...sent });
 }

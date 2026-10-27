@@ -6,6 +6,9 @@ import { verifySignature, lineClient, textMessage, say, postback } from "../../.
 import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
+import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
+
+const AUDIO_ASK = "（請整理這段錄音：先一句話說這是什麼會議或在談什麼，再分「重點」「決定」「待辦（誰／做什麼／何時）」，沒有的段落省略。明確的待辦（有人、有事）直接用 add_todos 加入並列出。不要貼逐字稿全文。）";
 
 const GROUP_CHIPS = [];
 const USER_CHIPS = [];
@@ -83,11 +86,15 @@ async function handle(env, ev, origin) {
   const who = group ? await member(db, line, chatId, userId) : { name: (await line.name(chatId, userId).catch(() => null)) || "你", optout: 0 };
 
   if (msg.type !== "text") {
+    const audio = msg.type === "audio" || (msg.type === "file" && isAudioName(msg.fileName));
     if (group) {
-      if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
-      if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
-      return;   // 群組裡的貼圖、照片不回應
+      // 錄音只記下來不自動轉（要轉：回覆那段錄音 @我，或說「整理剛剛的錄音」），免得每則語音都花錢
+      if (audio && !who.optout) await record(db, chatId, userId, who.name, `［傳了錄音${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "audio:" + msg.id);
+      else if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
+      else if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
+      return;   // 群組裡的貼圖、照片、錄音不回應
     }
+    if (audio) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, AUDIO_ASK, "（傳了錄音）", { id: msg.id, name: msg.fileName || "", audio: true, duration: msg.duration });
     if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）", "（傳了一張照片）", { id: msg.id, name: "照片.jpg" });
     if (msg.type === "file") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, `（使用者傳來檔案「${msg.fileName}」，整理重點；如果有期限、金額或要處理的事，列出來。）`, `（傳了檔案：${msg.fileName}）`, { id: msg.id, name: msg.fileName || "" });
     return reply(msg.type === "sticker" ? "👍" : "這個我還看不懂，打字跟我說吧。");
@@ -173,16 +180,23 @@ async function handle(env, ev, origin) {
 
   // ---- 交給 AI ----
   const ask = c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
+  // 回覆（引用）某張照片、檔案或錄音再 @ 它：直接把那個照片／檔案／錄音一起給它
+  let attach = null;
+  if (msg.quotedMessageId) {
+    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND (media=? OR media=? OR media=?) LIMIT 1").bind(chatId, msg.quotedMessageId, "file:" + msg.quotedMessageId, "audio:" + msg.quotedMessageId).first();
+    if (q) attach = q.media.startsWith("audio:") ? { id: msg.quotedMessageId, name: (q.text.match(/：(.*)］/) || [])[1] || "", audio: true }
+      : { id: msg.quotedMessageId, name: q.media.startsWith("file:") ? (q.text.match(/檔案：(.*)］/) || [])[1] || "" : "照片.jpg" };
+  }
+  // 「整理剛剛的錄音」「會議錄音轉文字」：沒引用時抓最近 24 小時的錄音（先找自己傳的）
+  if (!attach && group && /錄音|語音/.test(c) && /整理|轉|逐字|摘要|重點|紀錄|記錄|會議/.test(c)) {
+    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND media LIKE 'audio:%' AND ts>? ORDER BY (user_id=?) DESC, id DESC LIMIT 1").bind(chatId, Date.now() - 864e5, userId).first();
+    if (q) attach = { id: q.media.slice(6), name: (q.text.match(/：(.*)］/) || [])[1] || "", audio: true };
+  }
+  if (!ask && attach) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, attach.audio ? AUDIO_ASK : "（看一下這個，整理重點）", attach.audio ? "（請整理這段錄音）" : "（@了小助理）", attach);
   if (!ask) {
     // 只 @ 沒說事：通常是要它處理前面剛說過的內容，交給 AI 從最近的對話判斷
     const q = `（${who.name} 只 @ 了你，沒有另外說內容。看最近的群組對話，特別是 ${who.name} 剛才說的話，判斷他要你做什麼並直接處理。只處理他最新、還沒處理過的那件事，已經處理過的（標了［已完成］）不要再做；真的看不出來才簡短問一句。）`;
     return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, q, "（@了小助理）");
-  }
-  // 回覆（引用）某張照片或某個檔案再 @ 它：直接把那個照片／檔案一起給它看
-  let attach = null;
-  if (msg.quotedMessageId) {
-    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND (media=? OR media=?) LIMIT 1").bind(chatId, msg.quotedMessageId, "file:" + msg.quotedMessageId).first();
-    if (q) attach = { id: msg.quotedMessageId, name: q.media.startsWith("file:") ? (q.text.match(/檔案：(.*)］/) || [])[1] || "" : "照片.jpg" };
   }
   return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask, attach);
 }
@@ -219,18 +233,38 @@ async function answer(ctx, text, logText, attach) {
   if (!isGroup(chatId)) await line.loading(userId, 30);
   ctx.isAdmin = await isAdmin(db, userId);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
-  let content = [{ type: "text", text }];
-  if (attach) {
+  let content = [{ type: "text", text }], tail = "";
+  if (attach?.audio) {
+    // 同一段錄音轉過就直接用存好的逐字稿，不重複花錢
+    const prev = (await findTranscripts(db, chatId)).find(x => x.src === attach.id);
+    if (!prev && !(await budgetLeft(env, db))) return send("這個月的費用已經到上限，錄音先不轉。請管理員調整預算。");
+    if (!isGroup(chatId)) await line.loading(userId, 60);
+    try {
+      let t, saved;
+      if (prev) { t = { text: prev.text, seconds: (prev.minutes || 1) * 60, speakers: prev.speakers }; saved = prev; }
+      else {
+        const f = await line.content(attach.id, MAX_AUDIO);
+        t = await transcribe(env, f.bytes, f.type, attach.name, { durationMs: attach.duration, timeoutMs: env.LONG_RUN === "1" ? 280e3 : 20e3 });
+        await recordTranscribe(db, { chatId, userId, model: t.model, seconds: t.seconds }).catch(e => console.log("usage", e.message));
+        if (!t.text) return send("這段錄音裡沒聽到說話內容。");
+        saved = await saveTranscript(env, db, { chatId, chatName: ctx.chatName, userId, userName: ctx.userName, t, src: attach.id });
+      }
+      const min = Math.max(1, Math.round(t.seconds / 60));
+      const body = t.text.length > 60000 ? t.text.slice(0, 60000) + "\n（後面太長，略）" : t.text;
+      content = [{ type: "text", text: `（以下是那段錄音的逐字稿，約 ${min} 分鐘。${t.speakers ? "「說話者 A、B…」是系統自動分辨的不同人，不知道真名；對話裡聽得出名字就對應起來，聽不出就照代號寫。" : ""}）\n${body}` }, { type: "text", text }];
+      tail = saved.url ? `\n\n完整逐字稿（約 ${min} 分鐘）：${saved.url}` : `\n\n（${saved.docErr || "雲端備份沒存成功"}；逐字稿我先留 ${KEEP_DAYS} 天，可以直接問我）`;
+    } catch (e) { return send(/^content \d/.test(e.message) ? "錄音沒讀到，可能已經過期了，再傳一次？" : e.message); }
+  } else if (attach) {
     try {
       const f = await line.content(attach.id);
       content = [...(await toBlocks(f.bytes, f.type, attach.name)), { type: "text", text }];
     } catch (e) { return send(/讀不了|太大/.test(e.message) ? e.message : "檔案沒讀到，可能已經過期了，再傳一次？"); }
   }
   let out, pending = null;
-  try { const r = await chat(ctx, content, logText); out = r.text; pending = r.pending; }
+  try { const r = await chat(ctx, content, logText); out = r.text + tail; pending = r.pending; }
   catch (e) {
     console.log("chat error", e.message);
-    out = e.status === 401 ? "我現在沒辦法回覆，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。";
+    out = (e.status === 401 ? "我現在沒辦法回覆，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。") + (tail ? "\n錄音已經轉好了，晚點叫我整理就好。" + tail : "");
   }
   const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
