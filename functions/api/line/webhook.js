@@ -3,7 +3,7 @@
 import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard } from "../../../lib/line.js";
-import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
+import { chat, member, isGroup, kv, when, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
@@ -71,14 +71,7 @@ async function handle(env, ev, origin) {
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
       const tr = d.match(/^txr:(yes|no):(\w+)$/);
-      if (tr) {
-        const k = "txr:" + tr[2];
-        if (await kv.get(db, k)) return reply("這段錄音的提醒已經處理過了。要改提醒直接跟我說。");
-        await kv.set(db, k, tr[1]);
-        if (tr[1] === "no") return reply("好，不設提醒。");
-        const who = group ? await member(db, line, chatId, userId) : { name: "你" };
-        return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, REMIND_ASK, "（按了：要，幫我設提醒）");
-      }
+      if (tr) return remindButton(env, db, line, ev, chatId, userId, tr[2], tr[1] === "yes", origin, chips, reply);
       const dn = d.match(/^done:([0-9a-f]{4})$/);
       if (dn) return reply(await doneByButton(db, line, chatId, userId, dn[1]));
       const m = d.match(/^(ok|no):(\w+)$/);
@@ -224,6 +217,30 @@ async function doneByButton(db, line, chatId, userId, id) {
   const who = isGroup(chatId) ? await member(db, line, chatId, userId) : { name: "你", optout: 0 };
   if (isGroup(chatId) && !who.optout) await record(db, chatId, userId, who.name, `［按了已完成：${t.task}］`);
   return `✓ ${isGroup(chatId) ? who.name + " " : ""}完成了：${t.task}\n之後不會再提醒這件。`;
+}
+
+/* 會議卡片的「要，設提醒／不用」：可以改主意。
+   狀態存在 txr:<逐字稿id>：no＝不設；yes:[提醒id…]＝設了哪些。不用→要：照建議設；要→不用：把剛設的取消；同一個按兩次才說處理過了。 */
+async function remindButton(env, db, line, ev, chatId, userId, txId, want, origin, chips, reply) {
+  const k = "txr:" + txId, cur = (await kv.get(db, k)) || "";
+  if (cur === "busy") return reply("正在設提醒，等我一下。");
+  if (want ? cur.startsWith("yes") : cur === "no") return reply(want ? "提醒已經設好了。要改直接跟我說。" : "已經是不設提醒了。");
+  if (!want) {
+    let ids = []; try { ids = JSON.parse(cur.slice(4) || "[]"); } catch (e) {}
+    await kv.set(db, k, "no");
+    if (!ids.length) return reply("好，不設提醒。");
+    const { results } = await db.prepare(`SELECT id,due,text FROM line_reminders WHERE status='open' AND id IN (${ids.map(() => "?").join(",")})`).bind(...ids).all();
+    for (const r of results) await db.prepare("UPDATE line_reminders SET status='cancelled' WHERE id=? AND status='open'").bind(r.id).run();
+    return reply(results.length ? "好，剛剛設的提醒都取消了：\n" + results.map(r => `・${when(r.due)} ${r.text}`).join("\n") : "好，不設提醒。");
+  }
+  await kv.set(db, k, "busy");
+  const t0 = Date.now();
+  const who = isGroup(chatId) ? await member(db, line, chatId, userId) : { name: "你" };
+  try { await answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, REMIND_ASK, "（按了：要，幫我設提醒）"); }
+  finally {
+    const { results } = await db.prepare("SELECT id FROM line_reminders WHERE (chat_id=? OR chat_id=?) AND created_by=? AND created>=? AND todo_id IS NULL AND status='open'").bind(chatId, userId, userId, t0).all();
+    await kv.set(db, k, "yes:" + JSON.stringify(results.map(r => r.id)));
+  }
 }
 
 /* 待辦清單下面的「✓ 完成」快速按鈕（最多 10 件） */
