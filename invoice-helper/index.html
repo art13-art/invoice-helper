@@ -220,6 +220,18 @@ footer{color:var(--muted);font-size:14px}
   .bar .btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:700}
 }
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+/* 常見問題（給讀者與搜尋引擎） */
+.card.faq{max-width:60em}
+.faq h2{font-family:var(--f-head);font-size:20px;letter-spacing:.06em;margin:0 0 4px}
+.faq details{border-top:1px solid var(--line);padding:2px 0}
+.faq details:first-of-type{border-top:0}
+.faq summary{cursor:pointer;list-style:none;padding:12px 0;font-weight:500;display:flex;gap:8px;align-items:center;min-height:var(--tap)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"＋";margin-left:auto;color:var(--muted)}
+.faq details[open] summary::after{content:"－"}
+.faq p{margin:0 0 12px;color:var(--muted);font-size:16px;line-height:1.75;max-width:60ch}
+.faq p a{color:var(--accent)}
+@media print{.faq,.guide-links{display:none}}
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
@@ -235,6 +247,7 @@ footer{color:var(--muted);font-size:14px}
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "手開發票小幫手", "url": "https://taxtools.tw/invoice-helper/", "description": "輸入買方統編、品項與金額，自動算出營業稅、總計與中文大寫，並產生擬真三聯式／二聯式手開發票範例，照著寫就不會開錯。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "三聯式和二聯式發票有什麼不同？", "acceptedAnswer": {"@type": "Answer", "text": "買方是有統一編號的公司行號，開三聯式：銷售額和營業稅分開寫，買方拿扣抵聯去扣抵進項稅額。買方是一般消費者，開二聯式：直接寫含稅總額，不另外列稅額（統一發票使用辦法第 7 條）。"}}, {"@type": "Question", "name": "手開三聯式發票要填哪些欄位？", "acceptedAnswer": {"@type": "Answer", "text": "買受人名稱、統一編號、日期、品名、數量、單價、金額，再填銷售額合計、勾選課稅別（應稅、零稅率或免稅）、營業稅額和總計，總計還要用中文大寫填在「總計新臺幣」欄，最後蓋上統一發票專用章。"}}, {"@type": "Question", "name": "總計的中文大寫怎麼寫？", "acceptedAnswer": {"@type": "Answer", "text": "用壹、貳、參、肆、伍、陸、柒、捌、玖、零，依發票上印好的億、仟、佰、拾、萬、仟、佰、拾、元格子逐格填寫。本頁會依你輸入的金額自動算好，照著抄就不會錯。"}}, {"@type": "Question", "name": "含稅金額怎麼拆成銷售額和稅額？", "acceptedAnswer": {"@type": "Answer", "text": "含稅金額除以 1.05，四捨五入到元是銷售額；含稅金額減銷售額就是稅額，這樣加起來一定剛好等於總計。詳細說明見含稅未稅怎麼算。"}}, {"@type": "Question", "name": "發票寫錯了可以塗改嗎？", "acceptedAnswer": {"@type": "Answer", "text": "不建議塗改。寫錯要收回作廢、另開一張正確的發票；收不回來的話，主動向國稅局更正報備可以免罰。完整做法見發票開錯怎麼辦。"}}]}</script>
 <!--/seo-->
 </head>
 <body>
@@ -329,6 +342,15 @@ footer{color:var(--muted);font-size:14px}
     </section>
   </div>
 
+
+  <section class="card faq">
+    <h2>常見問題</h2>
+    <details><summary>三聯式和二聯式發票有什麼不同？</summary><p>買方是有統一編號的公司行號，開三聯式：銷售額和營業稅分開寫，買方拿扣抵聯去扣抵進項稅額。買方是一般消費者，開二聯式：直接寫含稅總額，不另外列稅額（統一發票使用辦法第 7 條）。</p></details>
+    <details><summary>手開三聯式發票要填哪些欄位？</summary><p>買受人名稱、統一編號、日期、品名、數量、單價、金額，再填銷售額合計、勾選課稅別（應稅、零稅率或免稅）、營業稅額和總計，總計還要用中文大寫填在「總計新臺幣」欄，最後蓋上統一發票專用章。</p></details>
+    <details><summary>總計的中文大寫怎麼寫？</summary><p>用壹、貳、參、肆、伍、陸、柒、捌、玖、零，依發票上印好的億、仟、佰、拾、萬、仟、佰、拾、元格子逐格填寫。本頁會依你輸入的金額自動算好，照著抄就不會錯。</p></details>
+    <details><summary>含稅金額怎麼拆成銷售額和稅額？</summary><p>含稅金額除以 1.05，四捨五入到元是銷售額；含稅金額減銷售額就是稅額，這樣加起來一定剛好等於總計。詳細說明見<a href="/guide/tax-included/">含稅未稅怎麼算</a>。</p></details>
+    <details><summary>發票寫錯了可以塗改嗎？</summary><p>不建議塗改。寫錯要收回作廢、另開一張正確的發票；收不回來的話，主動向國稅局更正報備可以免罰。完整做法見<a href="/guide/invoice-mistake/">發票開錯怎麼辦</a>。</p></details>
+  </section>
 
   <nav class="guide-links" aria-label="相關解答"><span>相關解答</span><a href="/guide/invoice-mistake/">發票開錯怎麼辦？手開發票作廢、重開、折讓單</a><a href="/guide/tax-included/">含稅未稅怎麼算？營業稅 5% 換算公式</a></nav>
   <footer>稅額計算：含稅金額 ÷ 1.05 四捨五入到元為銷售額，總計減銷售額為稅額。內容依統一發票使用辦法（114 年 1 月 1 日施行版本）及加值型及非加值型營業稅法第 32 條整理，僅供參考，實際以財政部及國稅局規定為準。</footer>

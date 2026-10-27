@@ -129,6 +129,7 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "報稅帳本", "url": "https://taxtools.tw/ledger/", "description": "給公司、工作室和個人的報稅帳本：記收入支出，自動算每期營業稅（銷項減進項）、整理代扣稅款和補充保費、年底可列舉的保險醫療捐款和房租。用 Google 登入，手機電腦同步。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "報稅帳本要付費嗎？", "acceptedAnswer": {"@type": "Answer", "text": "目前免費。沒登入也能用，資料只存在這台裝置的瀏覽器；用 Google 帳號登入後才會存到雲端，手機和電腦可以同步。"}}, {"@type": "Question", "name": "帳本怎麼算每期營業稅？", "acceptedAnswer": {"@type": "Answer", "text": "每兩個月一期，把這期開出去的發票稅額（銷項）減掉可以扣抵的進貨、費用發票稅額（進項），就是應繳營業稅；交際應酬用的進項不能扣抵（營業稅法第 15、19 條）。申報期限和遇假日順延的日期也會一起顯示。"}}, {"@type": "Question", "name": "記帳士可以一起看我的帳嗎？", "acceptedAnswer": {"@type": "Answer", "text": "可以。建立公司帳後，可以邀請同事加入，也可以連結你的記帳士事務所，依角色一起記帳、提問；每一筆新增、修改、刪除都會留下紀錄，負責人可以隨時取消連結。"}}, {"@type": "Question", "name": "可以匯出資料嗎？", "acceptedAnswer": {"@type": "Answer", "text": "可以匯出今年的 CSV（Excel、Google 試算表都能開），也能下載完整備份檔，或從試算表匯入既有的帳。"}}, {"@type": "Question", "name": "用帳本記完就等於報完稅了嗎？", "acceptedAnswer": {"@type": "Answer", "text": "不是。帳本幫你整理申報要用的數字，正式申報還是要透過財政部的申報系統完成。詳細步驟見營業稅怎麼報。"}}]}</script>
 <!--/seo-->
 </head>
 <body>
@@ -177,6 +178,15 @@ dialog.sheet::backdrop{background:rgba(15,20,27,.45)}
       </section>
     </div>
   </div>
+
+  <section class="card faq">
+    <h2>常見問題</h2>
+    <details><summary>報稅帳本要付費嗎？</summary><p>目前免費。沒登入也能用，資料只存在這台裝置的瀏覽器；用 Google 帳號登入後才會存到雲端，手機和電腦可以同步。</p></details>
+    <details><summary>帳本怎麼算每期營業稅？</summary><p>每兩個月一期，把這期開出去的發票稅額（銷項）減掉可以扣抵的進貨、費用發票稅額（進項），就是應繳營業稅；交際應酬用的進項不能扣抵（營業稅法第 15、19 條）。申報期限和遇假日順延的日期也會一起顯示。</p></details>
+    <details><summary>記帳士可以一起看我的帳嗎？</summary><p>可以。建立公司帳後，可以邀請同事加入，也可以連結你的記帳士事務所，依角色一起記帳、提問；每一筆新增、修改、刪除都會留下紀錄，負責人可以隨時取消連結。</p></details>
+    <details><summary>可以匯出資料嗎？</summary><p>可以匯出今年的 CSV（Excel、Google 試算表都能開），也能下載完整備份檔，或從試算表匯入既有的帳。</p></details>
+    <details><summary>用帳本記完就等於報完稅了嗎？</summary><p>不是。帳本幫你整理申報要用的數字，正式申報還是要透過財政部的申報系統完成。詳細步驟見<a href="/guide/vat-filing/">營業稅怎麼報</a>。</p></details>
+  </section>
 
   <nav class="guide-links" aria-label="相關解答"><span>相關解答</span><a href="/guide/vat-filing/">營業稅怎麼報？申報期限、計算方式、零申報</a><a href="/guide/invoice-mistake/">發票開錯怎麼辦？手開發票作廢、重開、折讓單</a></nav>
   <p class="site-foot">登入後帳本存在本站的雲端資料庫（Cloudflare），網站上只有登入的你能讀取，傳輸全程加密；本站不會把資料提供給第三方，可以隨時在帳號區刪除全部雲端資料。沒登入時資料只存在這台裝置的瀏覽器。營業稅依加值型及非加值型營業稅法第 15、33、35 條計算（銷項稅額減可扣抵進項稅額，交際應酬用的進項不能扣抵）。僅供參考，實際以國稅局規定為準。</p>
