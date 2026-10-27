@@ -119,10 +119,8 @@ async function handle(env, ev, origin) {
   let text = raw;
   for (const m of [...self].sort((a, b) => b.index - a.index)) text = text.slice(0, m.index) + text.slice(m.index + m.length);
   text = text.trim();
-  const named = /^(小助理|助理)[，,:：\s]/.test(text);
-  if (named) text = text.replace(/^(小助理|助理)[，,:：\s]+/, "").trim();
   const command = text.startsWith("/") || text.startsWith("／") ? text.replace(/^[/／]\s*/, "") : null;
-  const addressed = !group || self.length > 0 || command !== null || named;
+  const addressed = !group || self.length > 0 || command !== null;   // 群組裡只有 @小幫手 或按鈕送出的「/」指令才回應
 
   // 群組裡的一般訊息只記錄，不回應
   if (group && !who.optout && !(command && /^(不要記錄我|恢復記錄|清除紀錄)$/.test(command))) await record(db, chatId, userId, who.name, raw);
