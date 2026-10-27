@@ -2,7 +2,7 @@
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
-import { verifySignature, lineClient, textMessage, say, postback, meetingCard } from "../../../lib/line.js";
+import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard } from "../../../lib/line.js";
 import { chat, member, isGroup, kv, when, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -391,9 +391,12 @@ async function answer(ctx, text, logText, attach) {
   }
   let quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
   // 一般的回答下面放「詳細分析」按鈕（按了＝請它把這則展開；已經是詳細版、確認按鈕、很短的回覆就不放）
-  if (!pending && !ctx.deep && !card && out.length > 60 && !/^(好|收到|OK)/i.test(out)) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
+  // 存了文件：網址從文字拿掉（放進卡片）
+  const docs = (ctx.savedDocs || []).slice(0, 2);
+  if (docs.length) out = out.replace(/[：:]?[ \t]*\n?[ \t]*https:\/\/docs\.google\.com\/\S+/g, "").replace(/\n{3,}/g, "\n\n").trim() || "好了。";
+  if (!pending && !ctx.deep && !card && !docs.length && out.length > 60 && !/^(好|收到|OK)/i.test(out)) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
-  const extra = [...(card ? [card] : []), ...(ctx.adminMsgs || [])].slice(0, 3);
+  const extra = [...(card ? [card] : []), ...docs.map(d => docCard(d.title, d.url)), ...(ctx.adminMsgs || [])].slice(0, 3);
   const parts = splitText(out, 4800).slice(0, 5 - extra.length);
   const msgs = parts.map((p, i) => textMessage(p, i === parts.length - 1 ? quick : undefined));
   msgs.push(...extra);
