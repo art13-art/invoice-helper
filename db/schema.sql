@@ -59,3 +59,13 @@ CREATE TABLE IF NOT EXISTS history (
   before TEXT, after TEXT
 );
 CREATE INDEX IF NOT EXISTS history_item ON history(space_id, item_id, at);
+
+-- 網站流量（不用 Cookie、不存 IP；每日訪客只存當天加鹽雜湊，90 天後刪除）與意見回饋
+CREATE TABLE IF NOT EXISTS stat_views (day TEXT NOT NULL, path TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, path));
+CREATE TABLE IF NOT EXISTS stat_refs (day TEXT NOT NULL, ref TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ref));
+CREATE TABLE IF NOT EXISTS stat_devs (day TEXT NOT NULL, dev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, dev));
+CREATE TABLE IF NOT EXISTS stat_visitors (day TEXT NOT NULL, h TEXT NOT NULL, PRIMARY KEY (day, h));
+CREATE TABLE IF NOT EXISTS feedback (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, page TEXT, kind TEXT, text TEXT NOT NULL, contact TEXT,
+  user_id TEXT, iph TEXT, status TEXT NOT NULL DEFAULT 'new', note TEXT);
+CREATE INDEX IF NOT EXISTS feedback_ts ON feedback(ts);
