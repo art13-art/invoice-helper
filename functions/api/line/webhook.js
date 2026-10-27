@@ -10,6 +10,7 @@ import { adminFor, decisionCard, newDecision, toAdmin } from "../../../lib/escal
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
 const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
+const VIDEO_ASK = "（使用者傳來一支影片。上面附了影片封面（第一個畫面）和語音逐字稿；你看不到中間的畫面，回答時要說清楚是根據封面和聲音判斷的。先說影片在講什麼；如果是廣告或宣傳影片，評估開頭三秒的吸引力、主要訊息、CTA，給具體的改進建議。）";
 const REMIND_ASK = "（使用者在會議錄音整理的卡片上按了「要，設提醒」。依你剛剛那則整理裡「可提醒」的建議設好提醒：會議照開會提醒的規則（前一天 18:00 請大家先提出要討論的事項＋會議前 30 分鐘，都用 set_reminder、auto=true）；有人要完成的事（截止日）用 add_todos 加成待辦，系統會自動在前一天和到期時提醒，對話紀錄裡已經加過的待辦不要重複加；已經過了的時間跳過。設完用「時間＋內容」簡短列出。沒有可提醒的事就直接說沒有，問他要提醒什麼。）";
 
 const GROUP_CHIPS = [];
@@ -93,13 +94,16 @@ async function handle(env, ev, origin) {
 
   if (msg.type !== "text") {
     const audio = msg.type === "audio" || (msg.type === "file" && isAudioName(msg.fileName));
+    const video = msg.type === "video" || (msg.type === "file" && /\.(mp4|mov|m4v|webm)$/i.test(msg.fileName || ""));
     if (group) {
       // 錄音只記下來不自動轉（要轉：回覆那段錄音 @我，或說「整理剛剛的錄音」），免得每則語音都花錢
-      if (audio && !who.optout) await record(db, chatId, userId, who.name, `［傳了錄音${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "audio:" + msg.id);
+      if (video && !who.optout) await record(db, chatId, userId, who.name, `［傳了影片${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "video:" + msg.id);
+      else if (audio && !who.optout) await record(db, chatId, userId, who.name, `［傳了錄音${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "audio:" + msg.id);
       else if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
       else if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
       return;   // 群組裡的貼圖、照片、錄音不回應
     }
+    if (video) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, VIDEO_ASK, "（傳了影片）", { id: msg.id, name: msg.fileName || "", video: true, duration: msg.duration, file: msg.type === "file" });
     if (audio) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, AUDIO_ASK, "（傳了錄音）", { id: msg.id, name: msg.fileName || "", audio: true, duration: msg.duration });
     if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）", "（傳了一張照片）", { id: msg.id, name: "照片.jpg" });
     if (msg.type === "file") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, `（使用者傳來檔案「${msg.fileName}」，整理重點；如果有期限、金額或要處理的事，列出來。）`, `（傳了檔案：${msg.fileName}）`, { id: msg.id, name: msg.fileName || "" });
@@ -186,8 +190,8 @@ async function handle(env, ev, origin) {
   // 回覆（引用）某張照片、檔案或錄音再 @ 它：直接把那個照片／檔案／錄音一起給它
   let attach = null;
   if (msg.quotedMessageId) {
-    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND (media=? OR media=? OR media=?) LIMIT 1").bind(chatId, msg.quotedMessageId, "file:" + msg.quotedMessageId, "audio:" + msg.quotedMessageId).first();
-    if (q) attach = q.media.startsWith("audio:") ? { id: msg.quotedMessageId, name: (q.text.match(/：(.*)］/) || [])[1] || "", audio: true }
+    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND (media=? OR media=? OR media=? OR media=?) LIMIT 1").bind(chatId, msg.quotedMessageId, "file:" + msg.quotedMessageId, "audio:" + msg.quotedMessageId, "video:" + msg.quotedMessageId).first();
+    if (q) attach = q.media.startsWith("video:") ? { id: msg.quotedMessageId, name: (q.text.match(/：(.*)］/) || [])[1] || "", video: true } : q.media.startsWith("audio:") ? { id: msg.quotedMessageId, name: (q.text.match(/：(.*)］/) || [])[1] || "", audio: true }
       : { id: msg.quotedMessageId, name: q.media.startsWith("file:") ? (q.text.match(/檔案：(.*)］/) || [])[1] || "" : "照片.jpg" };
   }
   // 「整理剛剛的錄音」「會議錄音轉文字」：沒引用時抓最近 24 小時的錄音（先找自己傳的）
@@ -195,6 +199,12 @@ async function handle(env, ev, origin) {
     const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND media LIKE 'audio:%' AND ts>? ORDER BY (user_id=?) DESC, id DESC LIMIT 1").bind(chatId, Date.now() - 864e5, userId).first();
     if (q) attach = { id: q.media.slice(6), name: (q.text.match(/：(.*)］/) || [])[1] || "", audio: true };
   }
+  // 「看一下剛剛的影片」：沒引用時抓最近 24 小時的影片
+  if (!attach && group && /影片|影音|短影音|video/i.test(c)) {
+    const q = await db.prepare("SELECT text,media FROM line_msgs WHERE chat_id=? AND media LIKE 'video:%' AND ts>? ORDER BY (user_id=?) DESC, id DESC LIMIT 1").bind(chatId, Date.now() - 864e5, userId).first();
+    if (q) attach = { id: q.media.slice(6), name: (q.text.match(/：(.*)］/) || [])[1] || "", video: true };
+  }
+  if (!ask && attach?.video) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, VIDEO_ASK, "（請看這支影片）", attach);
   if (!ask && attach) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, attach.audio ? AUDIO_ASK : "（看一下這個，整理重點）", attach.audio ? "（請整理這段錄音）" : "（@了小助理）", attach);
   if (!ask) {
     // 只 @ 沒說事：通常是要它處理前面剛說過的內容，交給 AI 從最近的對話判斷
@@ -346,6 +356,25 @@ async function answer(ctx, text, logText, attach) {
       if (e.admin) return tellAdmin(ctx, "錄音轉文字暫時不能用。", e.message);
       return send(/^content \d/.test(e.message) ? "錄音沒讀到，可能已經過期了，再傳一次？" : e.message);
     }
+  } else if (attach?.video) {
+    if (!isGroup(chatId)) await line.loading(userId, 60);
+    const blocks = [];
+    try { const pv = await line.preview(attach.id); blocks.push(...(await toBlocks(pv.bytes, pv.type, "封面.jpg"))); } catch (e) { console.log("video preview", e.message); }
+    let heard = "（沒有取得聲音內容）";
+    try {
+      if (!(await budgetLeft(env, db))) heard = "（這個月預算用完，聲音沒有轉文字）";
+      else {
+        const f = await line.content(attach.id, MAX_AUDIO);
+        const t = await transcribe(env, f.bytes, f.type || "video/mp4", /\.(mp4|webm|m4a)$/i.test(attach.name) ? attach.name : "影片.mp4", { durationMs: attach.duration, timeoutMs: env.LONG_RUN === "1" ? 280e3 : 20e3 });
+        await recordTranscribe(db, { chatId, userId, model: t.model, seconds: t.seconds }).catch(e => console.log("usage", e.message));
+        heard = t.text ? `語音逐字稿（約 ${Math.max(1, Math.round(t.seconds / 60))} 分鐘）：\n${t.text.slice(0, 40000)}` : "（影片裡沒有聽到說話，可能只有音樂）";
+      }
+    } catch (e) {
+      if (e.admin) await escalateErr(ctx, e.message);
+      heard = /太大/.test(e.message) ? "（影片超過 25MB，聲音沒辦法轉文字，只看得到封面）" : /^content \d/.test(e.message) ? "（影片已經過期，讀不到）" : "（聲音轉文字失敗：" + e.message + "）";
+    }
+    if (!blocks.length && /過期|讀不到/.test(heard)) return send("影片沒讀到，可能已經過期了，再傳一次？");
+    content = [...blocks, { type: "text", text: heard }, { type: "text", text }];
   } else if (attach) {
     try {
       const f = await line.content(attach.id);
