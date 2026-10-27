@@ -16,7 +16,7 @@ globalThis.fetch = async (url, init = {}) => { calls.push({ url: String(url), bo
 const env = { DB: db, LINE_CHANNEL_TOKEN: "t", LINE_CHANNEL_SECRET: "s" };
 const G = "Cgroup1", now = Date.now();
 const ins = (q, ...a) => sq.prepare(q).run(...a);
-ins("INSERT INTO line_todos VALUES('ab12',?,?,'U_amy','Amy',?,'open',?,'U_boss')", G, "交報價單", now - 60e3, now);
+ins("INSERT INTO line_todos(id,chat_id,task,assignee_id,assignee_name,due,status,created,created_by) VALUES('ab12',?,?,'U_amy','Amy',?,'open',?,'U_boss')", G, "交報價單", now - 60e3, now);
 ins("INSERT INTO line_reminders VALUES('r1',?,?,?,'none','U_amy','Amy','ab12',?,'U_boss','open',NULL)", G, now - 60e3, "待辦到期：交報價單", now);
 ins("INSERT INTO line_reminders VALUES('r2',?,?,?,'none',NULL,NULL,NULL,?,'U_boss','open',NULL)", G, now - 60e3, "三點開會", now);
 let ok = 0, bad = 0; const t = (c, m) => { if (c) ok++; else { bad++; console.log("FAIL", m); } };
@@ -48,10 +48,10 @@ t(/已經完成/.test(r), "second press: " + r);
 r = await post("U_amy", "done:ffff");
 t(/找不到/.test(r), "unknown id");
 // creator can complete; no-assignee todo anyone can
-ins("INSERT INTO line_todos VALUES('cd34',?,?,NULL,NULL,NULL,'open',?,'U_boss')", G, "訂便當", now);
+ins("INSERT INTO line_todos(id,chat_id,task,assignee_id,assignee_name,due,status,created,created_by) VALUES('cd34',?,?,NULL,NULL,NULL,'open',?,'U_boss')", G, "訂便當", now);
 r = await post("U_other", "done:cd34"); t(/完成了：訂便當/.test(r), "unassigned anyone: " + r);
 // todo list chips
-ins("INSERT INTO line_todos VALUES('ef56',?,?,'U_amy','Amy',NULL,'open',?,'U_boss')", G, "寄樣品給廠商確認顏色和尺寸", now);
+ins("INSERT INTO line_todos(id,chat_id,task,assignee_id,assignee_name,due,status,created,created_by) VALUES('ef56',?,?,'U_amy','Amy',NULL,'open',?,'U_boss')", G, "寄樣品給廠商確認顏色和尺寸", now);
 const body = JSON.stringify({ events: [{ type: "message", webhookEventId: "m1", replyToken: "rt", source: { type: "group", groupId: G, userId: "U_amy" }, message: { type: "text", id: "1", text: "/待辦" } }] });
 calls.length = 0;
 await wh.onRequestPost({ request: new Request("https://x/api/line/webhook", { method: "POST", body, headers: { "x-line-signature": createHmac("sha256", "s").update(body).digest("base64") } }), env });

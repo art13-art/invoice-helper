@@ -53,7 +53,7 @@ t(fmt(rs.find(r => r.text === "我自己要的").due) === day(2) + " 07:30", "ex
 // tick: due → overdue every day until done
 sq.exec("DELETE FROM line_reminders; DELETE FROM line_todos; DELETE FROM line_kv;");
 const now = Date.now();
-sq.prepare("INSERT INTO line_todos VALUES('ab12',?,?,'U_amy','Amy',?,'open',?,'U_boss')").run(G, "交排班", now - 60e3, now);
+sq.prepare("INSERT INTO line_todos(id,chat_id,task,assignee_id,assignee_name,due,status,created,created_by) VALUES('ab12',?,?,'U_amy','Amy',?,'open',?,'U_boss')").run(G, "交排班", now - 60e3, now);
 sq.prepare("INSERT INTO line_reminders VALUES('r0',?,?,'明天到期：交排班','none','U_amy','Amy','ab12',?,'U_boss','open',NULL)").run(G, now - 3 * 60e3, now);
 sq.prepare("INSERT INTO line_reminders VALUES('r1',?,?,'待辦到期：交排班','none','U_amy','Amy','ab12',?,'U_boss','open',NULL)").run(G, now - 60e3, now);
 const run = async () => { sq.prepare("DELETE FROM line_kv WHERE k='tick:last'").run(); pushes = []; await tick.onRequestPost({ request: new Request("https://x/api/line/tick", { method: "POST", body: "{}" }), env }); };

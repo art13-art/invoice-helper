@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS line_members (                                       
   PRIMARY KEY (chat_id, user_id));
 CREATE TABLE IF NOT EXISTS line_todos (
   id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, task TEXT NOT NULL, assignee_id TEXT, assignee_name TEXT, due INTEGER,
-  status TEXT NOT NULL, created INTEGER NOT NULL, created_by TEXT);
+  status TEXT NOT NULL, created INTEGER NOT NULL, created_by TEXT, done_at INTEGER);
+-- 舊資料庫補欄位（2026-10-27 已在正式環境執行）：ALTER TABLE line_todos ADD COLUMN done_at INTEGER;
 CREATE INDEX IF NOT EXISTS line_todos_chat ON line_todos(chat_id, status);
 CREATE TABLE IF NOT EXISTS line_reminders (
   id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, due INTEGER NOT NULL, text TEXT NOT NULL, repeat TEXT NOT NULL DEFAULT 'none',

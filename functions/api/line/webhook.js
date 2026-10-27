@@ -2,7 +2,8 @@
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
-import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker } from "../../../lib/line.js";
+import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
+import { watchCommit, settleCommit } from "../../../lib/commit.js";
 import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -59,14 +60,14 @@ async function handle(env, ev, origin) {
     case "join": {
       const n = await line.groupName(chatId);
       if (n) await kv.set(db, "name:" + chatId, n);
-      return reply(JOIN_NOTICE);
+      return ev.replyToken ? line.reply(ev.replyToken, [helpCard(true, { keepDays: KEEP_DAYS, join: true })]).catch(e => { console.log("join card failed", e.message); return reply(JOIN_NOTICE); }) : null;
     }
     case "leave": return forgetChat(db, chatId);
-    case "memberJoined": return reply(`歡迎！我是小助理，有事 @我 就好。群組討論我會記 ${KEEP_DAYS} 天，不想被記錄跟我說「不要記錄我」。`);
+    case "memberJoined": return reply(`歡迎！我是小幫手，有事 @小幫手 就好，說「說明」可以看我會做什麼。群組討論我會記 ${KEEP_DAYS} 天，不想被記錄跟我說「不要記錄我」。`);
     case "memberLeft":
       for (const m of ev.left?.members || []) await db.prepare("DELETE FROM line_members WHERE chat_id=? AND user_id=?").bind(chatId, m.userId).run();
       return;
-    case "follow": return reply("嗨，我是小助理。" + HELP_USER);
+    case "follow": return ev.replyToken ? line.reply(ev.replyToken, [helpCard(false, { join: true })]).catch(() => reply("嗨，我是小幫手。" + HELP_USER)) : null;
     case "unfollow": return;
     case "postback": {
       const d = String(ev.postback?.data || "");
@@ -79,6 +80,8 @@ async function handle(env, ev, origin) {
       if (ad) return reply(await adminDecision(env, db, line, chatId, userId, ad[2], ad[1]));
       const tr = d.match(/^txr:(yes|no):(\w+)$/);
       if (tr) return remindButton(env, db, line, ev, chatId, userId, tr[2], tr[1] === "yes", origin, chips, reply);
+      const cm = d.match(/^cm:(yes|no):(\w+)$/);
+      if (cm) return reply(await settleCommit(db, { id: cm[2], userId, yes: cm[1] === "yes" }));
       const dn = d.match(/^done:([0-9a-f]{4})$/);
       if (dn) return reply(await doneByButton(db, line, chatId, userId, dn[1]));
       const m = d.match(/^(ok|no):(\w+)$/);
@@ -130,11 +133,14 @@ async function handle(env, ev, origin) {
   // 群組裡的一般訊息只記錄，不回應
   if (group && !who.optout && !(command && /^(不要記錄我|恢復記錄|清除紀錄)$/.test(command))) await record(db, chatId, userId, who.name, raw);
   if (group) await vendorReply(env, db, line, chatId, userId, who.name, text).catch(e => console.log("vendor reply", e.message));
+  // 沒叫小幫手、但說了自己要做的事（「我明天交報價」）：私訊問他要不要加成待辦
+  if (group && !addressed && !who.optout) await watchCommit(env, db, line, { chatId, userId, name: who.name, text: raw, replyToken: ev.replyToken, chatName: await kv.get(db, "name:" + chatId) }).catch(e => console.log("watchCommit", e.message));
   if (!addressed) return;
 
   // ---- 快速指令（不用 AI、不計費）----
   const c = command ?? text;
-  if (/^(說明|help|怎麼用|\?|？)$/i.test(c)) return reply(group ? HELP_GROUP : HELP_USER);
+  if (/^(說明|help|怎麼用|使用說明|你會什麼|你會做什麼|功能|\?|？)$/i.test(c))
+    return ev.replyToken ? line.reply(ev.replyToken, [helpCard(group, { keepDays: KEEP_DAYS })]).catch(() => reply(group ? HELP_GROUP : HELP_USER)) : null;
   if (/^(待辦(清單|事項)?|有哪些待辦[?？]?)$/.test(c)) return reply(await todoText(db, chatId), await todoChips(db, chatId));
   if (/^完成\s*[0-9a-f]{4}/i.test(c)) return reply(await completeByText(db, chatId, c));
   if (group && /^(請)?(不要|別|停止)(再)?(記錄|紀錄)我(的訊息)?$/.test(c)) {
@@ -227,7 +233,7 @@ async function doneByButton(db, line, chatId, userId, id) {
   if (t.status !== "open") return `這件已經完成了：${t.task}`;
   if (t.assignee_id && t.assignee_id !== userId && t.created_by !== userId && !(await isAdmin(db, userId)))
     return `這件是 ${t.assignee_name || "負責人"} 的，請本人按「已完成」，或跟我說一聲。`;
-  const r = await db.prepare("UPDATE line_todos SET status='done' WHERE id=? AND status='open'").bind(id).run();
+  const r = await db.prepare("UPDATE line_todos SET status='done', done_at=? WHERE id=? AND status='open'").bind(Date.now(), id).run();
   if ((r.meta?.changes ?? 1) === 0) return `這件已經完成了：${t.task}`;
   await db.prepare("UPDATE line_reminders SET status='cancelled' WHERE todo_id=? AND status='open'").bind(id).run();
   const who = isGroup(chatId) ? await member(db, line, chatId, userId) : { name: "你", optout: 0 };
