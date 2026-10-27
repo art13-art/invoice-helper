@@ -60,4 +60,11 @@ t(calls.some(c => c.url.endsWith("/message/reply")), "@ still works");
 sq.exec("UPDATE line_reminders SET status='cancelled' WHERE kind='chase'");
 await msg("U_amy", "Ben，小幫手的設定你可以看一下嗎");
 t(chases().length === 1, "naming Ben (not to bot) still chases");
+// 電腦版：打字的「@小幫手」（沒有真正的 mention）也算叫它
+await msg("U_amy", "@小幫手 在嗎");
+t(calls.some(c => c.url.endsWith("/message/reply")), "typed @小幫手 gets a reply");
+await msg("U_amy", "＠小幫手 幫我跟 Ben 說報價好了嗎");
+t(chases().length === 1, "typed @小幫手 mentioning Ben is for the bot, no extra chase");
+await msg("U_amy", "小幫手好用");
+t(!calls.some(c => c.url.endsWith("/message/reply")), "just the name without @ doesn't trigger");
 console.log(`${ok} passed, ${bad} failed`);

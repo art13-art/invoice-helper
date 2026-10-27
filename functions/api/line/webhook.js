@@ -120,9 +120,12 @@ async function handle(env, ev, origin) {
   // 拿掉 @小助理 本身，剩下的才是要問的內容
   let text = raw;
   for (const m of [...self].sort((a, b) => b.index - a.index)) text = text.slice(0, m.index) + text.slice(m.index + m.length);
+  // 電腦版 LINE 常常 @ 不到官方帳號：打字寫「@小幫手」也算在叫它（真正的 @ 已經在上面拿掉了）
+  const typedAt = /[@＠]\s?小幫手/.test(text);
+  if (typedAt) text = text.replace(/[@＠]\s?小幫手/g, "");
   text = text.trim();
   const command = text.startsWith("/") || text.startsWith("／") ? text.replace(/^[/／]\s*/, "") : null;
-  const addressed = !group || self.length > 0 || command !== null;   // 群組裡只有 @小幫手 或按鈕送出的「/」指令才回應
+  const addressed = !group || self.length > 0 || typedAt || command !== null;   // 群組裡只有 @小幫手 或按鈕送出的「/」指令才回應
 
   // 群組裡的一般訊息只記錄，不回應
   if (group && !who.optout && !(command && /^(不要記錄我|恢復記錄|清除紀錄)$/.test(command))) await record(db, chatId, userId, who.name, raw);

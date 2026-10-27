@@ -91,4 +91,7 @@ await say("U_amy", "再一題");
 const hist = JSON.stringify(claudeSeen[0].messages.slice(0, -1));
 t(/［\d{1,2}\/\d{1,2} \d{2}:\d{2}］Amy：/.test(hist), "history user lines carry their time " + hist.slice(0, 120));
 t(claudeSeen[0].system[0].text.includes("不要拿現在的時間去比") && claudeSeen[0].system[0].text.includes("不要主動翻舊對話"), "scope + time rules");
+await say("U_amy", "你是用什麼做的");
+const sys = claudeSeen[0].system[0].text;
+t(/Anthropic 的 Claude/.test(sys) && /直接問 .* 最準/.test(sys) && /不要叫人去問別人/.test(sys), "self-knowledge + no pushing to admin");
 console.log(`${ok} passed, ${bad} failed`);
