@@ -16,7 +16,9 @@ CREATE TABLE IF NOT EXISTS line_todos (
 CREATE INDEX IF NOT EXISTS line_todos_chat ON line_todos(chat_id, status);
 CREATE TABLE IF NOT EXISTS line_reminders (
   id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, due INTEGER NOT NULL, text TEXT NOT NULL, repeat TEXT NOT NULL DEFAULT 'none',
-  mention_id TEXT, mention_name TEXT, todo_id TEXT, created INTEGER NOT NULL, created_by TEXT, status TEXT NOT NULL);
+  mention_id TEXT, mention_name TEXT, todo_id TEXT, created INTEGER NOT NULL, created_by TEXT, status TEXT NOT NULL, kind TEXT);
+-- mention_id：一個或多個 userId（逗號分隔），或 all＝@All。kind：msg＝代發訊息（不加⏰）
+-- 舊資料庫補欄位（2026-10-27 已在正式環境執行）：ALTER TABLE line_reminders ADD COLUMN kind TEXT;
 CREATE INDEX IF NOT EXISTS line_reminders_due ON line_reminders(status, due);
 CREATE TABLE IF NOT EXISTS line_events (id TEXT PRIMARY KEY, ts INTEGER NOT NULL);       -- 避免 LINE 重送時重複處理
 CREATE TABLE IF NOT EXISTS line_pending (                                                -- 等人按「確認」才寫入的帳

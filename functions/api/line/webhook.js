@@ -182,7 +182,7 @@ async function handle(env, ev, origin) {
   }
 
   // ---- 交給 AI ----
-  const ask = c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
+  const ask = c === "詳細分析" ? "（請把你上一則回答展開成詳細分析：需要就上網多查幾個來源、補充數據、比較和具體建議；官方資料附網址；內容長就用 save_report 存成文件，LINE 裡回重點和連結。）" : c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
   // 回覆（引用）某張照片、檔案或錄音再 @ 它：直接把那個照片／檔案／錄音一起給它
   let attach = null;
   if (msg.quotedMessageId) {
@@ -360,7 +360,9 @@ async function answer(ctx, text, logText, attach) {
     if (e.status === 401) { await escalateErr(ctx, "Claude 金鑰好像失效了（401），我現在回不了話。"); }
     out = (e.status === 401 ? "我這邊連線出了問題，暫時回不了。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。") + (tail ? "\n錄音已經轉好了，晚點叫我整理就好。" + tail : "");
   }
-  const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
+  let quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
+  // 一般的回答下面放「詳細分析」按鈕（按了＝請它把這則展開；已經是詳細版、確認按鈕、很短的回覆就不放）
+  if (!pending && !ctx.deep && !card && out.length > 60 && !/^(好|收到|OK)/i.test(out)) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
   const extra = [...(card ? [card] : []), ...(ctx.adminMsgs || [])].slice(0, 3);
   const parts = splitText(out, 4800).slice(0, 5 - extra.length);
