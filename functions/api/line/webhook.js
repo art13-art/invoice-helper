@@ -140,7 +140,7 @@ async function handle(env, ev, origin) {
   if (c === "不用") return reply("好。");
   // ---- 記帳確認（打字也可以）----
   if (/^(確認|取消)(記帳)?$/.test(c)) {
-    const p = await db.prepare("SELECT id FROM line_pending WHERE chat_id=? AND user_id=? AND status='open' ORDER BY created DESC LIMIT 1").bind(chatId, userId).first();
+    const p = await db.prepare("SELECT id FROM line_pending WHERE chat_id=? AND user_id=? AND status='open' AND kind='rows' ORDER BY created DESC LIMIT 1").bind(chatId, userId).first();
     if (p) return reply(await settlePending(env, db, chatId, userId, p.id, c.startsWith("確認"), who.name));
   }
   // ---- 管理員：本月用量 ----
@@ -166,17 +166,17 @@ async function handle(env, ev, origin) {
     await kv.set(db, "admins", JSON.stringify(list)); await kv.set(db, "admincode", "null");
     return reply("好，你是管理員了。");
   }
-  if (group && /^記帳表$/.test(c)) {
-    const b = await getBook(db, chatId);
-    return reply(b ? `這個群組的記帳表：${b.name}\n${b.url}\n（要有 Google 共用權限才打得開）` : "這個群組還沒有記帳表，要的話 @我 說「設定記帳表」。");
+  if (group && /^(記帳表|紀錄表|記錄表)$/.test(c)) {
+    const b = await getBook(db, chatId), kind = b?.type === "log" ? "紀錄表" : "記帳表";
+    return reply(b ? `這個群組的${kind}：${b.name}\n${b.url}\n（要有 Google 共用權限才打得開）` : "這個群組還沒有表格，要的話 @我 說「設定紀錄表」或「設定記帳表」。");
   }
-  if (group && /^(設定記帳|取消記帳)/.test(c)) {
+  if (group && /^(設定|取消)(記帳|紀錄|記錄)/.test(c)) {
     if (await isAdmin(db, userId)) return reply(await bookCommand(env, db, chatId, c, userId));
     // 不是管理員：直接 @管理員，附按鈕讓他決定
     const adm = await adminFor(env, db, chatId);
     const id = await newDecision(db, { chatId, userId, kind: "book", payload: { c }, summary: c });
-    const ask = c.startsWith("取消") ? "取消這個群組的記帳表" : "幫這個群組設定記帳表";
-    const r = await toAdmin(env, db, { chatId, chatName: await kv.get(db, "name:" + chatId), adm, text: `${who.name} 想${ask}：「${c}」`, card: decisionCard(ask + "？", c, id, { yes: c.startsWith("取消") ? "取消記帳" : "設定" }) });
+    const kind = /紀錄|記錄/.test(c) ? "紀錄表" : "記帳表", ask = c.startsWith("取消") ? `取消這個群組的${kind}` : `幫這個群組設定${kind}`;
+    const r = await toAdmin(env, db, { chatId, chatName: await kv.get(db, "name:" + chatId), adm, text: `${who.name} 想${ask}：「${c}」`, card: decisionCard(ask + "？", c, id, { yes: c.startsWith("取消") ? "取消" : "設定" }) });
     const head = textMessage(r.how === "none" ? "這個要設定的人確認，目前還沒有人能確認。" : `好，我請 ${adm.name} 確認一下。`);
     return ev.replyToken ? line.reply(ev.replyToken, [head, ...r.msgs].slice(0, 5)).catch(e => console.log("reply failed", e.message)) : null;
   }
@@ -220,16 +220,27 @@ async function doneByButton(db, line, chatId, userId, id) {
 }
 
 /* 記帳表設定／取消（管理員本人，或管理員按了「設定」之後） */
+const LOG_HEADERS = ["日期", "項目", "類型", "假設／內容", "版本", "數據", "結果", "結論", "負責人", "備註", "記錄人", "原始訊息", "記錄時間"];
 async function bookCommand(env, db, chatId, c, userId) {
-  if (c === "取消記帳") { await db.prepare("DELETE FROM line_books WHERE chat_id=?").bind(chatId).run(); return "✓ 已取消綁定，之後不會再寫入。表格本身和裡面的資料都保留在雲端硬碟。"; }
+  const log = /紀錄|記錄/.test(c), kind = log ? "紀錄表" : "記帳表";
+  if (/^取消/.test(c)) { await db.prepare("DELETE FROM line_books WHERE chat_id=?").bind(chatId).run(); return "✓ 已取消綁定，之後不會再寫入。表格本身和裡面的資料都保留在雲端硬碟。"; }
   const url = (c.match(/https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w-]+[^\s]*/) || [])[0];
   const tab = (c.match(/分頁[:：]?\s*(\S+)/) || [])[1];
   try {
     const old = await getBook(db, chatId);
-    if (old && !url) return `這個群組已經綁定「${old.name}」。\n${old.url}\n要換表格：@我 說「設定記帳表」加上試算表網址；要取消：說「取消記帳」。`;
-    const info = url ? await gas(env, "linkBook", url, tab || null) : await gas(env, "createBook", (await kv.get(db, "name:" + chatId)) || "廠商群組");
+    if (old && !url) return `這個群組已經綁定「${old.name}」。\n${old.url}\n要換表格：@我 說「設定${kind}」加上試算表網址；要取消：說「取消${kind.slice(0, 2)}」。`;
+    const title = (await kv.get(db, "name:" + chatId)) || "群組";
+    let info, note = "";
+    if (url) info = await gas(env, "linkBook", url, tab || null);
+    else if (log) {
+      try { info = await gas(env, "createLog", title, LOG_HEADERS); }
+      catch (e) { if (!/unknown function/.test(e.message)) throw e; info = await gas(env, "createBook", title); note = "\n（Apps Script 還沒更新，先用記帳表的欄位建立；直接改第一列的欄位名稱就好）"; }
+    } else info = await gas(env, "createBook", title);
     await saveBook(db, chatId, info, userId);
-    return `✓ ${url ? "已綁定" : "已建立"}記帳表「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n大家可以 @我 說「記帳：碳粉 2 盒 3,200」，或傳單據照片後 @我 說「記這張」。` + (url ? "" : "\n要改成廠商原本的欄位，直接改第一列的欄位名稱就好。");
+    await kv.set(db, "booktype:" + chatId, log ? "log" : "book");
+    const how = log ? "大家可以 @我 說「記一筆：標題 A/B 測試，A 版 CTR 2.1%、B 版 1.4%，結論 A 勝」，或傳報表後 @我 說「把結果記下來」。"
+      : "大家可以 @我 說「記帳：碳粉 2 盒 3,200」，或傳單據照片後 @我 說「記這張」。";
+    return `✓ ${url ? "已綁定" : "已建立"}${kind}「${info.name}」（分頁：${info.tab}）\n欄位：${info.headers.join("、")}\n${info.url}\n\n${how}` + (url ? "" : "\n要改欄位，直接改第一列的欄位名稱就好。") + note;
   } catch (e) { return "設定沒有成功：" + e.message; }
 }
 
