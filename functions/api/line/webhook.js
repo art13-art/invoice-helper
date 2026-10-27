@@ -2,13 +2,14 @@
 // 先回 200 給 LINE，再在背景處理；所有回覆都用回覆權杖（不計每月則數）。
 import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
-import { verifySignature, lineClient, textMessage, say, postback } from "../../../lib/line.js";
+import { verifySignature, lineClient, textMessage, say, postback, meetingCard } from "../../../lib/line.js";
 import { chat, member, isGroup, kv, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
-const AUDIO_ASK = "（請整理這段錄音：先一句話說這是什麼會議或在談什麼，再分「重點」「決定」「待辦（誰／做什麼／何時）」，沒有的段落省略。明確的待辦（有人、有事）直接用 add_todos 加入並列出。不要貼逐字稿全文。）";
+const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
+const REMIND_ASK = "（使用者在會議錄音整理的卡片上按了「要，設提醒」。依你剛剛那則整理裡「可提醒」的建議，用 set_reminder 把提醒設好：會議預設提前 30 分鐘提醒，只有日期的預設當天早上 9 點；已經過了的時間跳過。設完簡短列出設了哪些。沒有可提醒的事就直接說沒有，問他要提醒什麼。）";
 
 const GROUP_CHIPS = [];
 const USER_CHIPS = [];
@@ -69,6 +70,15 @@ async function handle(env, ev, origin) {
       const d = String(ev.postback?.data || "");
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
+      const tr = d.match(/^txr:(yes|no):(\w+)$/);
+      if (tr) {
+        const k = "txr:" + tr[2];
+        if (await kv.get(db, k)) return reply("這段錄音的提醒已經處理過了。要改提醒直接跟我說。");
+        await kv.set(db, k, tr[1]);
+        if (tr[1] === "no") return reply("好，不設提醒。");
+        const who = group ? await member(db, line, chatId, userId) : { name: "你" };
+        return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, REMIND_ASK, "（按了：要，幫我設提醒）");
+      }
       const dn = d.match(/^done:([0-9a-f]{4})$/);
       if (dn) return reply(await doneByButton(db, line, chatId, userId, dn[1]));
       const m = d.match(/^(ok|no):(\w+)$/);
@@ -233,7 +243,7 @@ async function answer(ctx, text, logText, attach) {
   if (!isGroup(chatId)) await line.loading(userId, 30);
   ctx.isAdmin = await isAdmin(db, userId);
   if (isGroup(chatId)) { const g = await kv.get(db, "name:" + chatId); ctx.chatName = g || null; ctx.book = await getBook(db, chatId); }
-  let content = [{ type: "text", text }], tail = "";
+  let content = [{ type: "text", text }], tail = "", card = null;
   if (attach?.audio) {
     // 同一段錄音轉過就直接用存好的逐字稿，不重複花錢
     const prev = (await findTranscripts(db, chatId)).find(x => x.src === attach.id);
@@ -253,6 +263,7 @@ async function answer(ctx, text, logText, attach) {
       const body = t.text.length > 60000 ? t.text.slice(0, 60000) + "\n（後面太長，略）" : t.text;
       content = [{ type: "text", text: `（以下是那段錄音的逐字稿，約 ${min} 分鐘。${t.speakers ? "「說話者 A、B…」是系統自動分辨的不同人，不知道真名；對話裡聽得出名字就對應起來，聽不出就照代號寫。" : ""}）\n${body}` }, { type: "text", text }];
       tail = saved.url ? `\n\n完整逐字稿（約 ${min} 分鐘）：${saved.url}` : `\n\n（${saved.docErr || "雲端備份沒存成功"}；逐字稿我先留 ${KEEP_DAYS} 天，可以直接問我）`;
+      card = meetingCard({ txId: saved.id, minutes: t.seconds / 60, speakers: t.speakers, url: saved.url });
     } catch (e) { return send(/^content \d/.test(e.message) ? "錄音沒讀到，可能已經過期了，再傳一次？" : e.message); }
   } else if (attach) {
     try {
@@ -261,15 +272,17 @@ async function answer(ctx, text, logText, attach) {
     } catch (e) { return send(/讀不了|太大/.test(e.message) ? e.message : "檔案沒讀到，可能已經過期了，再傳一次？"); }
   }
   let out, pending = null;
-  try { const r = await chat(ctx, content, logText); out = r.text + tail; pending = r.pending; }
+  try { const r = await chat(ctx, content, logText); out = r.text + (card && !/雲端備份/.test(tail) ? "" : tail); pending = r.pending; }
   catch (e) {
     console.log("chat error", e.message);
+    card = null;
     out = (e.status === 401 ? "我現在沒辦法回覆，請管理員檢查設定。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。") + (tail ? "\n錄音已經轉好了，晚點叫我整理就好。" + tail : "");
   }
   const quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
-  const parts = splitText(out, 4800).slice(0, 5);
+  const parts = splitText(out, 4800).slice(0, card ? 4 : 5);
   const msgs = parts.map((p, i) => textMessage(p, i === parts.length - 1 ? quick : undefined));
+  if (card) msgs.push(card);
   await line.reply(ev.replyToken, msgs).catch(async e => {
     console.log("reply failed, pushing", e.message);
     await line.push(chatId, msgs).then(() => recordPush(db, chatId, 1)).catch(() => null);
