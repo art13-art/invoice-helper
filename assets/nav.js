@@ -1,8 +1,17 @@
 /* One menu for every page: edit TOOLS to add a tool everywhere. */
 (function(){
   // 網站字型在頁面載入完成後才套用：先用系統字型顯示內容，不讓字型拖慢第一次畫面
-  const fonts=()=>document.querySelectorAll("link[data-font]").forEach(l=>{ l.media="all"; });
-  if(document.readyState==="complete") fonts(); else addEventListener("load",fonts);
+  let done=false;
+  const fonts=()=>{ if(done) return; done=true; document.querySelectorAll('meta[name="tt-font"]').forEach(m=>{ const l=document.createElement("link"); l.rel="stylesheet"; l.href=m.content; document.head.appendChild(l); }); };
+  const afterLoad=()=>{
+    // 等第一次畫面出現（First Contentful Paint）之後再載字型；舊瀏覽器 1 秒後載
+    try{
+      if(performance.getEntriesByName("first-contentful-paint").length) return setTimeout(fonts,0);
+      new PerformanceObserver((l,o)=>{ if(l.getEntriesByName("first-contentful-paint").length){ o.disconnect(); setTimeout(fonts,0); } }).observe({type:"paint",buffered:true});
+    }catch(e){}
+    setTimeout(fonts,1000);
+  };
+  if(document.readyState==="complete") afterLoad(); else addEventListener("load",afterLoad);
 })();
 (function(){
   const TOOLS=[["/invoice-helper/","手開發票"],["/rent-withholding/","租金扣繳"],["/labor-report/","勞報扣繳"],["/tax-included/","含稅換算"],["/company-lookup/","統編查詢"],["/labor-health/","勞健保"],["/income-tax/","綜所稅"],["/landlord-tax/","房東報稅"],["/tax-calendar/","報稅行事曆"],["/ledger/","帳本"]];
