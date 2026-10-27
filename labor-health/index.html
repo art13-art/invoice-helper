@@ -13,11 +13,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<script src="/assets/rates.js?v=2026102706"></script>
-<script src="/assets/calc.js?v=2026102706"></script>
-<link rel="stylesheet" href="/assets/base.css?v=2026102706">
-<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
-<link rel="stylesheet" href="/assets/calc.css?v=2026102706">
+<script src="/assets/rates.js?v=2026102707"></script>
+<script src="/assets/calc.js?v=2026102707"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102707">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102707">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102707">
 <style>
 .role-seg button{min-height:56px}.role-seg button b{font-size:17px}
 /* Cost table: who pays what, one row per insurance, employee and employer side by side. */
@@ -139,7 +139,7 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/assets/nav.js?v=2026102706"></script>
+<script src="/assets/nav.js?v=2026102707"></script>
 <script>
 const $=id=>document.getElementById(id);
 const R_=window.RATES, I=R_.insurance;
@@ -214,7 +214,7 @@ function render(){
     ${w?`<div class="grades"><span>勞保級距 <b>${c.senior?"—":money(c.gLI)}</b></span><span>健保級距 <b>${money(c.gN)}</b></span><span>勞退級距 <b>${money(c.gP)}</b></span><span>職災級距 <b>${money(c.gOcc)}</b></span></div>
     <div class="year">一年：<span>員工自付 <b>${money(c.eT*12)}</b></span><span>老闆負擔 <b>${money(c.bT*12)}</b></span><span>人事成本 <b>${money(c.cost*12)}</b></span></div>
     ${!boss&&c.e.pen?`<p class="note">自提的 ${money(c.e.pen*12)} 元一年不用計入薪資所得；稅率 5% 的人約少繳 ${money(c.e.pen*12*.05)} 元，12% 約少繳 ${money(c.e.pen*12*.12)} 元。</p>`:""}
-    <div class="actions"><button type="button" class="btn" id="copy">複製保費明細</button></div>`:""}`;
+    <div class="actions"><button type="button" class="btn" id="copy">複製保費明細</button><button type="button" class="btn" data-share="勞健保試算">分享結果</button></div>`:""}`;
   if(w) $("copy").onclick=()=>copyText(summary(c),"已複製保費明細");
 
   const row=(t,s,ev,bv)=>`<tr><th>${t}${s?`<small>${s}</small>`:""}</th><td class="${ev?"":"z"}">${ev?money(ev):"—"}</td><td class="${bv?"":"z"}">${bv?money(bv):"—"}</td></tr>`;
@@ -244,8 +244,8 @@ function summary(c){
 
 const KEY="taxtools.laborhealth.v1";
 const RADIOS=["pt","dep","vol","st"];
-function save(){ try{ const d={S,amt:$("amt").value,occ:$("occ").value}; RADIOS.forEach(n=>d[n]=val(n)); localStorage.setItem(KEY,JSON.stringify(d)); }catch(e){} }
-function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+function save(){ try{ const d={S,amt:$("amt").value,occ:$("occ").value}; RADIOS.forEach(n=>d[n]=val(n)); keepState(KEY,(d)); }catch(e){} }
+function load(){ try{ const d=JSON.parse(sharedOr(KEY)||"null"); if(!d) return;
   Object.assign(S,d.S||{}); $("amt").value=d.amt??""; if(d.occ) $("occ").value=d.occ;
   RADIOS.forEach(n=>{ const x=document.querySelector(`input[name=${n}][value="${d[n]}"]`); if(x) x.checked=true; });
   if(d.st==="senior"||(d.occ&&d.occ!=="0.14")) $("adv").open=true;

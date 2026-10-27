@@ -13,11 +13,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<script src="/assets/rates.js?v=2026102706"></script>
-<script src="/assets/calc.js?v=2026102706"></script>
-<link rel="stylesheet" href="/assets/base.css?v=2026102706">
-<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
-<link rel="stylesheet" href="/assets/calc.css?v=2026102706">
+<script src="/assets/rates.js?v=2026102707"></script>
+<script src="/assets/calc.js?v=2026102707"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102707">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102707">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102707">
 <style>
 /* Each amount row carries its own copy button; the uppercase card mirrors the 億…元 boxes printed on invoices. */
 .legend .v{display:flex;align-items:center;gap:8px}
@@ -120,7 +120,7 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/assets/nav.js?v=2026102706"></script>
+<script src="/assets/nav.js?v=2026102707"></script>
 <script>
 const $=id=>document.getElementById(id);
 const R_=window.RATES;
@@ -186,7 +186,7 @@ function render(){
       ${row("var(--fg)","含稅（總計）","發票「總計」欄，也是客戶實付",c.total)}
     </ul>
     ${a?`<p class="how">${how}</p>`:`<p class="note">輸入金額，就會拆出未稅、稅額和總計。</p>`}
-    ${a?`<div class="actions"><button type="button" class="btn link" id="cpQuote">複製報價說明</button></div>`:""}`;
+    ${a?`<div class="actions"><button type="button" class="btn link" id="cpQuote">複製報價說明</button><button type="button" class="btn link" data-share="含稅未稅試算">分享結果</button></div>`:""}`;
   R.querySelectorAll(".cp").forEach(b=>b.onclick=()=>copyText(b.dataset.v,"已複製 "+money(+b.dataset.v)));
   if(a) $("cpQuote").onclick=()=>copyText(`未稅 ${money(c.sales)} 元＋營業稅（${rt}）${money(c.tax)} 元＝含稅 ${money(c.total)} 元（${cnUpper(c.total)}）`,"已複製報價說明");
   $("upperCard").innerHTML=upperCard(c.total);
@@ -196,8 +196,8 @@ function render(){
 }
 
 const KEY="taxtools.vat.v1";
-function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,rate:document.querySelector('input[name=rate]:checked').value,custom:$("custom").value})); }catch(e){} }
-function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+function save(){ try{ keepState(KEY,({S,amt:$("amt").value,rate:document.querySelector('input[name=rate]:checked').value,custom:$("custom").value})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(sharedOr(KEY)||"null"); if(!d) return;
   Object.assign(S,d.S||{}); $("amt").value=d.amt??""; $("custom").value=d.custom||"";
   const r=document.querySelector(`input[name=rate][value="${d.rate}"]`); if(r){ r.checked=true; if(d.rate==="c") $("adv").open=true; }
 }catch(e){} }

@@ -13,11 +13,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<script src="/assets/rates.js?v=2026102706"></script>
-<script src="/assets/calc.js?v=2026102706"></script>
-<link rel="stylesheet" href="/assets/base.css?v=2026102706">
-<link rel="stylesheet" href="/assets/nav.css?v=2026102706">
-<link rel="stylesheet" href="/assets/calc.css?v=2026102706">
+<script src="/assets/rates.js?v=2026102707"></script>
+<script src="/assets/calc.js?v=2026102707"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102707">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102707">
+<link rel="stylesheet" href="/assets/calc.css?v=2026102707">
 <style>.role-seg button{min-height:56px}.role-seg button b{font-size:17px}</style>
 <!--seo-->
 <meta property="og:type" content="website">
@@ -138,7 +138,7 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/assets/nav.js?v=2026102706"></script>
+<script src="/assets/nav.js?v=2026102707"></script>
 <script>
 const $=id=>document.getElementById(id);
 const S={payer:"org",landlord:"person",mode:"gross",role:"payer"};
@@ -231,7 +231,7 @@ function render(){
     ${a?`<div class="year">一年${ll?"收":"付"} ${12/k} 次：<span>租金 <b>${money(P*12/k)}</b></span><span>${ll?"你":"房東"}實拿 <b>${money(s.net*12/k)}</b></span><span>代扣合計 <b>${money((s.tax+s.nhi)*12/k)}</b></span></div>
     ${ll&&res?`<p class="note">報稅時的租賃所得約 <b>${money(P*12/k*.57)}</b> 元（全年租金減 43% 必要費用）。被代扣的 ${money(s.tax*12/k)} 元可以抵稅。</p>`:""}
     ${ll&&!res&&s.tax?`<p class="note">非居住者被扣繳後就算完稅，這筆不用再自己申報。</p>`:""}
-    <div class="actions"><button type="button" class="btn" id="copy">${ll?"複製說明給租客":"複製說明給房東"}</button></div>`:""}`;
+    <div class="actions"><button type="button" class="btn" id="copy">${ll?"複製說明給租客":"複製說明給房東"}</button><button type="button" class="btn" data-share="租金扣繳試算">分享結果</button></div>`:""}`;
   if(a) $("copy").onclick=()=>copyText(ll?quoteFor(s,k):msgFor(s,k),ll?"已複製，可以直接貼給租客":"已複製，可以直接貼給房東");
 
   // timeline
@@ -279,8 +279,8 @@ function msgFor(s,k){
 }
 /* remember the last inputs in this browser */
 const KEY="taxtools.rent.v1";
-function save(){ try{ localStorage.setItem(KEY,JSON.stringify({S,amt:$("amt").value,cyc:cyc(),res:resident(),nhist:nhiStatus()})); }catch(e){} }
-function load(){ try{ const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(!d) return;
+function save(){ try{ keepState(KEY,({S,amt:$("amt").value,cyc:cyc(),res:resident(),nhist:nhiStatus()})); }catch(e){} }
+function load(){ try{ const d=JSON.parse(sharedOr(KEY)||"null"); if(!d) return;
   Object.assign(S,d.S||{}); $("amt").value=d.amt??"";
   const c=document.querySelector(`input[name=cyc][value="${d.cyc}"]`); if(c) c.checked=true;
   document.querySelector(`input[name=res][value="${d.res?1:0}"]`).checked=true;

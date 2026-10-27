@@ -66,3 +66,14 @@ function shareResult(params,title,text){
   if(navigator.share){ navigator.share({title,text,url}).catch(()=>{}); return; }
   copyText((text?text+"\n":"")+url,"已複製結果連結，可以貼到 LINE 或訊息");
 }
+/* 舊工具共用的分享：save() 存的狀態放進網址 ?st=，打開時優先讀網址裡的狀態 */
+function keepState(key,obj){ window.__st=JSON.stringify(obj); try{ localStorage.setItem(key,window.__st); }catch(e){} }
+function sharedOr(key){
+  const p=shareParams();
+  if(p.st){ try{ return decodeURIComponent(escape(atob(p.st))); }catch(e){} }
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("[data-share]"); if(!b||!window.__st) return;
+  shareResult({st:btoa(unescape(encodeURIComponent(window.__st)))},document.title.split("｜")[0]+"試算",b.dataset.share||"我的試算結果");
+});
