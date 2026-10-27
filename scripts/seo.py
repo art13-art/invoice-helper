@@ -26,6 +26,8 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
     m = re.search(r'<meta name="description" content="([^"]*)"', src)
     desc = html.unescape(m.group(1)) if m else ""
     url = f"{SITE}/{rel}/" if rel else f"{SITE}/"
+    ogf = ROOT / "og" / ((rel.replace("/", "-") or "home") + ".png")
+    img = f"{SITE}/og/{ogf.name}" if ogf.exists() else f"{SITE}/og.png"
     blocks = [
         f'<meta property="og:type" content="{"article" if rel.startswith("guide/") else "website"}">',
         f'<meta property="og:site_name" content="稅務小工具">',
@@ -33,7 +35,7 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
         f'<meta property="og:title" content="{html.escape(title)}">',
         f'<meta property="og:description" content="{html.escape(desc)}">',
         f'<meta property="og:url" content="{url}">',
-        f'<meta property="og:image" content="{SITE}/og.png">',
+        f'<meta property="og:image" content="{img}">',
         f'<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">',
         f'<meta name="twitter:card" content="summary_large_image">',
     ]
@@ -44,7 +46,7 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
         h1 = text(re.search(r"<h1>(.*?)</h1>", src, re.S).group(1))
         org = {"@type": "Organization", "name": "稅務小工具", "url": f"{SITE}/"}
         ld.append({"@context": "https://schema.org", "@type": "Article", "headline": h1, "description": desc, "url": url,
-                   "mainEntityOfPage": url, "inLanguage": "zh-Hant-TW", "image": f"{SITE}/og.png",
+                   "mainEntityOfPage": url, "inLanguage": "zh-Hant-TW", "image": img,
                    "datePublished": pub.group(1) if pub else TODAY, "dateModified": mod.group(1) if mod else TODAY,
                    "author": org, "publisher": org})
         ld.append({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
