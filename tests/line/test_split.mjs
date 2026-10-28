@@ -82,74 +82,59 @@ let m = replies();
 t(claudeCalls.some(c => /sonnet/.test(c)), "sonnet reads bill");
 const bodies = calls.filter(c => c.url.includes("anthropic")).map(c => c.body);
 t(bodies.filter(b => /haiku/.test(b.model)).every(b => b.thinking?.type === "disabled") && bodies.some(b => /haiku/.test(b.model)), "haiku thinking off");
-t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.userId === "U_ben" && /填寫名單/.test(m[0].text), "asks Ben with mention");
+t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.userId === "U_ben" && /開始拆帳/.test(m[0].text), "asks Ben with mention");
 t(m[1]?.type === "flex" && JSON.stringify(m[1]).includes("108,600"), "bill card with cash total");
-t(JSON.stringify(m[1]).includes("/split/form?t=") && JSON.stringify(m[1]).includes(":gl"), "form + 名單填好了 buttons");
+t(JSON.stringify(m[1]).includes("/split/form?t=") && !JSON.stringify(m[1]).includes(":gl"), "single 開始拆帳 button");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 1, "split + photo saved");
 // 第二張（同單號）→ 併進同一張
 await photo("U_andy", "p3");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 2, "second photo merged");
 t(/第二張照片/.test(replies()[0]?.text || ""), "merged message");
-// 4b. 填寫名單網頁：卡片上有按鈕；預填 5 列男；送出存草稿；Ben 按「名單填好了」才套用
-const askCard = JSON.stringify(replies().length ? replies() : []);
-const sid0 = sq.prepare("SELECT id FROM line_splits").get().id;
+// 「拆帳」（沒回覆照片）＝再貼一次開始拆帳卡片，不重讀
+claudeCalls.length = 0; await say("U_ben", "拆帳");
+t(!claudeCalls.length && JSON.stringify(replies()).includes("/split/form?t="), "resend start card without re-reading");
+// 5. 表單：預填 5 列男；送出 → 結算、@All 拆帳完畢＋請款卡（推播）
+const sid = sq.prepare("SELECT id FROM line_splits").get().id;
 const fm = await import(R + "/functions/split/form.js");
 const tok0 = sq.prepare("SELECT v FROM line_kv WHERE k='split:tok:Cbar'").get()?.v;
-t(!!tok0, "token made for form");
-const furl = `https://x.dev/split/form?t=${tok0}&id=${sid0}`;
+const furl = `https://x.dev/split/form?t=${tok0}&id=${sid}`;
 let fr = await fm.onRequestGet({ request: new Request(furl), env }); let fh = await fr.text();
-t(fr.status === 200 && (fh.match(/"sex":"男"/g) || []).length === 5 && fh.includes("108,600"), "form prefilled 5 men");
+t(fr.status === 200 && (fh.match(/"sex":"男"/g) || []).length === 5 && fh.includes("108,600") && fh.includes("林莎") && fh.includes("格蘭利威13年"), "form prefilled with guests, hostess, shared");
 if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/form.html", fh);
-await press("U_ben", `sp:${sid0}:gl`); t(/還沒收到名單/.test(replies()[0]?.text), "gl before submit");
-fr = await fm.onRequestPost({ request: new Request(furl, { method: "POST", body: JSON.stringify({ guests: [{ name: "Tom", sex: "男" }, { name: "Amy", sex: "女", to: "Tom" }, { name: "Ken", sex: "男", to: "Amy" }, { name: "Tom", sex: "男" }] }) }), env });
-t(fr.status === 200 && (await fr.json()).count === 3, "draft saved, dup dropped");
-const dr = JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid0).data).draft;
-t(dr.merge.g1 === "g0" && dr.merge.g2 === "g0", "merge chain resolved to Tom");
-t(JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid0).data).guests.length === 0, "not applied before Ben presses");
-await press("U_andy", `sp:${sid0}:gl`); t(/只有 Ben/.test(replies()[0]?.text), "only Ben applies list");
-await press("U_ben", `sp:${sid0}:gl`); m = replies();
-t(/3 位：Tom（男）、Amy（女）→併 Tom、Ken（男）→併 Tom/.test(m[0]?.text) && m.some(x => x.contents?.type === "carousel"), "applied → pick cards " + m[0]?.text);
-t((await fm.onRequestPost({ request: new Request(furl.replace(tok0, "bad" + tok0), { method: "POST", body: "{}" }), env })).status === 404, "form needs token");
-
-// 5. 別人回答不算；Ben 回答 → 卡片
-guestsAnswer = { answer: true, count: 5, guests: ["A", "J", "B", "I", "玄"].map(name => ({ name, sex: "男" })), merge: [{ from: "I", to: "A" }] };
-claudeCalls.length = 0; await say("U_andy", "5人 A J B I 玄");
-t(!claudeCalls.some(c => /拆一張/.test(c)), "non-admin answer not parsed as split");
-await say("U_ben", "5人 A男 J男 B男 I男 玄男，I 併 A");
-m = replies();
-t(/5 位/.test(m[0]?.text) && /I（男）→併 A/.test(m[0]?.text), "pick intro " + m[0]?.text);
-const car = m.filter(x => x.contents?.type === "carousel").flatMap(x => x.contents.contents);
-t(car.length === 8 + 8, "8 hostess + 8 shared bubbles " + car.length);
-t(car.every(b => JSON.stringify(b).length < 10000), "bubbles small");
-t(JSON.stringify(m[m.length - 1]).includes(":ok"), "done card last");
-const sid = sq.prepare("SELECT id FROM line_splits").get().id;
 const sp = JSON.parse(sq.prepare("SELECT data FROM line_splits").get().data);
-const g = nm => sp.guests.find(x => x.name === nm).id, h = nm => sp.hostess.find(x => x.name === nm).id, s = nm => sp.shared.find(x => x.name === nm).id;
-// 6. 別人按不行
-await press("U_andy", `sp:${sid}:h:${h("沐熙")}:${g("A")}`); t(/只有 Ben/.test(replies()[0]?.text), "only Ben can press");
-// 7. 沒指定完不能完成
-await press("U_ben", `sp:${sid}:ok`); t(/還有 8 位小姐/.test(replies()[0]?.text), "blocks unfinished");
-const plan = { 沐熙: "A", UU: "J", 若瑄: "B", 紫瑤: "B", 奶茶: "I", 維恩: "I", 愷若: "玄", 林莎: "J" };
-for (const [k, v] of Object.entries(plan)) await press("U_ben", `sp:${sid}:h:${h(k)}:${g(v)}`);
-t(/林莎 → J（小姐 8\/8）/.test(replies()[0]?.text), "feedback text " + replies()[0]?.text);
-await press("U_ben", `sp:${sid}:h:${h("林莎")}:${g("A")}`); t(/林莎 → A/.test(replies()[0]?.text), "reassign");
-// 公費：小費 J 沒份 → 排除，再加回
-await press("U_ben", `sp:${sid}:s:${s("支小費")}:${g("J")}`); t(/支小費：A、B、I、玄（4 人分）/.test(replies()[0]?.text), "exclude " + replies()[0]?.text);
-await press("U_ben", `sp:${sid}:s:${s("支小費")}:${g("J")}`); t(/支小費：全部平分/.test(replies()[0]?.text), "add back");
-await press("U_ben", `sp:${sid}:st`); t(/小姐：8\/8/.test(replies()[0]?.text) && /目前試算/.test(replies()[0]?.text), "status");
-// 8. 完成 → @All 拆帳完畢＋請款卡
-await press("U_ben", `sp:${sid}:ok`);
-m = replies();
-t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.type === "all" && /拆帳完畢/.test(m[0].text), "@All 拆帳完畢");
-const card = JSON.stringify(m[1]);
-t(m[1]?.type === "flex" && card.includes("$40,818") && card.includes("含 I $6,864") && card.includes("$27,424") && card.includes("$21,894") && card.includes("$18,464") && card.includes("$108,600"), "result card amounts");
+const h = nm => sp.hostess.find(x => x.name === nm).id, s = nm => sp.shared.find(x => x.name === nm).id;
+const post = body => fm.onRequestPost({ request: new Request(furl, { method: "POST", body: JSON.stringify(body) }), env });
+const guests = ["A", "J", "B", "I", "玄"].map(name => ({ name, sex: "男", to: name === "I" ? "A" : "" }));
+const plan = { 沐熙: "A", UU: "J", 若瑄: "B", 紫瑤: "B", 奶茶: "I", 維恩: "I", 愷若: "玄", 林莎: "A" };
+// 沒選完 → 錯誤、不貼
+calls.length = 0;
+fr = await post({ guests, hostess: { [h("沐熙")]: "A" } });
+t(fr.status === 400 && /還有小姐沒選客人/.test((await fr.json()).error) && !calls.some(c => c.url.endsWith("/message/push")), "blocks unassigned");
+fr = await post({ guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), shared: { [s("支小費")]: [] } });
+t(fr.status === 400 && /至少要有一個人分/.test((await fr.json()).error), "shared needs someone");
+calls.length = 0;
+fr = await post({ guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
+let fj = await fr.json();
+t(fr.status === 200 && fj.posted && fj.total === 108600, "form finish ok " + JSON.stringify(fj));
+let pushed = calls.find(c => c.url.endsWith("/message/push"));
+t(pushed && pushed.body.to === G && pushed.body.messages[0].type === "textV2" && pushed.body.messages[0].substitution.m0.mentionee.type === "all" && /拆帳完畢/.test(pushed.body.messages[0].text), "@All 拆帳完畢 pushed");
+const card = JSON.stringify(pushed.body.messages[1]);
+t(card.includes("$40,818") && card.includes("含 I $6,864") && card.includes("$27,424") && card.includes("$21,894") && card.includes("$18,464") && card.includes("$108,600"), "result card amounts");
+t(sq.prepare("SELECT status FROM line_splits WHERE id=?").get(sid).status === "done", "saved done");
 const url = (card.match(/https:\/\/x\.dev\/split\?t=\w+&id=\w+/) || [])[0];
 t(!!url, "detail link");
-await press("U_ben", `sp:${sid}:ok`); t(/已經拆完/.test(replies()[0]?.text), "double finish");
+// 公費改成 J 沒份小費 → 重送＝更正
+calls.length = 0;
+fr = await post({ guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), shared: { [s("支小費")]: ["A", "B", "I", "玄"] } });
+fj = await fr.json(); pushed = calls.find(c => c.url.endsWith("/message/push"));
+t(fj.fix && /拆帳更正/.test(pushed?.body.messages[0].text) && fj.payers.find(p => p.name === "J").total === 27424 - 400, "correction resend " + JSON.stringify(fj.payers));
+// 舊卡片按鈕 → 指向表單
+await press("U_ben", `sp:${sid}:ok`); t(/表單/.test(replies()[0]?.text), "old card buttons point to form");
+t((await fm.onRequestPost({ request: new Request(furl.replace(tok0, "bad" + tok0), { method: "POST", body: "{}" }), env })).status === 404, "form needs token");
 // 9. 網頁
 const pg = await import(R + "/functions/split/index.js"), im = await import(R + "/functions/split/img.js");
 let res = await pg.onRequestGet({ request: new Request(url), env }); let html = await res.text();
-t(res.status === 200 && html.includes("40,818") && html.includes("林莎") && html.includes("含 I") && html.includes("差額（店家進位）"), "detail page");
+t(res.status === 200 && html.includes("41,018") && html.includes("林莎") && html.includes("含 I") && html.includes("差額（店家進位）"), "detail page");
 if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/detail.html", html);
 res = await pg.onRequestGet({ request: new Request(url.replace(/&id=.*/, "")), env }); html = await res.text();
 if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/list.html", html);
@@ -165,5 +150,5 @@ await say("U_andy", "拆帳紀錄"); t(/\/split\?t=/.test(replies()[0]?.text), "
 await say("U_ben", "關掉拆帳。"); t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "0", "disabled (關掉拆帳。)"); claudeCalls.length = 0;
 await photo("U_andy", "p9"); t(!claudeCalls.length, "off again");
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_andy" }, message: { type: "text", id: "q1", text: "@小幫手 拆帳", quotedMessageId: "p9", mention: { mentionees: [{ index: 0, length: 4, isSelf: true }] } } });
-t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /填寫名單/.test(replies()[0]?.text || ""), "manual 拆帳 by reply");
+t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /開始拆帳/.test(replies()[0]?.text || ""), "manual 拆帳 by reply");
 console.log(`${ok} passed, ${bad} failed`);

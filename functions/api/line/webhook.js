@@ -4,7 +4,7 @@ import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
-import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, parseGuests, setGuests, pickMessages, splitPostback, splitToken } from "../../../lib/split.js";
+import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken } from "../../../lib/split.js";
 import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -241,6 +241,12 @@ async function handle(env, ev, origin) {
     const ids = [];
     if (msg.quotedMessageId) ids.push(msg.quotedMessageId);
     else {
+      // 已經有讀好、還沒拆完的單：再貼一次「開始拆帳」卡片就好，不重讀
+      const sp = await openSplit(db, chatId);
+      if (sp) {
+        const adm = await adminFor(env, db, chatId).catch(() => null);
+        return line.reply(ev.replyToken, askMessages(sp, adm?.inChat ? adm.id : null, false, `${origin}/split/form?t=${await splitToken(db, chatId)}&id=${sp.id}`)).catch(e => console.log("ask reply failed", e.message));
+      }
       const { results } = await db.prepare("SELECT media FROM line_msgs WHERE chat_id=? AND media IS NOT NULL AND media NOT LIKE '%:%' AND ts>? ORDER BY id DESC LIMIT 2").bind(chatId, Date.now() - 15 * 60e3).all();
       ids.push(...results.map(r => r.media).reverse());
     }
@@ -250,20 +256,6 @@ async function handle(env, ev, origin) {
     for (const id of ids) { try { imgs.push(await line.content(id, 4.5 * 1024 * 1024)); } catch (e) { console.log("bill img", e.message); } }
     if (!imgs.length) return reply("照片讀不到了，可能已經過期，再貼一次？");
     return billReply(env, db, line, ev, chatId, userId, imgs, "", origin);
-  }
-  // Ben 回答拆帳的人名
-  if (group && (await isAdmin(db, userId))) {
-    const sp = await openSplit(db, chatId);
-    // 問人名的階段每句都看；已經在點卡片的階段，像是要改名單（有人數、男女、併）才看
-    if (sp && (sp.status === "ask" || /\d+\s*(人|位)|男|女|併/.test(c))) {
-      const p = await parseGuests(env, db, chatId, c).catch(e => { console.log("parse guests", e.message); return null; });
-      if (p) {
-        await setGuests(db, sp, p);
-        const msgs = pickMessages(sp);
-        if (p.count && p.count !== p.guests.length) msgs[0] = textMessage(`你說 ${p.count} 人，但我只認到 ${p.guests.length} 個名字：${p.guests.map(g => g.name).join("、")}。有漏的再回我一次完整的名單。\n\n` + msgs[0].text);
-        return line.reply(ev.replyToken, msgs).catch(e => console.log("pick reply failed", e.message));
-      }
-    }
   }
 
   // ---- 交給 AI ----
