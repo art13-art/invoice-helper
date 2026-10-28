@@ -170,7 +170,7 @@ async function handle(env, ev, origin) {
   // ---- 快速指令（不用 AI、不計費）----
   const c = command ?? text;
   if (/^(說明|help|怎麼用|使用說明|你會什麼|你會做什麼|功能|\?|？)$/i.test(c))
-    return ev.replyToken ? line.reply(ev.replyToken, [helpCard(group, { keepDays: KEEP_DAYS })]).catch(() => reply(group ? HELP_GROUP : HELP_USER)) : null;
+    return ev.replyToken ? line.reply(ev.replyToken, [helpCard(group, { keepDays: KEEP_DAYS, split: group && (await splitOn(db, chatId)) })]).catch(() => reply(group ? HELP_GROUP : HELP_USER)) : null;
   if (/^(待辦(清單|事項)?|有哪些待辦[?？]?)$/.test(c)) return reply(await todoText(db, chatId), await todoChips(db, chatId));
   if (/^完成\s*[0-9a-f]{4}/i.test(c)) return reply(await completeByText(db, chatId, c));
   if (group && /^(請)?(不要|別|停止)(再)?(記錄|紀錄)我(的訊息)?$/.test(c)) {

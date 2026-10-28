@@ -45,7 +45,7 @@ let m = replies()[0]?.[0];
 t(m?.type === "flex" && JSON.stringify(m).includes("大家好，我是小幫手") && JSON.stringify(m).includes("#12524F"), "join card");
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_amy" }, message: { type: "text", id: "1", text: "@小幫手 說明" } });
 m = replies()[0]?.[0];
-t(m?.type === "flex" && JSON.stringify(m).includes("/總結"), "help card in group");
+t(m?.type === "flex" && JSON.stringify(m).includes("/總結") && !JSON.stringify(m).includes("拆帳單"), "help card in group (no split item)");
 await send({ type: "message", source: { type: "user", userId: "U_ben" }, message: { type: "text", id: "2", text: "說明" } });
 t(JSON.stringify(replies()[0]).includes("什麼都能問"), "help card in admin DM");
 // 只有 Ben 能用私訊、拉進群

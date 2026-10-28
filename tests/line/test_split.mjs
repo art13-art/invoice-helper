@@ -72,6 +72,7 @@ t(!claudeCalls.length, "split off → no AI");
 await say("U_andy", "開啟拆帳"); t(/只有 Ben/.test(replies()[0]?.text), "non-admin can't enable");
 await say("U_ben", "啟動拆賬"); t(/開啟拆帳/.test(replies()[0]?.text), "admin enables (啟動拆賬) " + replies()[0]?.text);
 t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "1", "enabled flag");
+await say("U_andy", "說明"); t(JSON.stringify(replies()[0]).includes("拆帳單"), "help card shows split item when on");
 // 3. 一般照片：只花 Haiku、不回
 isBill = false; await photo("U_andy", "p1");
 t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length, "non-bill photo silent");
