@@ -80,6 +80,8 @@ t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length,
 isBill = true; claudeCalls.length = 0; await photo("U_andy", "p2");
 let m = replies();
 t(claudeCalls.some(c => /sonnet/.test(c)), "sonnet reads bill");
+const bodies = calls.filter(c => c.url.includes("anthropic")).map(c => c.body);
+t(bodies.filter(b => /haiku/.test(b.model)).every(b => b.thinking?.type === "disabled") && bodies.some(b => /haiku/.test(b.model)), "haiku thinking off");
 t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.userId === "U_ben" && /幾人、名字、男女/.test(m[0].text), "asks Ben with mention");
 t(m[1]?.type === "flex" && JSON.stringify(m[1]).includes("108,600"), "bill card with cash total");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 1, "split + photo saved");

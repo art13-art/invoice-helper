@@ -68,6 +68,13 @@ export async function onRequestPost({ request, env }) {
 
   try { await checkQuota(env, db, line, now); } catch (e) { console.log("quota failed", e.message); }
 
+  // 補做以前沒存成的每日摘要（10/28 前 Haiku 的回答被思考用光、摘要都是空的）：每次補 2 天，補到 29 天前
+  const bf = Number(await kv.get(db, "digest:backfill") ?? 1);
+  if (bf <= 29) {
+    await kv.set(db, "digest:backfill", bf + 2);
+    for (const k of [bf, bf + 1]) if (k <= 29) await buildDigests(env, db, now - (k - 1) * 864e5).catch(e => console.log("digest backfill", e.message));
+  }
+
   const today = ymd(now);
   try { if (await monthlyReport(env, db, gas)) sent.report = true; } catch (e) { console.log("report failed", e.message); }
   // 保存期限：群組訊息與對話紀錄 30 天、處理過的事件 7 天
