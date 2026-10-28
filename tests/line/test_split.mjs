@@ -28,7 +28,7 @@ globalThis.fetch = async (url, init = {}) => {
   const u = String(url), body = init.body ? JSON.parse(init.body) : null; calls.push({ url: u, body });
   if (u.includes("api.anthropic.com")) {
     claudeCalls.push(body.model + ":" + body.system.slice(0, 12));
-    const txt = /判斷照片/.test(body.system) ? JSON.stringify({ bill: isBill, bill_no: isBill ? "61020010[005-1]" : "" })
+    const txt = /是不是消費帳單/.test(body.system) ? JSON.stringify({ bill: isBill, bill_no: isBill ? "61020010[005-1]" : "" })
       : /帳單判讀/.test(body.system) ? JSON.stringify(BILL) : /拆一張酒店帳單/.test(body.system) ? JSON.stringify(guestsAnswer || { answer: false }) : "好";
     return new Response(JSON.stringify({ content: [{ type: "text", text: txt }], stop_reason: "end_turn", usage: { input_tokens: 10, output_tokens: 5 } }), { status: 200 });
   }
