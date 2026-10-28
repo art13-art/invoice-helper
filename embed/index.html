@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>免費嵌入報稅小工具｜把含稅計算機、報稅期限放進你的網站</title>
+<link rel="canonical" href="https://taxtools.tw/embed/">
+<meta name="description" content="記帳士事務所、部落格、公司官網都可以免費嵌入稅務小工具：含稅未稅計算機、接下來的報稅期限。複製一段程式碼貼上就能用，自動更新、支援手機和深色模式。">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="theme-color" content="#F5F3EE">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
+<script src="/assets/calc.js?v=2026102802"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026102802">
+<link rel="stylesheet" href="/assets/nav.css?v=2026102802">
+<link rel="stylesheet" href="/assets/guide.css?v=2026102802">
+<style>
+.emb{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:24px;align-items:start;max-width:960px}
+@media (max-width:760px){.emb{grid-template-columns:minmax(0,1fr)}}
+.emb iframe{width:100%;border:0;border-radius:12px;background:transparent}
+.code{display:grid;gap:10px}
+.code textarea{font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;width:100%;min-height:96px;padding:10px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--sunk);color:var(--fg);resize:vertical}
+.code .chips{margin:0}
+.art h2{margin-top:36px}
+</style>
+<!--seo-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="稅務小工具">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:title" content="免費嵌入報稅小工具｜把含稅計算機、報稅期限放進你的網站">
+<meta property="og:description" content="記帳士事務所、部落格、公司官網都可以免費嵌入稅務小工具：含稅未稅計算機、接下來的報稅期限。複製一段程式碼貼上就能用，自動更新、支援手機和深色模式。">
+<meta property="og:url" content="https://taxtools.tw/embed/">
+<meta property="og:image" content="https://taxtools.tw/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<!--/seo-->
+</head>
+<body>
+<header class="site-head">
+  <a class="site-brand" href="/"><img src="/icon-192.png" alt="">稅務小工具</a>
+  <nav class="site-nav" aria-label="工具"></nav>
+</header>
+
+<div class="wrap" role="main">
+  <div class="page-head">
+    <h1>免費嵌入報稅小工具</h1>
+    <p>記帳士事務所、會計部落格、公司官網，都可以把下面的小工具放進自己的網頁。複製程式碼貼上就好，數字和期限由我們自動更新，免費、不放廣告。</p>
+  </div>
+
+  <article class="art" style="max-width:none">
+    <h2 id="tax">含稅未稅計算機</h2>
+    <div class="emb">
+      <iframe src="/embed/tax-included/" height="430" title="含稅未稅計算機" loading="lazy"></iframe>
+      <div class="code">
+        <p>輸入含稅或未稅金額，算出銷售額、5% 營業稅、總計和中文大寫。適合放在報價、開發票相關的頁面。</p>
+        <textarea readonly id="c1" aria-label="含稅未稅計算機嵌入碼"></textarea>
+        <div class="actions"><button type="button" class="btn primary" data-copy="c1">複製嵌入碼</button></div>
+      </div>
+    </div>
+
+    <h2 id="deadlines">接下來的報稅期限</h2>
+    <div class="emb">
+      <iframe id="f2" src="/embed/deadlines/?role=company&n=5" height="420" title="接下來的報稅期限" loading="lazy"></iframe>
+      <div class="code">
+        <p>自動列出接下來的報稅、繳費期限，已依假日順延，每天自動更新。適合放在事務所首頁或客戶專區。</p>
+        <span class="lbl">給誰看</span>
+        <div class="chips" role="radiogroup" aria-label="身分">
+          <label><input type="radio" name="role" value="company" checked>公司・行號</label>
+          <label><input type="radio" name="role" value="person">個人</label>
+          <label><input type="radio" name="role" value="landlord">房東</label>
+        </div>
+        <textarea readonly id="c2" aria-label="報稅期限嵌入碼"></textarea>
+        <div class="actions"><button type="button" class="btn primary" data-copy="c2">複製嵌入碼</button></div>
+      </div>
+    </div>
+
+    <h2 id="faq-h">使用說明</h2>
+    <ul>
+      <li>免費使用，不需要註冊。請保留小工具下方「由稅務小工具提供」的連結。</li>
+      <li>小工具會跟著瀏覽器自動切換淺色、深色模式，寬度 280px 以上都能正常顯示。</li>
+      <li>計算都在訪客的瀏覽器裡進行，不會收集訪客輸入的金額。</li>
+      <li>想要其他工具的嵌入版，或需要調整樣式，歡迎用頁首的「意見回饋」告訴我們。</li>
+    </ul>
+  </article>
+
+  <p class="site-foot">本站為民間提供的免費工具，非政府官方網站。計算結果僅供參考，實際以財政部、國稅局規定為準。</p>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="/assets/nav.js?v=2026102802"></script>
+<script>
+const code=(src,h,t)=>`<iframe src="https://taxtools.tw${src}" width="100%" height="${h}" style="max-width:420px;border:0" title="${t}" loading="lazy"></iframe>`;
+const $=id=>document.getElementById(id);
+$("c1").value=code("/embed/tax-included/",430,"含稅未稅計算機");
+function role(){ const r=document.querySelector("input[name=role]:checked").value; $("c2").value=code(`/embed/deadlines/?role=${r}&n=5`,420,"接下來的報稅期限"); $("f2").src=`/embed/deadlines/?role=${r}&n=5`; }
+document.querySelectorAll("input[name=role]").forEach(e=>e.addEventListener("change",role)); role();
+document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copyText($(b.dataset.copy).value,"已複製嵌入碼，貼到網頁的 HTML 裡就能用"));
+</script>
+</body>
+</html>

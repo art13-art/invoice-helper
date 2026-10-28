@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>接下來的報稅期限（嵌入版）｜稅務小工具</title>
+<link rel="canonical" href="https://taxtools.tw/tax-calendar/">
+<link rel="stylesheet" href="/assets/embed.css?v=2026102802">
+</head>
+<body>
+<div class="w">
+  <h1 id="h">接下來的報稅期限</h1>
+  <ul class="dl" id="l"><li><span class="d">…</span><span>載入中</span></li></ul>
+  <p class="by">期限已依假日順延。由 <a id="more" href="https://taxtools.tw/tax-calendar/" target="_blank" rel="noopener">稅務小工具 taxtools.tw</a> 提供完整報稅行事曆</p>
+</div>
+<script>
+// 網址參數：?role=company|person|landlord（預設 company）、&n=顯示幾筆（預設 5，最多 10）
+const q=new URLSearchParams(location.search), role=["company","person","landlord","car"].includes(q.get("role"))?q.get("role"):"company", n=Math.min(10,Math.max(1,+q.get("n")||5));
+const NAME={company:"公司・行號",person:"個人・上班族",landlord:"房東",car:"有車的人"};
+document.getElementById("h").textContent=`接下來的報稅期限（${NAME[role]}）`;
+document.getElementById("more").href=`https://taxtools.tw/tax-calendar/#${role}`;
+fetch("/assets/deadlines.json").then(r=>r.json()).then(d=>{
+  const t=new Date(); t.setHours(0,0,0,0);
+  const items=d.items.filter(i=>i.roles.includes(role)&&new Date(i.due+"T00:00")>=t).slice(0,n);
+  document.getElementById("l").innerHTML=items.map(i=>{ const due=new Date(i.due+"T00:00"), days=Math.round((due-t)/864e5);
+    return `<li><span class="d">${due.getMonth()+1}/${due.getDate()}<small>${days===0?"今天":days+" 天後"}</small></span><a href="https://taxtools.tw${i.link||"/tax-calendar/"}" target="_blank" rel="noopener">${i.title}</a></li>`; }).join("")||"<li>目前沒有資料</li>";
+}).catch(()=>{ document.getElementById("l").innerHTML="<li>載入失敗，請重新整理</li>"; });
+try{ if(navigator.doNotTrack!=="1") navigator.sendBeacon("/api/track",new Blob([JSON.stringify({p:location.pathname,r:document.referrer||""})],{type:"text/plain"})); }catch(e){}
+</script>
+</body>
+</html>

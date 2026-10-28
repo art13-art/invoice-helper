@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>含稅未稅計算機（嵌入版）｜稅務小工具</title>
+<link rel="canonical" href="https://taxtools.tw/tax-included/">
+<link rel="stylesheet" href="/assets/embed.css?v=2026102802">
+</head>
+<body>
+<div class="w">
+  <h1>含稅未稅計算機</h1>
+  <div class="seg" role="group" aria-label="輸入的是">
+    <button type="button" data-m="incl" aria-pressed="true">我有含稅金額</button>
+    <button type="button" data-m="excl" aria-pressed="false">我有未稅金額</button>
+  </div>
+  <input id="a" inputmode="numeric" aria-label="金額" value="10,500">
+  <ul class="rows" id="r" aria-live="polite"></ul>
+  <p class="up" id="u"></p>
+  <p class="by">營業稅 5%，稅額元以下四捨五入。由 <a href="https://taxtools.tw/tax-included/" target="_blank" rel="noopener">稅務小工具 taxtools.tw</a> 提供</p>
+</div>
+<script>
+let M="incl"; const $=id=>document.getElementById(id), f=n=>n.toLocaleString("zh-TW");
+function up(n){ if(!n) return "新臺幣零元整"; const D="零壹貳參肆伍陸柒捌玖",U=["","拾","佰","仟"],B=["","萬","億","兆"]; const g=[]; let x=n; while(x>0){g.push(x%10000);x=Math.floor(x/10000);} let s="";
+  for(let i=g.length-1;i>=0;i--){ const p=g[i]; if(!p){ if(s) s+="零"; continue; } if(s&&p<1000) s+="零"; const d=String(p).padStart(4,"0"); let q=""; for(let j=0;j<4;j++){ const v=+d[j]; if(v) q+=D[v]+U[3-j]; else if(q) q+="零"; } s+=q.replace(/零+$/,"")+B[i]; }
+  return "新臺幣"+s.replace(/零+/g,"零").replace(/零$/,"")+"元整"; }
+function r(){ const a=parseInt($("a").value.replace(/\D/g,""),10)||0;
+  const ex=M==="incl"?Math.round(a/1.05):a, tot=M==="incl"?a:Math.round(a*1.05), tax=tot-ex;
+  $("r").innerHTML=`<li><span>銷售額（未稅）</span><b>${f(ex)}</b></li><li><span>營業稅 5%</span><b>${f(tax)}</b></li><li class="tot"><span>總計（含稅）</span><b>${f(tot)}</b></li>`;
+  $("u").textContent="總計大寫："+up(tot);
+  document.querySelectorAll("[data-m]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===M)); }
+document.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{ M=b.dataset.m; r(); });
+$("a").addEventListener("input",e=>{ const v=e.target.value.replace(/\D/g,""); e.target.value=v?(+v).toLocaleString("zh-TW"):""; r(); });
+r();
+try{ if(navigator.doNotTrack!=="1") navigator.sendBeacon("/api/track",new Blob([JSON.stringify({p:location.pathname,r:document.referrer||""})],{type:"text/plain"})); }catch(e){}
+</script>
+</body>
+</html>

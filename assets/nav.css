@@ -31,3 +31,6 @@
 .fb-act{display:flex;justify-content:flex-end;gap:10px}
 @media (max-width:639px){.fb-head{order:2;margin-left:auto;font-size:13px;min-height:34px;padding:0 12px}.site-nav{order:3}}
 @media print{.fb-head{display:none!important}}
+/* 工具變多後選單會超出一行：桌機縮小間距，右側淡出提示可以往右捲 */
+@media (min-width:640px){.site-nav a{padding:0 10px}}
+.site-nav{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent);padding-right:28px}

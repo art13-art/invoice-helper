@@ -10,7 +10,7 @@ import datetime as dt, html, json, pathlib, re
 SITE = "https://taxtools.tw"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TODAY = dt.date.today().isoformat()
-NOT_TOOLS = {"", "privacy", "join", "guide"}
+NOT_TOOLS = {"", "privacy", "join", "guide", "embed"}
 
 def text(s):
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", s))).strip()

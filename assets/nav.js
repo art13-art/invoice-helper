@@ -23,7 +23,7 @@
   const foot=document.querySelector(".site-foot");
   if(foot&&!document.querySelector(".foot-links")){
     const p=document.createElement("p"); p.className="foot-links";
-    p.innerHTML=`<a href="/">所有工具</a><a href="/guide/">報稅解答</a><a href="#" data-feedback>意見回饋</a><a href="/privacy/">隱私權政策與使用條款</a><span>非政府官方網站</span>`;
+    p.innerHTML=`<a href="/">所有工具</a><a href="/guide/">報稅解答</a><a href="/embed/">嵌入到你的網站</a><a href="#" data-feedback>意見回饋</a><a href="/privacy/">隱私權政策與使用條款</a><span>非政府官方網站</span>`;
     foot.after(p);
   }
   if(/^\/admin\b/.test(here)) return;
