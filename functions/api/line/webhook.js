@@ -4,6 +4,7 @@ import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
+import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, parseGuests, setGuests, pickMessages, splitPostback, splitToken } from "../../../lib/split.js";
 import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -95,6 +96,10 @@ async function handle(env, ev, origin) {
       if (ad) return reply(await adminDecision(env, db, line, chatId, userId, ad[2], ad[1]));
       const tr = d.match(/^txr:(yes|no):(\w+)$/);
       if (tr) return remindButton(env, db, line, ev, chatId, userId, tr[2], tr[1] === "yes", origin, chips, reply);
+      if (d.startsWith("sp:")) {
+        const out = await splitPostback(env, db, { chatId, userId, data: d, isAdmin: await isAdmin(db, userId), origin });
+        return out && ev.replyToken ? line.reply(ev.replyToken, out).catch(e => console.log("split reply failed", e.message)) : null;
+      }
       const cm = d.match(/^cm:(yes|no):(\w+)$/);
       if (cm) return reply(await settleCommit(db, { id: cm[2], userId, yes: cm[1] === "yes" }));
       const dn = d.match(/^done:([0-9a-f]{4})$/);
@@ -125,6 +130,14 @@ async function handle(env, ev, origin) {
       if (video && !who.optout) await record(db, chatId, userId, who.name, `［傳了影片${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "video:" + msg.id);
       else if (audio && !who.optout) await record(db, chatId, userId, who.name, `［傳了錄音${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "audio:" + msg.id);
       else if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
+      // 開了拆帳的群組：照片先讓便宜的 AI 看是不是帳單，是就開始拆帳
+      if (msg.type === "image" && (await splitOn(db, chatId)) && env.ANTHROPIC_API_KEY && (await budgetLeft(env, db))) {
+        try {
+          const img = await line.content(msg.id, 4.5 * 1024 * 1024);
+          const hit = await looksLikeBill(env, db, chatId, img);
+          if (hit) return billReply(env, db, line, ev, chatId, userId, [img], hit.bill_no);
+        } catch (e) { console.log("bill check", e.message); }
+      }
       else if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
       return;   // 群組裡的貼圖、照片、錄音不回應
     }
@@ -214,6 +227,44 @@ async function handle(env, ev, origin) {
     return ev.replyToken ? line.reply(ev.replyToken, [head, ...r.msgs].slice(0, 5)).catch(e => console.log("reply failed", e.message)) : null;
   }
 
+  // ---- 拆帳 ----
+  if (group && /^(開啟|打開|關閉|停止)拆帳$/.test(c)) {
+    if (!(await isAdmin(db, userId))) return reply("拆帳設定只有 Ben 能改。");
+    const on = /開啟|打開/.test(c);
+    await kv.set(db, "split:on:" + chatId, on ? "1" : "0");
+    return reply(on ? "好，這個群組開啟拆帳：之後貼帳單照片，我會自動讀，再 @Ben 問人名。" : "好，這個群組關閉自動拆帳。要拆還是可以回覆帳單照片 @我 說「拆帳」。");
+  }
+  if (group && /^拆帳(紀錄|記錄|明細)$/.test(c)) return reply(`這個群組的拆帳紀錄：\n${origin}/split?t=${await splitToken(db, chatId)}`);
+  if (group && /^(拆帳|拆單|分帳)$/.test(c)) {
+    // 回覆某張照片，或抓最近 15 分鐘的照片（最多 2 張，同一張單的明細＋結帳單）
+    const ids = [];
+    if (msg.quotedMessageId) ids.push(msg.quotedMessageId);
+    else {
+      const { results } = await db.prepare("SELECT media FROM line_msgs WHERE chat_id=? AND media IS NOT NULL AND media NOT LIKE '%:%' AND ts>? ORDER BY id DESC LIMIT 2").bind(chatId, Date.now() - 15 * 60e3).all();
+      ids.push(...results.map(r => r.media).reverse());
+    }
+    if (!ids.length) return reply("先貼帳單照片，再回覆那張照片 @我 說「拆帳」。");
+    if (!(await budgetLeft(env, db))) return reply("這個月的費用已經到上限，先不讀帳單。");
+    const imgs = [];
+    for (const id of ids) { try { imgs.push(await line.content(id, 4.5 * 1024 * 1024)); } catch (e) { console.log("bill img", e.message); } }
+    if (!imgs.length) return reply("照片讀不到了，可能已經過期，再貼一次？");
+    return billReply(env, db, line, ev, chatId, userId, imgs, "");
+  }
+  // Ben 回答拆帳的人名
+  if (group && (await isAdmin(db, userId))) {
+    const sp = await openSplit(db, chatId);
+    // 問人名的階段每句都看；已經在點卡片的階段，像是要改名單（有人數、男女、併）才看
+    if (sp && (sp.status === "ask" || /\d+\s*(人|位)|男|女|併/.test(c))) {
+      const p = await parseGuests(env, db, chatId, c).catch(e => { console.log("parse guests", e.message); return null; });
+      if (p) {
+        await setGuests(db, sp, p);
+        const msgs = pickMessages(sp);
+        if (p.count && p.count !== p.guests.length) msgs[0] = textMessage(`你說 ${p.count} 人，但我只認到 ${p.guests.length} 個名字：${p.guests.map(g => g.name).join("、")}。有漏的再回我一次完整的名單。\n\n` + msgs[0].text);
+        return line.reply(ev.replyToken, msgs).catch(e => console.log("pick reply failed", e.message));
+      }
+    }
+  }
+
   // ---- 交給 AI ----
   const ask = c === "詳細分析" ? "（請把你上一則回答展開成詳細分析：需要就上網多查幾個來源、補充數據、比較和具體建議；官方資料附網址；內容長就用 save_report 存成文件，LINE 裡回重點和連結。）" : c === "加入待辦" ? "請把你剛剛整理出來的待辦加入待辦清單（用 add_todos），然後列出加入的項目。" : c === "總結" ? "請總結這個群組最近 24 小時的討論。" : c.startsWith("總結") ? "請總結這個群組的討論：" + c.slice(2) : text;
   // 回覆（引用）某張照片、檔案或錄音再 @ 它：直接把那個照片／檔案／錄音一起給它
@@ -241,6 +292,19 @@ async function handle(env, ev, origin) {
     return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, q, "（@了小助理）");
   }
   return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips, rawText: raw }, ask, ask, attach);
+}
+
+/* 讀帳單並在群組 @Ben 問人名（讀帳單要 20～40 秒，回覆權杖過期就改推播） */
+async function billReply(env, db, line, ev, chatId, userId, imgs, billNo) {
+  let r;
+  try { r = await startSplit(env, db, { chatId, userId, imgs, billNo }); }
+  catch (e) { console.log("split failed", e.message); r = { error: "帳單讀取失敗，等一下再試一次。" }; }
+  const adm = await adminFor(env, db, chatId).catch(() => null);
+  const msgs = r.error ? [textMessage(r.error)] : askMessages(r.split, adm?.inChat ? adm.id : null, r.merged);
+  await line.reply(ev.replyToken, msgs).catch(async e => {
+    console.log("bill reply failed, pushing", e.message);
+    await line.push(chatId, msgs).then(() => recordPush(db, chatId, 1)).catch(e2 => console.log("bill push failed", e2.message));
+  });
 }
 
 /* 提醒卡或待辦清單上按「✓ 已完成」：負責人、交辦的人或管理員按了就劃掉，之後不再提醒 */

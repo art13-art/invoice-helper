@@ -48,3 +48,9 @@ CREATE TABLE IF NOT EXISTS line_digests (
   chat_id TEXT NOT NULL, day TEXT NOT NULL, text TEXT NOT NULL, created INTEGER NOT NULL,
   PRIMARY KEY (chat_id, day)
 );
+
+-- 拆酒店帳單（lib/split.js）：data＝讀到的帳單、客人、指派；result＝算好的金額
+CREATE TABLE IF NOT EXISTS line_splits (
+  id TEXT PRIMARY KEY, chat_id TEXT NOT NULL, bill_no TEXT, created INTEGER NOT NULL, created_by TEXT, status TEXT NOT NULL, data TEXT NOT NULL, result TEXT, done_at INTEGER);
+CREATE INDEX IF NOT EXISTS line_splits_chat ON line_splits(chat_id, created);
+CREATE TABLE IF NOT EXISTS line_split_imgs (split_id TEXT NOT NULL, n INTEGER NOT NULL, mime TEXT, data BLOB, PRIMARY KEY (split_id, n));
