@@ -82,13 +82,35 @@ let m = replies();
 t(claudeCalls.some(c => /sonnet/.test(c)), "sonnet reads bill");
 const bodies = calls.filter(c => c.url.includes("anthropic")).map(c => c.body);
 t(bodies.filter(b => /haiku/.test(b.model)).every(b => b.thinking?.type === "disabled") && bodies.some(b => /haiku/.test(b.model)), "haiku thinking off");
-t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.userId === "U_ben" && /幾人、名字、男女/.test(m[0].text), "asks Ben with mention");
+t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.userId === "U_ben" && /填寫名單/.test(m[0].text), "asks Ben with mention");
 t(m[1]?.type === "flex" && JSON.stringify(m[1]).includes("108,600"), "bill card with cash total");
+t(JSON.stringify(m[1]).includes("/split/form?t=") && JSON.stringify(m[1]).includes(":gl"), "form + 名單填好了 buttons");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 1, "split + photo saved");
 // 第二張（同單號）→ 併進同一張
 await photo("U_andy", "p3");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 2, "second photo merged");
 t(/第二張照片/.test(replies()[0]?.text || ""), "merged message");
+// 4b. 填寫名單網頁：卡片上有按鈕；預填 5 列男；送出存草稿；Ben 按「名單填好了」才套用
+const askCard = JSON.stringify(replies().length ? replies() : []);
+const sid0 = sq.prepare("SELECT id FROM line_splits").get().id;
+const fm = await import(R + "/functions/split/form.js");
+const tok0 = sq.prepare("SELECT v FROM line_kv WHERE k='split:tok:Cbar'").get()?.v;
+t(!!tok0, "token made for form");
+const furl = `https://x.dev/split/form?t=${tok0}&id=${sid0}`;
+let fr = await fm.onRequestGet({ request: new Request(furl), env }); let fh = await fr.text();
+t(fr.status === 200 && (fh.match(/"sex":"男"/g) || []).length === 5 && fh.includes("108,600"), "form prefilled 5 men");
+if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/form.html", fh);
+await press("U_ben", `sp:${sid0}:gl`); t(/還沒收到名單/.test(replies()[0]?.text), "gl before submit");
+fr = await fm.onRequestPost({ request: new Request(furl, { method: "POST", body: JSON.stringify({ guests: [{ name: "Tom", sex: "男" }, { name: "Amy", sex: "女", to: "Tom" }, { name: "Ken", sex: "男", to: "Amy" }, { name: "Tom", sex: "男" }] }) }), env });
+t(fr.status === 200 && (await fr.json()).count === 3, "draft saved, dup dropped");
+const dr = JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid0).data).draft;
+t(dr.merge.g1 === "g0" && dr.merge.g2 === "g0", "merge chain resolved to Tom");
+t(JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid0).data).guests.length === 0, "not applied before Ben presses");
+await press("U_andy", `sp:${sid0}:gl`); t(/只有 Ben/.test(replies()[0]?.text), "only Ben applies list");
+await press("U_ben", `sp:${sid0}:gl`); m = replies();
+t(/3 位：Tom（男）、Amy（女）→併 Tom、Ken（男）→併 Tom/.test(m[0]?.text) && m.some(x => x.contents?.type === "carousel"), "applied → pick cards " + m[0]?.text);
+t((await fm.onRequestPost({ request: new Request(furl.replace(tok0, "bad" + tok0), { method: "POST", body: "{}" }), env })).status === 404, "form needs token");
+
 // 5. 別人回答不算；Ben 回答 → 卡片
 guestsAnswer = { answer: true, count: 5, guests: ["A", "J", "B", "I", "玄"].map(name => ({ name, sex: "男" })), merge: [{ from: "I", to: "A" }] };
 claudeCalls.length = 0; await say("U_andy", "5人 A J B I 玄");
@@ -143,5 +165,5 @@ await say("U_andy", "拆帳紀錄"); t(/\/split\?t=/.test(replies()[0]?.text), "
 await say("U_ben", "關掉拆帳。"); t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "0", "disabled (關掉拆帳。)"); claudeCalls.length = 0;
 await photo("U_andy", "p9"); t(!claudeCalls.length, "off again");
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_andy" }, message: { type: "text", id: "q1", text: "@小幫手 拆帳", quotedMessageId: "p9", mention: { mentionees: [{ index: 0, length: 4, isSelf: true }] } } });
-t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /幾人/.test(replies()[0]?.text || ""), "manual 拆帳 by reply");
+t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /填寫名單/.test(replies()[0]?.text || ""), "manual 拆帳 by reply");
 console.log(`${ok} passed, ${bad} failed`);

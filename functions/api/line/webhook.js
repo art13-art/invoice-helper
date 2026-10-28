@@ -135,7 +135,7 @@ async function handle(env, ev, origin) {
         try {
           const img = await line.content(msg.id, 4.5 * 1024 * 1024);
           const hit = await looksLikeBill(env, db, chatId, img);
-          if (hit) return billReply(env, db, line, ev, chatId, userId, [img], hit.bill_no);
+          if (hit) return billReply(env, db, line, ev, chatId, userId, [img], hit.bill_no, origin);
         } catch (e) { console.log("bill check", e.message); }
       }
       else if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
@@ -249,7 +249,7 @@ async function handle(env, ev, origin) {
     const imgs = [];
     for (const id of ids) { try { imgs.push(await line.content(id, 4.5 * 1024 * 1024)); } catch (e) { console.log("bill img", e.message); } }
     if (!imgs.length) return reply("照片讀不到了，可能已經過期，再貼一次？");
-    return billReply(env, db, line, ev, chatId, userId, imgs, "");
+    return billReply(env, db, line, ev, chatId, userId, imgs, "", origin);
   }
   // Ben 回答拆帳的人名
   if (group && (await isAdmin(db, userId))) {
@@ -296,12 +296,13 @@ async function handle(env, ev, origin) {
 }
 
 /* 讀帳單並在群組 @Ben 問人名（讀帳單要 20～40 秒，回覆權杖過期就改推播） */
-async function billReply(env, db, line, ev, chatId, userId, imgs, billNo) {
+async function billReply(env, db, line, ev, chatId, userId, imgs, billNo, origin) {
   let r;
   try { r = await startSplit(env, db, { chatId, userId, imgs, billNo }); }
   catch (e) { console.log("split failed", e.message); r = { error: "帳單讀取失敗，等一下再試一次。" }; }
   const adm = await adminFor(env, db, chatId).catch(() => null);
-  const msgs = r.error ? [textMessage(r.error)] : askMessages(r.split, adm?.inChat ? adm.id : null, r.merged);
+  const formUrl = !r.error && origin ? `${origin}/split/form?t=${await splitToken(db, chatId)}&id=${r.split.id}` : null;
+  const msgs = r.error ? [textMessage(r.error)] : askMessages(r.split, adm?.inChat ? adm.id : null, r.merged, formUrl);
   await line.reply(ev.replyToken, msgs).catch(async e => {
     console.log("bill reply failed, pushing", e.message);
     await line.push(chatId, msgs).then(() => recordPush(db, chatId, 1)).catch(e2 => console.log("bill push failed", e2.message));
