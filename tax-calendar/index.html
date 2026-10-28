@@ -114,6 +114,16 @@
         </div>
         <div class="timeline" id="list"></div>
       </section>
+      <section class="card" id="cards">
+        <h2>期限圖卡</h2>
+        <p class="hint" style="margin:-6px 0 12px">每個月的報稅期限做成一張圖，可以存下來傳給同事、客戶，或貼到社群。</p>
+        <div class="cards" id="cardList"></div>
+      </section>
+      <style>.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.cards a{display:grid;gap:6px;text-decoration:none;color:var(--fg);font-size:14.5px}.cards img{width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--sunk)}</style>
+      <script>(function(){ const n=new Date(), f=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+        const ms=[new Date(n.getFullYear(),n.getMonth(),1),new Date(n.getFullYear(),n.getMonth()+1,1)];
+        document.getElementById("cardList").innerHTML=ms.map(d=>`<a href="/og/cards/${f(d)}.png" download="報稅期限-${d.getFullYear()-1911}年${d.getMonth()+1}月.png"><img src="/og/cards/${f(d)}.png" alt="${d.getFullYear()-1911} 年 ${d.getMonth()+1} 月報稅期限圖卡" width="1080" height="1350" loading="lazy" onerror="this.parentNode.remove()"><span>下載 ${d.getMonth()+1} 月圖卡</span></a>`).join("");
+      })();</script>
       <section class="card faq">
         <h2>常見問題</h2>
         <details><summary>期限遇到假日怎麼算？</summary><p>期限的最後一天碰到週末或國定假日，順延到下一個上班日。這裡已經依行政院人事行政總處公布的辦公日曆算好，標示「順延」的就是原本落在假日的。</p></details>
@@ -124,6 +134,7 @@
     </div>
   </div>
 
+  <nav class="guide-links" aria-label="下載"><span>下載</span><a href="/tax-calendar/2027/">116 年報稅行事曆總表（可列印）</a><a href="#cards" data-cards>本月期限圖卡</a></nav>
   <nav class="guide-links" aria-label="相關解答"><span>相關解答</span><a href="/guide/vat-filing/">營業稅怎麼報？申報期限、計算方式、零申報</a></nav>
   <p class="site-foot">期限依所得稅法第 92 條、加值型及非加值型營業稅法第 35 條、全民健康保險法、勞工保險條例、房屋稅條例、土地稅法、使用牌照稅法等規定整理，假日依行政院人事行政總處辦公日曆表順延。僅供參考，實際以財政部、地方稅務局、勞保局及健保署公告為準。資料更新：<span id="gen"></span>。</p>
 </div>

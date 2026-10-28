@@ -16,7 +16,7 @@ def text(s):
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", s))).strip()
 
 pages = []
-for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("guide/*/index.html")]):
+for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("guide/*/index.html"), *ROOT.glob("tax-calendar/*/index.html")]):
     rel = f.parent.relative_to(ROOT).as_posix()
     rel = "" if rel == "." else rel
     if rel.startswith(("scripts", "functions", "lib", "assets", "join", "db", "admin", "worker", "tests")):
@@ -53,7 +53,7 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
             {"@type": "ListItem", "position": 1, "name": "稅務小工具", "item": f"{SITE}/"},
             {"@type": "ListItem", "position": 2, "name": "報稅解答", "item": f"{SITE}/guide/"},
             {"@type": "ListItem", "position": 3, "name": h1, "item": url}]})
-    if rel and rel not in NOT_TOOLS and not rel.startswith("guide/"):
+    if rel and rel not in NOT_TOOLS and "/" not in rel:
         ld.append({"@context": "https://schema.org", "@type": "WebApplication", "name": title.split("｜")[0],
                    "url": url, "description": desc, "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication",
                    "operatingSystem": "Any", "isAccessibleForFree": True, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}})
@@ -74,7 +74,7 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
     else:
         src = src.replace("</head>", seo + "\n</head>", 1)
     f.write_text(src)
-    pages.append((url, 1.0 if not rel else 0.7 if rel.startswith("guide") else 0.5 if rel in NOT_TOOLS else 0.8))
+    pages.append((url, 1.0 if not rel else 0.7 if rel.startswith(("guide", "tax-calendar/")) else 0.5 if rel in NOT_TOOLS else 0.8))
     print(f"{url:45} faq={len(qa) if faq else 0}")
 
 (ROOT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
