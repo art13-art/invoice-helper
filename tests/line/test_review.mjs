@@ -17,6 +17,7 @@ globalThis.fetch = async (url, init = {}) => {
   const u = String(url), body = init.body ? JSON.parse(init.body) : null; calls.push({ url: u, body });
   if (u.includes("api.anthropic.com")) { claudeN++; return new Response(JSON.stringify({ content: [{ type: "text", text: haiku }], stop_reason: "end_turn", usage: { input_tokens: 10, output_tokens: 5 } }), { status: 200 }); }
   if (u.endsWith("/message/push") && pushFail) return new Response("{}", { status: 400 });
+  if (u.includes("/group/Cno/member/")) return new Response("{}", { status: 404 });
   if (u.includes("/member/") || u.includes("/profile/")) return new Response(JSON.stringify({ displayName: u.endsWith("U_ben") ? "Ben Wu" : "Amy" }), { status: 200 });
   if (u.includes("/summary")) return new Response(JSON.stringify({ groupName: "96廣告分析" }), { status: 200 });
   return new Response("{}", { status: 200 });
@@ -45,8 +46,21 @@ t(m?.type === "flex" && JSON.stringify(m).includes("大家好，我是小幫手"
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_amy" }, message: { type: "text", id: "1", text: "@小幫手 說明" } });
 m = replies()[0]?.[0];
 t(m?.type === "flex" && JSON.stringify(m).includes("/總結"), "help card in group");
-await send({ type: "message", source: { type: "user", userId: "U_amy" }, message: { type: "text", id: "2", text: "說明" } });
-t(JSON.stringify(replies()[0]).includes("什麼都能問"), "help card in DM");
+await send({ type: "message", source: { type: "user", userId: "U_ben" }, message: { type: "text", id: "2", text: "說明" } });
+t(JSON.stringify(replies()[0]).includes("什麼都能問"), "help card in admin DM");
+// 只有 Ben 能用私訊、拉進群
+claudeN = 0;
+await send({ type: "message", source: { type: "user", userId: "U_amy" }, message: { type: "text", id: "2b", text: "幫我寫一封信" } });
+t(/私訊不開放/.test(replies()[0]?.[0]?.text) && claudeN === 0, "non-admin DM closed, no AI cost");
+await send({ type: "follow", source: { type: "user", userId: "U_amy" } });
+t(/私訊不開放/.test(replies()[0]?.[0]?.text), "non-admin follow closed");
+await send({ type: "follow", source: { type: "user", userId: "U_ben" } });
+t(replies()[0]?.[0]?.type === "flex", "admin follow gets card");
+await send({ type: "postback", source: { type: "user", userId: "U_amy" }, postback: { data: "grp:x:Cg1" } });
+t(!replies().length, "non-admin DM postback ignored");
+await send({ type: "join", source: { type: "group", groupId: "Cno" } });
+t(calls.some(c => c.url.endsWith("/group/Cno/leave")) && /先離開/.test(replies()[0]?.[0]?.text), "join without Ben -> leave");
+t(!sq.prepare("SELECT 1 FROM line_kv WHERE k='name:Cno'").get(), "no record of refused group");
 const src = readFileSync(R + "/lib/assistant.js", "utf8");
 t(!/我是小助理/.test(src), "no old name in join notice");
 
@@ -57,14 +71,14 @@ for (const s of ["你明天交報價單嗎？", "明天要開會", "我覺得不
 
 // 群組裡沒 @ 的一句「我明天交報價單給王總」→ Haiku 確認 → 私訊卡片
 claudeN = 0;
-await send({ type: "message", source: { type: "group", groupId: G, userId: "U_amy" }, message: { type: "text", id: "3", text: "我明天交報價單給王總" } });
+await send({ type: "message", source: { type: "group", groupId: G, userId: "U_ben" }, message: { type: "text", id: "3", text: "我明天交報價單給王總" } });
 const dm = calls.find(c => c.url.endsWith("/message/push"));
-t(claudeN === 1 && dm && dm.body.to === "U_amy" && JSON.stringify(dm.body).includes("要加成待辦嗎") && JSON.stringify(dm.body).includes("96廣告分析"), "DM card sent");
+t(claudeN === 1 && dm && dm.body.to === "U_ben" && JSON.stringify(dm.body).includes("要加成待辦嗎") && JSON.stringify(dm.body).includes("96廣告分析"), "DM card sent");
 t(!replies().length, "nothing said in group");
 const pid = sq.prepare("SELECT id FROM line_pending WHERE kind='commit'").get()?.id;
 // 2 小時內同一人不再問
 claudeN = 0;
-await send({ type: "message", source: { type: "group", groupId: G, userId: "U_amy" }, message: { type: "text", id: "4", text: "我後天寄樣品" } });
+await send({ type: "message", source: { type: "group", groupId: G, userId: "U_ben" }, message: { type: "text", id: "4", text: "我後天寄樣品" } });
 t(claudeN === 0, "rate limited");
 // 一般訊息不花錢
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_bob" }, message: { type: "text", id: "5", text: "今天天氣不錯" } });
@@ -72,18 +86,19 @@ t(claudeN === 0, "no AI for normal chat");
 // 別人按不行；本人按「加入待辦」→ 群組待辦＋提醒
 await send({ type: "postback", source: { type: "user", userId: "U_bob" }, postback: { data: "cm:yes:" + pid } });
 t(/本人/.test(replies()[0]?.[0]?.text), "other person blocked");
-await send({ type: "postback", source: { type: "user", userId: "U_amy" }, postback: { data: "cm:yes:" + pid } });
+await send({ type: "postback", source: { type: "user", userId: "U_ben" }, postback: { data: "cm:yes:" + pid } });
 const td = sq.prepare("SELECT * FROM line_todos WHERE chat_id=?").get(G);
-t(td && td.task === "交報價單給王總" && td.assignee_id === "U_amy" && td.due, "todo created in group");
+t(td && td.task === "交報價單給王總" && td.assignee_id === "U_ben" && td.due, "todo created in group");
 t(sq.prepare("SELECT count(*) n FROM line_reminders WHERE todo_id=?").get(td.id).n === 2, "eve + due reminders");
 t(/已加到「96廣告分析」/.test(replies()[0]?.[0]?.text), "confirm text " + replies()[0]?.[0]?.text);
-await send({ type: "postback", source: { type: "user", userId: "U_amy" }, postback: { data: "cm:yes:" + pid } });
+await send({ type: "postback", source: { type: "user", userId: "U_ben" }, postback: { data: "cm:yes:" + pid } });
 t(/已經加過/.test(replies()[0]?.[0]?.text), "double press");
-// 沒加好友（私訊失敗）→ 在群組回覆那句、@本人
-pushFail = true;
+// 不是管理員（私訊不開放）→ 在群組回覆那句、@本人，不推播
+pushFail = false;
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_cat" }, message: { type: "text", id: "6", text: "我週五前寄合約給客戶" } });
 const gr = replies()[0];
 t(gr && gr[0].type === "textV2" && gr[0].substitution.m0.mentionee.userId === "U_cat" && gr[1].type === "flex", "group fallback with mention");
+t(!calls.some(c => c.url.endsWith("/message/push")), "no DM push to non-admin");
 pushFail = false;
 // Haiku 說不是承諾 → 什麼都不做
 haiku = '{"commit":false}';

@@ -14,6 +14,7 @@ const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下�
 const VIDEO_ASK = "（使用者傳來一支影片。上面附了影片封面（第一個畫面）和語音逐字稿；你看不到中間的畫面，回答時要說清楚是根據封面和聲音判斷的。先說影片在講什麼；如果是廣告或宣傳影片，評估開頭三秒的吸引力、主要訊息、CTA，給具體的改進建議。）";
 const REMIND_ASK = "（使用者在會議錄音整理的卡片上按了「要，設提醒」。依你剛剛那則整理裡「可提醒」的建議設好提醒：會議照開會提醒的規則（前一天 18:00 請大家先提出要討論的事項＋會議前 30 分鐘，都用 set_reminder、auto=true）；有人要完成的事（截止日）用 add_todos 加成待辦，系統會自動在前一天和到期時提醒，對話紀錄裡已經加過的待辦不要重複加；已經過了的時間跳過。設完用「時間＋內容」簡短列出。沒有可提醒的事就直接說沒有，問他要提醒什麼。）";
 
+const DM_CLOSED = "小幫手目前只在工作群組裡使用，私訊不開放。有事請在群組裡 @小幫手。";
 const GROUP_CHIPS = [];
 const USER_CHIPS = [];
 
@@ -58,6 +59,16 @@ async function handle(env, ev, origin) {
 
   switch (ev.type) {
     case "join": {
+      // 只有 Ben（管理員）在的群組才留下：LINE 不會告訴我們是誰邀請的，所以看管理員在不在群組裡
+      const adms = await admins(db);
+      let inside = !adms.length;
+      for (const a of adms) { if (inside) break; for (let i = 0; i < 2 && !inside; i++) inside = (await line.isMember(chatId, a)) === true; }
+      if (!inside) {
+        console.log("join refused: admin not in", chatId);
+        if (ev.replyToken) await line.reply(ev.replyToken, [textMessage("小幫手目前只在指定的工作群組使用，先離開了。")]).catch(() => null);
+        await (chatId.startsWith("R") ? line.leaveRoom(chatId) : line.leaveGroup(chatId));
+        return forgetChat(db, chatId);
+      }
       const n = await line.groupName(chatId);
       if (n) await kv.set(db, "name:" + chatId, n);
       return ev.replyToken ? line.reply(ev.replyToken, [helpCard(true, { keepDays: KEEP_DAYS, join: true })]).catch(e => { console.log("join card failed", e.message); return reply(JOIN_NOTICE); }) : null;
@@ -67,10 +78,14 @@ async function handle(env, ev, origin) {
     case "memberLeft":
       for (const m of ev.left?.members || []) await db.prepare("DELETE FROM line_members WHERE chat_id=? AND user_id=?").bind(chatId, m.userId).run();
       return;
-    case "follow": return ev.replyToken ? line.reply(ev.replyToken, [helpCard(false, { join: true })]).catch(() => reply("嗨，我是小幫手。" + HELP_USER)) : null;
+    case "follow":
+      // 只有管理員能用私訊；其他人加了好友也只回一句（LINE 沒辦法禁止別人加好友）
+      if (!(await isAdmin(db, userId)) && (await admins(db)).length) return reply(DM_CLOSED, []);
+      return ev.replyToken ? line.reply(ev.replyToken, [helpCard(false, { join: true })]).catch(() => reply("嗨，我是小幫手。" + HELP_USER)) : null;
     case "unfollow": return;
     case "postback": {
       const d = String(ev.postback?.data || "");
+      if (!group && !/^cm:/.test(d) && !(await isAdmin(db, userId)) && (await admins(db)).length) return;   // 私訊只給管理員
       if (group) await watchAdmin(env, db, { chatId, userId, name: "", text: "" }).catch(() => null);
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
@@ -96,6 +111,8 @@ async function handle(env, ev, origin) {
   }
 
   const msg = ev.message || {};
+  // 私訊只給管理員：其他人只能用「管理員代碼」（新增管理員用），其餘一律回一句
+  if (!group && (await admins(db)).length && !(await isAdmin(db, userId)) && !(msg.type === "text" && /^管理員代碼\s*\d{6}$/.test((msg.text || "").trim()))) return reply(DM_CLOSED, []);
   const who = group ? await member(db, line, chatId, userId) : { name: (await line.name(chatId, userId).catch(() => null)) || "你", optout: 0 };
   // 有人找管理員：3 小時沒回就再 @ 他一次（管理員自己在群組說話就算回了）
   if (group) await watchAdmin(env, db, { chatId, userId, name: who.name, text: msg.type === "text" ? msg.text : "", mentionees: msg.mention?.mentionees }).catch(e => console.log("watchAdmin", e.message));

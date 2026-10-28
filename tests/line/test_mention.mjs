@@ -64,18 +64,20 @@ t(tv.some(x => Object.keys(x.substitution).length === 2), "two mentions sent");
 // 私訊排程到別的群組 → 先給群組按鈕，點了才建立
 sq.exec("DELETE FROM line_reminders");
 const pressDM = (u, data) => send({ type: "postback", source: { type: "user", userId: u }, postback: { data } });
+const pressG = (u, data) => send({ type: "postback", source: { type: "group", groupId: "Cad", userId: u }, postback: { data } });
+// 私訊只給管理員：非管理員在群組裡請它排到別的群組
 toolPlan = { name: "set_reminder", input: { when: day + "T09:00", text: "請大家今天下班前上傳本週素材", group: "廣告分析", mention: "全部", kind: "message" } };
-await sayDM("U_amy", "明天 9 點在廣告群公告請大家上傳素材");
+await sayG("U_amy", "明天 9 點在廣告群公告請大家上傳素材");
 t(sq.prepare("SELECT count(*) n FROM line_reminders").get().n === 0, "not created before picking");
 let picker = lastMsgs.find(x => x.type === "flex"), btns = picker?.contents.footer.contents || [];
 t(btns.length === 1 && btns[0].action.label === "96廣告分析" && btns[0].style === "primary", "picker lists only Amy's groups, best first " + JSON.stringify(btns.map(b => b.action.label)));
 t(!(lastMsgs[0].quickReply?.items || []).some(i => i.action.text === "/詳細分析"), "no chip with picker");
-let res = (await pressDM("U_amy", btns[0].action.data))[0].text;
+let res = (await pressG("U_amy", btns[0].action.data))[0].text;
 let r = sq.prepare("SELECT chat_id,kind,mention_id,created_by FROM line_reminders").get();
 t(r && r.chat_id === "Cad" && r.kind === "msg" && r.mention_id === "all" && r.created_by === "U_amy", "created after pick " + JSON.stringify(r));
 t(/✓ 已設定在「96廣告分析」（到時代發這則訊息）/.test(res) && /@全體：請大家今天下班前上傳本週素材/.test(res), "confirmation " + res);
-res = (await pressDM("U_amy", btns[0].action.data))[0].text; t(/已經設定好/.test(res), "double press");
-res = (await pressDM("U_tom", btns[0].action.data))[0].text; t(/別人/.test(res), "other user can't press");
+res = (await pressG("U_amy", btns[0].action.data))[0].text; t(/已經設定好/.test(res), "double press");
+res = (await pressG("U_tom", btns[0].action.data))[0].text; t(/別人/.test(res), "other user can't press");
 p = await runTick();
 t(p.length === 1 && p[0].body.to === "Cad" && !p[0].body.messages[0].text.includes("⏰"), "message sent without ⏰");
 // 管理員看得到所有群組
