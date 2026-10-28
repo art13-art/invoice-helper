@@ -227,15 +227,16 @@ async function handle(env, ev, origin) {
     return ev.replyToken ? line.reply(ev.replyToken, [head, ...r.msgs].slice(0, 5)).catch(e => console.log("reply failed", e.message)) : null;
   }
 
-  // ---- 拆帳 ----
-  if (group && /^(開啟|打開|關閉|停止)拆帳$/.test(c)) {
+  // ---- 拆帳 ----（「賬」「单」也算；說法放寬：啟動／開始／啟用、幫我拆帳…）
+  const sc = c.replace(/賬/g, "帳").replace(/单/g, "單").replace(/[。！!～~\s]+$/g, "").replace(/^(請|幫我|麻煩)?/, "");
+  if (group && /^(開啟|打開|啟動|啟用|開始|開|關閉|關掉|停止|停用|取消)(自動)?(拆帳|分帳|拆單)(功能|模式)?$/.test(sc)) {
     if (!(await isAdmin(db, userId))) return reply("拆帳設定只有 Ben 能改。");
-    const on = /開啟|打開/.test(c);
+    const on = !/關|停|取消/.test(sc);
     await kv.set(db, "split:on:" + chatId, on ? "1" : "0");
     return reply(on ? "好，這個群組開啟拆帳：之後貼帳單照片，我會自動讀，再 @Ben 問人名。" : "好，這個群組關閉自動拆帳。要拆還是可以回覆帳單照片 @我 說「拆帳」。");
   }
-  if (group && /^拆帳(紀錄|記錄|明細)$/.test(c)) return reply(`這個群組的拆帳紀錄：\n${origin}/split?t=${await splitToken(db, chatId)}`);
-  if (group && /^(拆帳|拆單|分帳)$/.test(c)) {
+  if (group && /^(拆帳|分帳)(紀錄|記錄|明細|網頁)$/.test(sc)) return reply(`這個群組的拆帳紀錄：\n${origin}/split?t=${await splitToken(db, chatId)}`);
+  if (group && /^(拆帳|拆單|分帳|拆這張|拆一下|算一下|拆帳單|這張拆帳)$/.test(sc)) {
     // 回覆某張照片，或抓最近 15 分鐘的照片（最多 2 張，同一張單的明細＋結帳單）
     const ids = [];
     if (msg.quotedMessageId) ids.push(msg.quotedMessageId);

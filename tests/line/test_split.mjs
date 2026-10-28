@@ -70,7 +70,8 @@ await photo("U_andy", "p0");
 t(!claudeCalls.length, "split off → no AI");
 // 2. 只有 Ben 能開
 await say("U_andy", "開啟拆帳"); t(/只有 Ben/.test(replies()[0]?.text), "non-admin can't enable");
-await say("U_ben", "開啟拆帳"); t(/開啟拆帳/.test(replies()[0]?.text), "admin enables");
+await say("U_ben", "啟動拆賬"); t(/開啟拆帳/.test(replies()[0]?.text), "admin enables (啟動拆賬) " + replies()[0]?.text);
+t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "1", "enabled flag");
 // 3. 一般照片：只花 Haiku、不回
 isBill = false; await photo("U_andy", "p1");
 t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length, "non-bill photo silent");
@@ -136,7 +137,7 @@ t(res.status === 200 && (await res.arrayBuffer()).byteLength === 6, "photo serve
 t((await im.onRequestGet({ request: new Request(`https://x.dev/split/img?t=${tok}x&id=${sid}&n=1`), env })).status === 404, "photo needs token");
 // 10. 拆帳紀錄指令、手動「拆帳」（回覆照片）在沒開的群組也行
 await say("U_andy", "拆帳紀錄"); t(/\/split\?t=/.test(replies()[0]?.text), "records link");
-await say("U_ben", "關閉拆帳"); claudeCalls.length = 0;
+await say("U_ben", "關掉拆帳。"); t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "0", "disabled (關掉拆帳。)"); claudeCalls.length = 0;
 await photo("U_andy", "p9"); t(!claudeCalls.length, "off again");
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_andy" }, message: { type: "text", id: "q1", text: "@小幫手 拆帳", quotedMessageId: "p9", mention: { mentionees: [{ index: 0, length: 4, isSelf: true }] } } });
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /幾人/.test(replies()[0]?.text || ""), "manual 拆帳 by reply");
