@@ -4,7 +4,7 @@ import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
-import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink } from "../../../lib/split.js";
+import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink, sameBill, redoMessages } from "../../../lib/split.js";
 import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -90,6 +90,7 @@ async function handle(env, ev, origin) {
       if (group) await watchAdmin(env, db, { chatId, userId, name: "", text: "" }).catch(() => null);
       if (d === "wipe:" + chatId) { await forgetChat(db, chatId); return reply("好，這個群組的紀錄、待辦和提醒都清掉了。"); }
       if (d === "keep") return reply("好，不清。");
+      if (d === "split:no") return;
       const gp = d.match(/^grp:(\w+):([CR]\w+)$/);
       if (gp) return reply(await applyGroupPick(env, db, { pid: gp[1], groupId: gp[2], userId, isAdmin: await isAdmin(db, userId) }));
       const ad = d.match(/^adm:(ok|all|no):(\w+)$/);
@@ -297,6 +298,13 @@ async function handle(env, ev, origin) {
 
 /* 讀帳單並在群組 @Ben 問人名（讀帳單要 20～40 秒，回覆權杖過期就改推播） */
 async function billReply(env, db, line, ev, chatId, userId, imgs, billNo, origin) {
+  // 同一張單又貼一次：拆過了→問要不要重新拆；拆到一半（超過 15 分鐘，不是補第二張）→再給表單。都不重讀帳單
+  const ex = await sameBill(db, chatId, billNo).catch(() => null);
+  if (ex && (ex.status === "done" || Date.now() - ex.created > 15 * 60e3)) {
+    const url = await formLink(db, origin, chatId, ex.id);
+    const m = ex.status === "done" ? redoMessages(ex, url) : askMessages(ex, null, false, url);
+    return line.reply(ev.replyToken, m).catch(e => console.log("same bill reply failed", e.message));
+  }
   let r;
   try { r = await startSplit(env, db, { chatId, userId, imgs, billNo }); }
   catch (e) { console.log("split failed", e.message); r = { error: "帳單讀取失敗，等一下再試一次。" }; }

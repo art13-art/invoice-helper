@@ -191,4 +191,17 @@ fr = await pl({ idToken: "U_ben", guests, hostess: { ...Object.fromEntries(Objec
 t(fr.status === 400 && /節數/.test((await fr.json()).error), "segment needs units");
 fh = await (await fm.onRequestGet({ request: new Request(furl), env })).text();
 { const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(okjs && /"mode":"seg"/.test(fh) && /"mode":"pick","w":\["g\d","g\d","g\d","g\d","g\d"\]/.test(fh), "form restores segment + even"); }
+// 14. 已拆過的單又貼一次 → 問要不要重新拆（不重讀）；請款卡有「修改」
+sq.prepare("DELETE FROM line_kv WHERE k='liff:split'").run();
+sq.prepare("UPDATE line_kv SET v='1' WHERE k='split:on:Cbar'").run();
+sq.prepare("UPDATE line_splits SET status='done' WHERE chat_id='Cbar'").run();
+isBill = true; claudeCalls.length = 0;
+await photo("U_andy", "p20");
+{ const m = replies(); t(/已經拆過帳了/.test(m[0]?.altText || "") && JSON.stringify(m).includes("重新拆帳") && JSON.stringify(m).includes("split:no") && !claudeCalls.some(c => /sonnet/.test(c)), "repost done bill → redo prompt, no re-read " + JSON.stringify(m).slice(0, 120)); }
+await send({ type: "postback", source: { type: "group", groupId: G, userId: "U_ben" }, postback: { data: "split:no" } });
+t(!replies().length, "不用 → quiet");
+calls.length = 0;
+fr = await pl({ idToken: "U_ben", guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
+await new Promise(r => setTimeout(r, 20));
+{ const ps = calls.find(c => c.url.endsWith("/message/push")); t(ps && JSON.stringify(ps.body.messages[1]).includes("修改") && JSON.stringify(ps.body.messages[1]).includes("/split/form?t="), "result card has 修改 button"); }
 console.log(`${ok} passed, ${bad} failed`);
