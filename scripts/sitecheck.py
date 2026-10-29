@@ -21,7 +21,7 @@ BASE = os.environ.get("BASE", "https://taxtools.tw").rstrip("/")
 PROD = "https://taxtools.tw"
 UA_TAIL = " taxtools-monitor"
 VIEWPORTS = {"桌機": (1280, 800), "手機": (390, 844)}
-IGNORE_CONSOLE = re.compile(r"favicon|googletagmanager|fonts\.g|ERR_BLOCKED|net::ERR_ABORTED|/api/track|/og/cards/", re.I)  # 圖卡缺月份時頁面會 onerror 自動移除
+IGNORE_CONSOLE = re.compile(r"favicon|googletagmanager|fonts\.g|ERR_BLOCKED|net::ERR_ABORTED|/api/track|/og/cards/|accounts\.google\.com/gsi", re.I)  # 圖卡缺月份時頁面會 onerror 自動移除
 LOCAL = not BASE.startswith(PROD)
 
 
