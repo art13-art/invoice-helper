@@ -66,17 +66,22 @@ d0.shared[0].who = [gid("A"), gid("B"), gid("I")];   // 芭樂盤 200 三人分
 const r1 = S.compute(d0);
 t(r1.people.reduce((a, p) => a + p.total, 0) === 108600, "uneven split still sums exactly");
 
-// 1. 沒開拆帳的群組：照片不花錢
-await photo("U_andy", "p0");
-t(!claudeCalls.length, "split off → no AI");
+// 1. 沒說過開啟的群組：預設用嚴格標準（只認酒店／KTV 帳單），不是就不回
+isBill = false; await photo("U_andy", "p0");
+t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && calls.some(c => c.body?.system && /便服店/.test(c.body.system)) && !replies().length, "default strict check, silent");
+// 廠商群組不判斷
+sq.prepare(`INSERT INTO line_kv VALUES('flows','[{"notify":"Cvendor"}]')`).run(); claudeCalls.length = 0;
+await send({ type: "message", source: { type: "group", groupId: "Cvendor", userId: "U_andy" }, message: { type: "image", id: "pv" } });
+t(!claudeCalls.length, "vendor group → no check");
+claudeCalls.length = 0; isBill = true;
 // 2. 只有 Ben 能開
 await say("U_andy", "開啟拆帳"); t(/只有 Ben/.test(replies()[0]?.text), "non-admin can't enable");
 await say("U_ben", "啟動拆賬"); t(/開啟拆帳/.test(replies()[0]?.text), "admin enables (啟動拆賬) " + replies()[0]?.text);
 t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "1", "enabled flag");
 await say("U_andy", "說明"); t(JSON.stringify(replies()[0]).includes("拆帳單"), "help card shows split item when on");
 // 3. 一般照片：只花 Haiku、不回
-isBill = false; await photo("U_andy", "p1");
-t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length, "non-bill photo silent");
+isBill = false; claudeCalls.length = 0; await photo("U_andy", "p1");
+t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length && !calls.some(c => c.body?.system && /便服店/.test(c.body.system)), "non-bill photo silent (broad check)");
 // 4. 帳單照片 → 讀帳單 → @Ben 問人名
 isBill = true; claudeCalls.length = 0; await photo("U_andy", "p2");
 let m = replies();

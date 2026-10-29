@@ -4,7 +4,7 @@ import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
-import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink, sameBill, redoMessages } from "../../../lib/split.js";
+import { splitOn, splitMode, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink, sameBill, redoMessages } from "../../../lib/split.js";
 import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -132,10 +132,12 @@ async function handle(env, ev, origin) {
       else if (audio && !who.optout) await record(db, chatId, userId, who.name, `［傳了錄音${msg.duration ? "，約 " + Math.max(1, Math.round(msg.duration / 60e3)) + " 分鐘" : ""}${msg.fileName ? "：" + msg.fileName : ""}］`, "audio:" + msg.id);
       else if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
       // 開了拆帳的群組：照片先讓便宜的 AI 看是不是帳單，是就開始拆帳
-      if (msg.type === "image" && (await splitOn(db, chatId)) && env.ANTHROPIC_API_KEY && (await budgetLeft(env, db))) {
+      // 群組照片：預設用嚴格標準判斷是不是酒店／KTV 帳單；說過「開啟拆帳」的群組用寬鬆標準；關掉的、廠商群組不判斷
+      const sm = msg.type === "image" ? await splitMode(db, chatId) : "off";
+      if (sm !== "off" && env.ANTHROPIC_API_KEY && (await budgetLeft(env, db))) {
         try {
           const img = await line.content(msg.id, 4.5 * 1024 * 1024);
-          const hit = await looksLikeBill(env, db, chatId, img);
+          const hit = await looksLikeBill(env, db, chatId, img, sm === "strict");
           if (hit) return billReply(env, db, line, ev, chatId, userId, [img], hit.bill_no, origin);
         } catch (e) { console.log("bill check", e.message); }
       }
