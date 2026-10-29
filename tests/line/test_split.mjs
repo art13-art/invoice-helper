@@ -190,5 +190,5 @@ t(saved.hostess.find(x => x.name === "沐熙").split.length === 2 && saved.hoste
 fr = await pl({ idToken: "U_ben", guests, hostess: { ...Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), [h("沐熙")]: { segs: [{ u: 0, who: ["A"] }, { u: 1, who: ["B"] }] } } });
 t(fr.status === 400 && /節數/.test((await fr.json()).error), "segment needs units");
 fh = await (await fm.onRequestGet({ request: new Request(furl), env })).text();
-{ const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(okjs && /"mode":"seg"/.test(fh) && /"mode":"even"/.test(fh), "form restores segment modes"); }
+{ const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(okjs && /"mode":"seg"/.test(fh) && /"mode":"pick","w":\["g\d","g\d","g\d","g\d","g\d"\]/.test(fh), "form restores segment + even"); }
 console.log(`${ok} passed, ${bad} failed`);

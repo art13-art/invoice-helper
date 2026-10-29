@@ -60,7 +60,7 @@ export async function onRequestGet({ request, env }) {
     id: r.id, done: r.status === "done", cash: d.cash, back: isGroup(chatId) ? "https://line.me/R/nv/chat" : "https://line.me/R/oaMessage/" + encodeURIComponent(env.LINE_OA_ID || "@249owrao"),
     guests, next: guests.length,
     hostess: d.hostess.map(h => ({ id: h.id, name: h.name, amount: h.amount, mark: h.mark || "", lines: h.lines.map(l => [l.type, l.time, l.units ? l.units + " 節" : ""].filter(Boolean).join(" ")), units: h.lines.reduce((a, l) => a + (l.units || 0), 0), g: h.guest || "",
-      mode: !h.split ? "one" : h.split.length === 1 ? "even" : "seg", w: h.split && h.split.length === 1 ? h.split[0].who : [], segs: h.split && h.split.length > 1 ? h.split.map(sg => ({ u: sg.u, w: sg.who })) : [] })),
+      mode: h.split && h.split.length > 1 ? "seg" : "pick", w: h.split && h.split.length === 1 ? h.split[0].who : h.guest ? [h.guest] : [], segs: h.split && h.split.length > 1 ? h.split.map(sg => ({ u: sg.u, w: sg.who })) : [] })),
     shared: d.shared.map(s => ({ id: s.id, name: s.name, amount: s.amount, qty: s.qty, price: s.price, who: s.who || null })),
     free: d.free || [],
     members: (await env.DB.prepare("SELECT name FROM line_members WHERE chat_id=? AND name IS NOT NULL AND optout=0 ORDER BY updated DESC LIMIT 30").bind(chatId).all()).results.map(x => x.name).filter(n => n && n !== "成員"),
@@ -74,8 +74,8 @@ export async function onRequestGet({ request, env }) {
     <section><div class="step"><span>1</span>客人</div><p class="hint">名字、男女；要跟別人一起請款的，在「併給」選付錢的人。</p>
       <div id="guests"></div><button class="add" id="add" type="button">＋ 加一位</button>
       <div class="chips mem" id="members"></div></section>
-    <section><div class="step"><span>2</span>小姐坐誰</div><p class="hint">每位小姐點她坐的客人。</p><div id="hostess"></div></section>
-    <section><div class="step"><span>3</span>公費誰分</div><p class="hint">預設全部平分；沒份的人點掉。</p><div id="shared"></div>
+    <section><div class="step"><span>2</span>小姐坐誰</div><p class="hint">點要付這位小姐的人；點好幾位就平分，或按「全部平分」。</p><div id="hostess"></div></section>
+    <section><div class="step"><span>3</span>公費誰分</div><p class="hint">預設全部平分；只有部分人付的，直接點要付的人。</p><div id="shared"></div>
       ${state.free.length ? `<div class="free">招待：${state.free.map(esc).join("、")}</div>` : ""}</section>
     <section><div class="step"><span>4</span>試算</div><div class="card" id="preview"></div></section>
   </main>
@@ -97,13 +97,13 @@ async function liffInit() {
 }
 const backToChat = () => { try { if (window.liff && liff.isInClient && liff.isInClient()) { liff.closeWindow(); return true; } } catch (e) {} return false; };
 const KEY = "split-form-" + S.id;
-try { const sv = JSON.parse(localStorage.getItem(KEY) || "null"); if (sv && sv.guests && !S.done) Object.assign(S, { guests: sv.guests, next: sv.next, hostess: S.hostess.map(h => ({ ...h, ...(sv.h?.[h.id] && typeof sv.h[h.id] === "object" ? sv.h[h.id] : { g: sv.h?.[h.id] ?? h.g }) })), shared: S.shared.map(s => ({ ...s, who: sv.s && s.id in sv.s ? sv.s[s.id] : s.who })) }); } catch (e) {}
+try { const sv = JSON.parse(localStorage.getItem(KEY) || "null"); if (sv && sv.guests && !S.done) Object.assign(S, { guests: sv.guests, next: sv.next, hostess: S.hostess.map(h => ({ ...h, ...(sv.h?.[h.id] && typeof sv.h[h.id] === "object" && Array.isArray(sv.h[h.id].w) ? { mode: sv.h[h.id].mode === "seg" ? "seg" : "pick", w: sv.h[h.id].mode === "one" ? (sv.h[h.id].g ? [sv.h[h.id].g] : []) : sv.h[h.id].w, segs: sv.h[h.id].segs || [] } : {}) })), shared: S.shared.map(s => ({ ...s, who: sv.s && s.id in sv.s ? sv.s[s.id] : s.who })) }); } catch (e) {}
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const fmt = n => Math.round(n).toLocaleString("en-US");
 const named = () => S.guests.filter(g => g.name.trim());
 // 小姐分給誰：one＝一位、even＝多人平分、seg＝分段（每段節數＋誰），回傳 [{u, w}]
-const hsegs = h => { const ok = k => named().some(g => g.k === k); return h.mode === "seg" ? h.segs.map(sg => ({ u: +sg.u || 0, w: sg.w.filter(ok) })) : h.mode === "even" ? [{ u: 1, w: h.w.filter(ok) }] : [{ u: 1, w: ok(h.g) ? [h.g] : [] }]; };
+const hsegs = h => { const ok = k => named().some(g => g.k === k); return h.mode === "seg" ? h.segs.map(sg => ({ u: +sg.u || 0, w: sg.w.filter(ok) })) : [{ u: 1, w: h.w.filter(ok) }]; };
 const hDone = h => { const sg = hsegs(h); return sg.length && sg.every(x => x.w.length && x.u > 0); };
 function persist() { try { localStorage.setItem(KEY, JSON.stringify({ guests: S.guests, next: S.next, h: Object.fromEntries(S.hostess.map(h => [h.id, { g: h.g, mode: h.mode, w: h.w, segs: h.segs }])), s: Object.fromEntries(S.shared.map(s => [s.id, s.who])) })); } catch (e) {} }
 
@@ -124,15 +124,13 @@ function derived() {
   const pick = (sel, on) => ns.length ? ns.map(g => \`<button type="button" class="pill \${on(g) ? "on" : ""}" \${sel}="\${g.k}">\${esc(g.name)}</button>\`).join("") : '<span class="muted">先在上面填客人名字</span>';
   $("#hostess").innerHTML = S.hostess.map(h => {
     const tog = (sel, list) => pick(sel, g => list.includes(g.k));
-    const body = h.mode === "seg" ? h.segs.map((sg, i) => \`<div class="segrow"><label class="u"><input type="number" inputmode="numeric" min="1" data-hu="\${h.id}" data-i="\${i}" value="\${sg.u || ""}" placeholder="節">節</label><div class="pills" data-h="\${h.id}" data-i="\${i}">\${tog("data-hs", sg.w)}</div>\${h.segs.length > 1 ? \`<button type="button" class="del sm" data-hdel="\${h.id}" data-i="\${i}" aria-label="刪除這段">×</button>\` : ""}</div>\`).join("") + \`<div class="segfoot">\${h.units ? \`帳單 \${h.units} 節，已填 \${h.segs.reduce((a, x) => a + (+x.u || 0), 0)} 節\` : ""}<button type="button" class="reset" data-hadd="\${h.id}">＋ 加一段</button></div>\`
-      : h.mode === "even" ? \`<div class="pills" data-h="\${h.id}">\${tog("data-he", h.w)}<button type="button" class="reset" data-hall="\${h.id}">全部</button></div>\`
-      : \`<div class="pills" data-h="\${h.id}">\${pick("data-hg", g => h.g === g.k)}</div>\`;
-    const modes = [["one", "一位"], ["even", "多人平分"], ["seg", "分段"]].map(([m, t]) => \`<button type="button" class="\${h.mode === m ? "on" : ""}" data-hm="\${m}" data-h="\${h.id}">\${t}</button>\`).join("");
+    const body = h.mode === "seg" ? h.segs.map((sg, i) => \`<div class="segrow"><label class="u"><input type="number" inputmode="numeric" min="1" data-hu="\${h.id}" data-i="\${i}" value="\${sg.u || ""}" placeholder="節">節</label><div class="pills" data-h="\${h.id}" data-i="\${i}">\${tog("data-hs", sg.w)}</div>\${h.segs.length > 1 ? \`<button type="button" class="del sm" data-hdel="\${h.id}" data-i="\${i}" aria-label="刪除這段">×</button>\` : ""}</div>\`).join("") + \`<div class="segfoot">\${h.units ? \`帳單 \${h.units} 節，已填 \${h.segs.reduce((a, x) => a + (+x.u || 0), 0)} 節\` : ""}<span><button type="button" class="reset" data-hadd="\${h.id}">＋ 加一段</button><button type="button" class="reset" data-hm="pick" data-h="\${h.id}">取消分段</button></span></div>\`
+      : \`<div class="pills" data-h="\${h.id}">\${tog("data-he", h.w)}<button type="button" class="pill all \${ns.length && ns.every(g => h.w.includes(g.k)) ? "on" : ""}" data-hall="\${h.id}">全部平分</button></div><div class="segfoot"><span>\${h.w.length > 1 ? h.w.length + " 人平分" : ""}</span><button type="button" class="reset" data-hm="seg" data-h="\${h.id}">依節數分段</button></div>\`;
     return \`<div class="item \${hDone(h) ? "" : "todo"}"><div class="ihead"><div><b>\${esc(h.name)}</b>\${h.mark ? \`<small class="mark">標記 \${esc(h.mark)}</small>\` : ""}<div class="sub">\${h.lines.map(esc).join("｜")}</div></div><div class="amt">\${fmt(h.amount)}</div></div>
-      <div class="seg hmode">\${modes}</div>\${body}</div>\`; }).join("");
+      \${body}</div>\`; }).join("");
   $("#shared").innerHTML = S.shared.map(s => { const all = !s.who; return \`
-    <div class="item"><div class="ihead"><div><b>\${esc(s.name)}</b>\${s.qty > 1 ? \`<small>\${s.qty} × \${fmt(s.price)}</small>\` : ""}<div class="sub">\${all ? "全部平分" : (s.who.filter(k => ns.some(g => g.k === k)).length + " 人分")}</div></div><div class="amt">\${fmt(s.amount)}</div></div>
-      <div class="pills" data-s="\${s.id}">\${pick("data-sg", g => all || s.who.includes(g.k))}\${!all ? '<button type="button" class="reset" data-all="' + s.id + '">全部平分</button>' : ""}</div></div>\`; }).join("");
+    <div class="item"><div class="ihead"><div><b>\${esc(s.name)}</b>\${s.qty > 1 ? \`<small>\${s.qty} × \${fmt(s.price)}</small>\` : ""}<div class="sub">\${all ? "全部平分" : (s.who.filter(k => ns.some(g => g.k === k)).length + " 人付")}</div></div><div class="amt">\${fmt(s.amount)}</div></div>
+      <div class="pills" data-s="\${s.id}">\${pick("data-sg", g => !all && s.who.includes(g.k))}<button type="button" class="pill all \${all ? "on" : ""}" data-all="\${s.id}">全部平分</button></div></div>\`; }).join("");
   preview();
   persist();
 }
@@ -169,15 +167,15 @@ document.addEventListener("click", e => {
   else if (b.id === "add") { if (S.guests.length < 12) { S.guests.push({ k: "g" + S.next++, name: "", sex: "男", to: "" }); renderGuests(); document.querySelector(\`.name[data-k="g\${S.next - 1}"]\`).focus(); } }
   else if (b.dataset.hm) { const h = S.hostess.find(x => x.id === b.dataset.h), m = b.dataset.hm; if (m === h.mode) return;
     const cur = hsegs(h).flatMap(x => x.w).filter((k, i, a) => a.indexOf(k) === i);
-    if (m === "one") h.g = cur[0] || ""; else if (m === "even") h.w = cur; else h.segs = [{ u: h.units || 0, w: cur }];
+    if (m === "pick") h.w = cur; else h.segs = [{ u: h.units || 0, w: cur }];
     h.mode = m; derived(); }
   else if (b.dataset.he) { const h = S.hostess.find(x => x.id === b.closest(".pills").dataset.h), k = b.dataset.he; h.w = h.w.includes(k) ? h.w.filter(x => x !== k) : [...h.w, k]; derived(); }
-  else if (b.dataset.hall) { S.hostess.find(x => x.id === b.dataset.hall).w = named().map(g => g.k); derived(); }
+  else if (b.dataset.hall) { const h = S.hostess.find(x => x.id === b.dataset.hall), all = named().map(g => g.k); h.w = all.every(k => h.w.includes(k)) ? [] : all; derived(); }
   else if (b.dataset.hs) { const p = b.closest(".pills"), h = S.hostess.find(x => x.id === p.dataset.h), sg = h.segs[+p.dataset.i], k = b.dataset.hs; sg.w = sg.w.includes(k) ? sg.w.filter(x => x !== k) : [...sg.w, k]; derived(); }
   else if (b.dataset.hadd) { const h = S.hostess.find(x => x.id === b.dataset.hadd), used = h.segs.reduce((a, x) => a + (+x.u || 0), 0); h.segs.push({ u: h.units > used ? h.units - used : 0, w: [] }); derived(); }
   else if (b.dataset.hdel) { const h = S.hostess.find(x => x.id === b.dataset.hdel); h.segs.splice(+b.dataset.i, 1); derived(); }
-  else if (b.dataset.hg) { const h = S.hostess.find(x => x.id === b.closest(".pills").dataset.h); h.g = b.dataset.hg; derived(); }
-  else if (b.dataset.sg) { const s = S.shared.find(x => x.id === b.closest(".pills").dataset.s), all = named().map(g => g.k), cur = s.who || all, k = b.dataset.sg; let nx = cur.includes(k) ? cur.filter(x => x !== k) : [...cur, k]; if (!nx.length) { toast("至少要有一個人分"); return; } s.who = all.every(x => nx.includes(x)) ? null : nx; derived(); }
+
+  else if (b.dataset.sg) { const s = S.shared.find(x => x.id === b.closest(".pills").dataset.s), all = named().map(g => g.k), k = b.dataset.sg; const cur = s.who || []; const nx = cur.includes(k) ? cur.filter(x => x !== k) : [...cur, k]; s.who = !nx.length || all.every(x => nx.includes(x)) ? null : nx; derived(); }
   else if (b.dataset.all) { S.shared.find(x => x.id === b.dataset.all).who = null; derived(); }
   else if (b.id === "send") send();
 });
@@ -185,7 +183,7 @@ async function send() {
   const ns = named(), name = k => (S.guests.find(g => g.k === k) || {}).name?.trim() || "";
   if (S.done && !confirm("這張已經結算過，要用新的內容更正嗎？群組會再貼一次請款單。")) return;
   $("#send").disabled = true; $("#send").textContent = "結算中…";
-  const body = { idToken: TOKEN, guests: ns.map(g => ({ name: g.name.trim(), sex: g.sex, to: name(g.to) })), hostess: Object.fromEntries(S.hostess.map(h => [h.id, h.mode === "one" ? name(h.g) : h.mode === "even" ? { even: h.w.map(name).filter(Boolean) } : { segs: h.segs.map(sg => ({ u: +sg.u || 0, who: sg.w.map(name).filter(Boolean) })) }])), shared: Object.fromEntries(S.shared.filter(s => s.who).map(s => [s.id, s.who.map(name).filter(Boolean)])) };
+  const body = { idToken: TOKEN, guests: ns.map(g => ({ name: g.name.trim(), sex: g.sex, to: name(g.to) })), hostess: Object.fromEntries(S.hostess.map(h => [h.id, h.mode === "pick" ? (h.w.length === 1 ? name(h.w[0]) : { even: h.w.map(name).filter(Boolean) }) : { segs: h.segs.map(sg => ({ u: +sg.u || 0, who: sg.w.map(name).filter(Boolean) })) }])), shared: Object.fromEntries(S.shared.filter(s => s.who).map(s => [s.id, s.who.map(name).filter(Boolean)])) };
   try {
     const r = await fetch(location.href, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json(); if (!r.ok) throw new Error(j.error || "送出失敗");
@@ -242,7 +240,7 @@ main{max-width:560px;margin:0 auto;padding:4px 16px 20px}section{margin-top:22px
 .sum{flex:1;font-size:14px;color:var(--brand);font-weight:600}.sum.bad{color:var(--warn);font-weight:500}
 #send{border:0;background:var(--brand);color:#fff;font-weight:700;padding:12px 24px;border-radius:12px}#send:disabled{opacity:.45}
 .done{text-align:center;padding:48px 20px;max-width:520px;margin:0 auto}.ok{width:64px;height:64px;border-radius:32px;background:var(--brand);color:#fff;font-size:34px;line-height:64px;margin:0 auto 14px}
-.hmode{display:inline-flex;margin:8px 0 6px}.hmode button{font-size:13px;padding:4px 12px}.segrow{display:flex;align-items:flex-start;gap:8px;margin:8px 0;padding-top:8px;border-top:1px dashed var(--line)}.segrow .u{display:flex;align-items:center;gap:4px;font-size:14px;color:var(--sub);flex:none}.segrow .u input{width:56px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:var(--card);color:var(--ink)}.segrow .pills{flex:1;margin:0}.del.sm{width:28px;height:28px;font-size:16px}.segfoot{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub);margin-top:4px}
+.pill.all{border-style:dashed}.pill.all.on{border-style:solid}.segrow{display:flex;align-items:flex-start;gap:8px;margin:8px 0;padding-top:8px;border-top:1px dashed var(--line)}.segrow .u{display:flex;align-items:center;gap:4px;font-size:14px;color:var(--sub);flex:none}.segrow .u input{width:56px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:var(--card);color:var(--ink)}.segrow .pills{flex:1;margin:0}.del.sm{width:28px;height:28px;font-size:16px}.segfoot{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub);margin-top:4px}
 .done h2{font-size:21px;margin:0 0 6px}.done .back{display:inline-block;margin-top:14px;padding:12px 28px;border-radius:24px;background:var(--brand);color:#fff;text-decoration:none;font-weight:700}.done p{color:var(--sub);margin:6px 0}.done .list{text-align:left;margin-top:18px}.small{font-size:13px}
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1F2937;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#toast.show{opacity:1}
 .empty{text-align:center;color:var(--sub);padding:80px 0}
