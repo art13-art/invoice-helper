@@ -1,0 +1,46 @@
+# 每日全站檢查：不用 Claude，免費。結果寫進 issue「每日全站檢查」：
+#   正常 → 只更新 issue 內文（不發通知）；有問題 → 加一則留言（會寄 Email 通知）
+# 每日營運簡報會讀這個 issue。
+name: 每日全站檢查
+on:
+  schedule:
+    - cron: "17 22 * * *"   # 台北 06:17
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/sitecheck.yml", "scripts/sitecheck.py"]
+permissions:
+  contents: read
+  issues: write
+concurrency: { group: sitecheck, cancel-in-progress: true }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install playwright==1.48.0 && python -m playwright install --with-deps chromium
+      - id: run
+        run: python scripts/sitecheck.py
+        continue-on-error: true
+        env: { BASE: "https://taxtools.tw" }
+      - name: 回報到 issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FAILED: ${{ steps.run.outcome == 'failure' }}
+        run: |
+          [ -f report.md ] || echo "# 每日全站檢查：腳本沒有產生報告，請看 Actions 紀錄" > report.md
+          echo "" >> report.md
+          echo "[執行紀錄](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> report.md
+          n=$(gh issue list --state open --search "每日全站檢查 in:title" --json number --jq '.[0].number')
+          if [ -z "$n" ]; then
+            gh issue create --title "每日全站檢查" --body-file report.md
+          else
+            gh issue edit "$n" --body-file report.md
+            if [ "$FAILED" = "true" ]; then gh issue comment "$n" --body-file report.md; fi
+          fi
+      - if: steps.run.outcome == 'failure'
+        run: exit 1
