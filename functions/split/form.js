@@ -3,6 +3,15 @@
 import { kv, isGroup } from "../../lib/assistant.js";
 import { loadSplit, finishForm, fmt } from "../../lib/split.js";
 import { lineClient } from "../../lib/line.js";
+import { isAdmin } from "../../lib/books.js";
+
+/* LINE 內嵌視窗的身分：用 ID token 跟 LINE 確認是誰（頻道 ID＝LIFF ID 前半段） */
+async function lineUser(env, idToken, liff) {
+  if (!idToken || !liff) return null;
+  const r = await fetch("https://api.line.me/oauth2/v2.1/verify", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ id_token: idToken, client_id: liff.split("-")[0] }) }).catch(() => null);
+  const j = r && r.ok ? await r.json().catch(() => null) : null;
+  return j?.sub || null;
+}
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 async function who(request, env) {
@@ -15,11 +24,22 @@ export async function onRequestPost({ request, env, waitUntil }) {
   const { chatId, id, origin } = await who(request, env);
   if (!chatId) return Response.json({ error: "連結不對或已失效" }, { status: 404 });
   let body = {}; try { body = await request.json(); } catch (e) {}
+  // 有設定內嵌視窗：只有管理員（Ben）能送出；check＝打開時先問「我能不能送」
+  const liff = await kv.get(env.DB, "liff:split");
+  if (liff) {
+    const uid = await lineUser(env, body.idToken, liff);
+    const ok = !!uid && (await isAdmin(env.DB, uid));
+    if (body.check) return Response.json({ admin: ok });
+    if (!ok) return Response.json({ error: uid ? "只有 Ben 能送出拆帳" : "請從 LINE 裡的按鈕打開表單" }, { status: 403 });
+  } else if (body.check) return Response.json({ admin: true });
   const r = await finishForm(env, env.DB, lineClient(env.LINE_CHANNEL_TOKEN || ""), { chatId, id, body, origin, defer: typeof waitUntil === "function" ? p => waitUntil(p) : null });
   return Response.json(r, { status: r.error ? 400 : 200 });
 }
 
 export async function onRequestGet({ request, env }) {
+  // 從 liff.line.me 打開時，第一次會帶 liff.state（原本的 ?t=…&id=…），轉回正常網址
+  const st = new URL(request.url).searchParams.get("liff.state");
+  if (st && !new URL(request.url).searchParams.get("t")) { const u = new URL(request.url); return Response.redirect(u.origin + u.pathname + (st.startsWith("?") ? st : st.replace(/^[^?]*/, "")), 302); }
   const { chatId, id } = await who(request, env);
   const r = chatId ? await loadSplit(env.DB, id) : null;
   if (!r || r.chat_id !== chatId) return html("找不到", `<div class="empty">連結不對或已失效。</div>`, 404);
@@ -36,6 +56,7 @@ export async function onRequestGet({ request, env }) {
     if (!guests.length) guests = [{ k: "g0", name: "", sex: "男", to: "" }];
   }
   const state = {
+    liff: (await kv.get(env.DB, "liff:split")) || "",
     id: r.id, done: r.status === "done", cash: d.cash, back: isGroup(chatId) ? "https://line.me/R/nv/chat" : "https://line.me/R/oaMessage/" + encodeURIComponent(env.LINE_OA_ID || "@249owrao"),
     guests, next: guests.length,
     hostess: d.hostess.map(h => ({ id: h.id, name: h.name, amount: h.amount, mark: h.mark || "", lines: h.lines.map(l => [l.type, l.time, l.units ? l.units + " 節" : ""].filter(Boolean).join(" ")), g: h.guest || "" })),
@@ -61,6 +82,19 @@ export async function onRequestGet({ request, env }) {
   <div class="done" id="done" hidden></div>
 <script>
 const S = ${JSON.stringify(state).replace(/</g, "\\u003c")};
+let TOKEN = "";
+async function liffInit() {
+  if (!S.liff || !window.liff) return;
+  try {
+    await liff.init({ liffId: S.liff });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    TOKEN = liff.getIDToken() || "";
+    const r = await fetch(location.href, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ check: true, idToken: TOKEN }) });
+    const j = await r.json().catch(() => ({}));
+    if (!j.admin) { $("#send").disabled = true; $("#send").textContent = "只有 Ben 能送出"; $("#bar").classList.add("ro"); }
+  } catch (e) { console.log("liff", e); }
+}
+const backToChat = () => { try { if (window.liff && liff.isInClient && liff.isInClient()) { liff.closeWindow(); return true; } } catch (e) {} return false; };
 const KEY = "split-form-" + S.id;
 try { const sv = JSON.parse(localStorage.getItem(KEY) || "null"); if (sv && sv.guests && !S.done) Object.assign(S, { guests: sv.guests, next: sv.next, hostess: S.hostess.map(h => ({ ...h, g: sv.h?.[h.id] ?? h.g })), shared: S.shared.map(s => ({ ...s, who: sv.s && s.id in sv.s ? sv.s[s.id] : s.who })) }); } catch (e) {}
 const $ = s => document.querySelector(s);
@@ -133,27 +167,27 @@ async function send() {
   const ns = named(), name = k => (S.guests.find(g => g.k === k) || {}).name?.trim() || "";
   if (S.done && !confirm("這張已經結算過，要用新的內容更正嗎？群組會再貼一次請款單。")) return;
   $("#send").disabled = true; $("#send").textContent = "結算中…";
-  const body = { guests: ns.map(g => ({ name: g.name.trim(), sex: g.sex, to: name(g.to) })), hostess: Object.fromEntries(S.hostess.map(h => [h.id, name(h.g)])), shared: Object.fromEntries(S.shared.filter(s => s.who).map(s => [s.id, s.who.map(name).filter(Boolean)])) };
+  const body = { idToken: TOKEN, guests: ns.map(g => ({ name: g.name.trim(), sex: g.sex, to: name(g.to) })), hostess: Object.fromEntries(S.hostess.map(h => [h.id, name(h.g)])), shared: Object.fromEntries(S.shared.filter(s => s.who).map(s => [s.id, s.who.map(name).filter(Boolean)])) };
   try {
     const r = await fetch(location.href, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json(); if (!r.ok) throw new Error(j.error || "送出失敗");
     try { localStorage.removeItem(KEY); } catch (e) {}
     // 送出成功：直接回 LINE 對話，請款卡會貼在聊天室
     $("#app").hidden = true; $("#bar").hidden = true;
-    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>請款卡會貼在聊天室。</p><p><a class="back" href="\${S.back}">回到 LINE</a></p>\`;
+    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>請款卡會貼在聊天室。</p><p><a class="back" href="\${S.back}" onclick="if (backToChat()) return false">回到 LINE</a></p>\`;
     $("#done").hidden = false; window.scrollTo(0, 0);
-    try { window.close(); } catch (e) {}
-    setTimeout(() => location.replace(S.back), 300);
+    if (!backToChat()) { try { window.close(); } catch (e) {} }
   } catch (e) { toast(e.message); $("#send").disabled = false; $("#send").textContent = "送出結算"; }
 }
 function toast(t) { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; document.body.appendChild(el); } el.textContent = t; el.className = "show"; setTimeout(() => el.className = "", 2600); }
 renderGuests();
+liffInit();
 </script>`);
 }
 
 function html(title, body, status = 200) {
   return new Response(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<meta name="robots" content="noindex"><title>${esc(title)}</title><style>
+<meta name="robots" content="noindex"><script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script><title>${esc(title)}</title><style>
 :root{--brand:#12524F;--soft:#EEF2F1;--ink:#1F2937;--sub:#6B7280;--line:#E5E7EB;--bg:#F6F8F7;--card:#FFFFFF;--accent:#F28C28;--warn:#B45309}
 @media (prefers-color-scheme:dark){:root{--soft:#1E2B2A;--ink:#E8EEED;--sub:#9AA8A6;--line:#2A3735;--bg:#0F1716;--card:#16201F}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:100px}

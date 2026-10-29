@@ -25,7 +25,8 @@ const BILL = { store: "威仕登", bill_no: "61020010[005-1]", date: "10/20", gu
 let isBill = true, guestsAnswer = null; const claudeCalls = [];
 const calls = [];
 globalThis.fetch = async (url, init = {}) => {
-  const u = String(url), body = init.body ? JSON.parse(init.body) : null; calls.push({ url: u, body });
+  const u = String(url), body = typeof init.body === "string" ? JSON.parse(init.body) : null; calls.push({ url: u, body });
+  if (u.includes("oauth2/v2.1/verify")) { const tk = new URLSearchParams(String(init.body)).get("id_token"); return tk === "bad" ? new Response("{}", { status: 400 }) : new Response(JSON.stringify({ sub: tk }), { status: 200 }); }
   if (u.includes("api.anthropic.com")) {
     claudeCalls.push(body.model + ":" + body.system.slice(0, 12));
     const txt = /是不是消費帳單/.test(body.system) ? JSON.stringify({ bill: isBill, bill_no: isBill ? "61020010[005-1]" : "" })
@@ -156,4 +157,20 @@ t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /請填寫�
 isBill = true; claudeCalls.length = 0;
 await send({ type: "message", source: { type: "user", userId: "U_ben" }, message: { type: "image", id: "dm1" } });
 t(/如要拆單服務/.test(replies()[0]?.altText || "") && claudeCalls.filter(c => /sonnet/.test(c)).length === 1 && sq.prepare("SELECT count(*) n FROM line_splits WHERE chat_id='U_ben'").get().n === 1, "DM bill → form " + JSON.stringify(replies()).slice(0, 150));
+// 12. 內嵌視窗：只有 Ben 能送；按鈕改成 liff.line.me；liff.state 轉址
+sq.prepare("INSERT INTO line_kv VALUES('liff:split','2012283214-XTQGE9lq')").run();
+const pl = body => fm.onRequestPost({ request: new Request(furl, { method: "POST", body: JSON.stringify(body) }), env });
+t((await (await pl({ check: true, idToken: "U_ben" })).json()).admin === true && (await (await pl({ check: true, idToken: "U_andy" })).json()).admin === false, "check admin via token");
+fr = await pl({ idToken: "U_andy", guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
+t(fr.status === 403 && /只有 Ben/.test((await fr.json()).error), "non-admin blocked");
+fr = await pl({ guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
+t(fr.status === 403, "no token blocked");
+fr = await pl({ idToken: "U_ben", guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
+t(fr.status === 200, "Ben can submit");
+const lk = await S.formLink(db, "https://x.dev", G, sid);
+t(lk.startsWith("https://liff.line.me/2012283214-XTQGE9lq?t="), "liff link " + lk);
+fr = await fm.onRequestGet({ request: new Request("https://x.dev/split/form?liff.state=" + encodeURIComponent("?t=" + tok0 + "&id=" + sid)), env });
+t(fr.status === 302 && fr.headers.get("location") === furl, "liff.state redirect " + fr.headers.get("location"));
+fh = await (await fm.onRequestGet({ request: new Request(furl), env })).text();
+t(/liff\/edge\/2\/sdk\.js/.test(fh) && /"liff":"2012283214-XTQGE9lq"/.test(fh), "form loads LIFF");
 console.log(`${ok} passed, ${bad} failed`);

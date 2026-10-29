@@ -4,7 +4,7 @@ import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
-import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken } from "../../../lib/split.js";
+import { splitOn, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink } from "../../../lib/split.js";
 import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -253,7 +253,7 @@ async function handle(env, ev, origin) {
       const sp = await openSplit(db, chatId);
       if (sp) {
         const adm = await adminFor(env, db, chatId).catch(() => null);
-        return line.reply(ev.replyToken, askMessages(sp, adm?.inChat ? adm.id : null, false, `${origin}/split/form?t=${await splitToken(db, chatId)}&id=${sp.id}`)).catch(e => console.log("ask reply failed", e.message));
+        return line.reply(ev.replyToken, askMessages(sp, adm?.inChat ? adm.id : null, false, await formLink(db, origin, chatId, sp.id))).catch(e => console.log("ask reply failed", e.message));
       }
       const { results } = await db.prepare("SELECT media FROM line_msgs WHERE chat_id=? AND media IS NOT NULL AND media NOT LIKE '%:%' AND ts>? ORDER BY id DESC LIMIT 2").bind(chatId, Date.now() - 15 * 60e3).all();
       ids.push(...results.map(r => r.media).reverse());
@@ -301,7 +301,7 @@ async function billReply(env, db, line, ev, chatId, userId, imgs, billNo, origin
   try { r = await startSplit(env, db, { chatId, userId, imgs, billNo }); }
   catch (e) { console.log("split failed", e.message); r = { error: "帳單讀取失敗，等一下再試一次。" }; }
   const adm = await adminFor(env, db, chatId).catch(() => null);
-  const formUrl = !r.error && origin ? `${origin}/split/form?t=${await splitToken(db, chatId)}&id=${r.split.id}` : null;
+  const formUrl = !r.error ? (await formLink(db, origin, chatId, r.split.id)) || null : null;
   const msgs = r.error ? [textMessage(r.error)] : askMessages(r.split, adm?.inChat ? adm.id : null, r.merged, formUrl);
   await line.reply(ev.replyToken, msgs).catch(async e => {
     console.log("bill reply failed, pushing", e.message);
