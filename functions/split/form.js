@@ -150,7 +150,7 @@ function calc() {
 function preview() {
   const r = calc(), ns = named(), un = S.hostess.filter(h => !hDone(h)).length;
   $("#preview").innerHTML = r.payers.length ? r.payers.map(p => { const me = r.people.find(x => x.k === p.k); return \`
-    <div class="payer"><div class="ptop"><b>\${esc(p.name)}</b><span>$\${fmt(p.total)}</span></div><div class="sub">小姐 \${fmt(me.h)}｜公費 \${fmt(me.total - Math.round(me.h))}</div>
+    <div class="payer"><div class="ptop"><b>\${esc(p.name)}</b><span>$\${fmt(p.total)}</span></div>\${p.inc.length ? \`<div class="inc me">\${esc(me.name)}（本人） $\${fmt(me.total)}</div>\` : ""}<div class="sub">小姐 \${fmt(me.h)}｜公費 \${fmt(me.total - Math.round(me.h))}</div>
     \${p.inc.map(x => \`<div class="inc">＋ 含 \${esc(x.name)} $\${fmt(x.total)}</div>\`).join("")}</div>\`; }).join("") : '<div class="muted">填好客人就會出現試算</div>';
   const dups = ns.map(g => g.name.trim()).filter((n, i, a) => a.indexOf(n) !== i);
   const msg = !ns.length ? "先填客人" : dups.length ? "名字重複：" + dups[0] : un ? \`還有 \${un} 位小姐沒選客人\` : \`合計 $\${fmt(r.target)}\` + (r.target !== S.cash ? \`（帳單 $\${fmt(S.cash)}）\` : " ✓");
@@ -240,7 +240,7 @@ main{max-width:560px;margin:0 auto;padding:4px 16px 20px}section{margin-top:22px
 .sum{flex:1;font-size:14px;color:var(--brand);font-weight:600}.sum.bad{color:var(--warn);font-weight:500}
 #send{border:0;background:var(--brand);color:#fff;font-weight:700;padding:12px 24px;border-radius:12px}#send:disabled{opacity:.45}
 .done{text-align:center;padding:48px 20px;max-width:520px;margin:0 auto}.ok{width:64px;height:64px;border-radius:32px;background:var(--brand);color:#fff;font-size:34px;line-height:64px;margin:0 auto 14px}
-.pill.all{border-style:dashed}.pill.all.on{border-style:solid}.segrow{display:flex;align-items:flex-start;gap:8px;margin:8px 0;padding-top:8px;border-top:1px dashed var(--line)}.segrow .u{display:flex;align-items:center;gap:4px;font-size:14px;color:var(--sub);flex:none}.segrow .u input{width:56px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:var(--card);color:var(--ink)}.segrow .pills{flex:1;margin:0}.del.sm{width:28px;height:28px;font-size:16px}.segfoot{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub);margin-top:4px}
+.inc.me{color:var(--ink);font-weight:600}.pill.all{border-style:dashed}.pill.all.on{border-style:solid}.segrow{display:flex;align-items:flex-start;gap:8px;margin:8px 0;padding-top:8px;border-top:1px dashed var(--line)}.segrow .u{display:flex;align-items:center;gap:4px;font-size:14px;color:var(--sub);flex:none}.segrow .u input{width:56px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:var(--card);color:var(--ink)}.segrow .pills{flex:1;margin:0}.del.sm{width:28px;height:28px;font-size:16px}.segfoot{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--sub);margin-top:4px}
 .done h2{font-size:21px;margin:0 0 6px}.done .back{display:inline-block;margin-top:14px;padding:12px 28px;border-radius:24px;background:var(--brand);color:#fff;text-decoration:none;font-weight:700}.done p{color:var(--sub);margin:6px 0}.done .list{text-align:left;margin-top:18px}.small{font-size:13px}
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1F2937;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#toast.show{opacity:1}
 .empty{text-align:center;color:var(--sub);padding:80px 0}
