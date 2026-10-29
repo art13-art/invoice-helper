@@ -23,19 +23,25 @@
   const foot=document.querySelector(".site-foot");
   if(foot&&!document.querySelector(".foot-links")){
     const p=document.createElement("p"); p.className="foot-links";
-    p.innerHTML=`<a href="/">所有工具</a><a href="/guide/">報稅解答</a><a href="/embed/">嵌入到你的網站</a><a href="#" data-feedback>意見回饋</a><a href="/privacy/">隱私權政策與使用條款</a><span>非政府官方網站</span>`;
+    p.innerHTML=`<a href="/">所有工具</a><a href="/guide/">報稅解答</a><a href="/rates/">數字速查</a><a href="/embed/">嵌入到你的網站</a><a href="#" data-feedback>意見回饋</a><a href="/about/">關於本站</a><a href="/privacy/">隱私權政策與使用條款</a><span>非政府官方網站</span>`;
     foot.after(p);
   }
   if(/^\/admin\b/.test(here)) return;
 
   // 匿名瀏覽統計：只記哪一頁、從哪個網站來、手機或電腦；不用 Cookie、不存 IP
+  // 廣告來源：網址帶 utm_source／utm_campaign（或 gclid）時記下來，這次造訪後面的轉換事件也算給它
+  const okTrack=navigator.doNotTrack!=="1"&&!/^(localhost|127\.)/.test(location.hostname);
+  const beacon=o=>{ const body=JSON.stringify(o);
+    if(!(navigator.sendBeacon&&navigator.sendBeacon("/api/track",new Blob([body],{type:"text/plain"}))))
+      fetch("/api/track",{method:"POST",body,keepalive:true}).catch(()=>{}); };
+  let src="";
   try{
-    if(navigator.doNotTrack!=="1"&&!/^(localhost|127\.)/.test(location.hostname)){
-      const body=JSON.stringify({p:location.pathname,r:document.referrer||""});
-      if(!(navigator.sendBeacon&&navigator.sendBeacon("/api/track",new Blob([body],{type:"text/plain"}))))
-        fetch("/api/track",{method:"POST",body,keepalive:true}).catch(()=>{});
-    }
+    const q=new URLSearchParams(location.search), s=(q.get("utm_source")||(q.get("gclid")?"google-ads":"")).slice(0,40);
+    if(s){ src=s; sessionStorage.setItem("tt_src",s); } else src=sessionStorage.getItem("tt_src")||"";
+    if(okTrack) beacon({p:location.pathname,r:document.referrer||"",u:s?{s,c:(q.get("utm_campaign")||"").slice(0,60)}:null});
   }catch(e){}
+  // 轉換事件：頁面上呼叫 ttEvent("inquiry") 之類，只記事件名稱與來源，不記任何填寫內容
+  window.ttEvent=ev=>{ try{ if(okTrack) beacon({e:String(ev).slice(0,40),s:src}); }catch(e){} };
 
   // 意見回饋：頁首按鈕＋頁尾連結，打開同一個表單
   // 頁首右側的「意見回饋」（不用浮動按鈕，避免蓋住計算結果）

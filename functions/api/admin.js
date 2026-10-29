@@ -17,12 +17,14 @@ export async function onRequestGet({ request, env }) {
   const now = Date.now(), from = tpDay(now - (days - 1) * 864e5), today = tpDay(now);
   const all = async (q, ...b) => (await db.prepare(q).bind(...b).all()).results;
   const one = async (q, ...b) => await db.prepare(q).bind(...b).first();
-  const [views, vis, pages, refs, devs, users, newUsers, active, spaces, items, fb] = await Promise.all([
+  const [views, vis, pages, refs, devs, utm, events, users, newUsers, active, spaces, items, fb] = await Promise.all([
     all("SELECT day, SUM(n) v FROM stat_views WHERE day >= ? GROUP BY day", from),
     all("SELECT day, COUNT(*) u FROM stat_visitors WHERE day >= ? GROUP BY day", from),
     all("SELECT path, SUM(n) v FROM stat_views WHERE day >= ? GROUP BY path ORDER BY v DESC LIMIT 20", from),
     all("SELECT ref, SUM(n) v FROM stat_refs WHERE day >= ? GROUP BY ref ORDER BY v DESC LIMIT 15", from),
     all("SELECT dev, SUM(n) v FROM stat_devs WHERE day >= ? GROUP BY dev ORDER BY v DESC", from),
+    all("SELECT src || CASE WHEN camp <> '' THEN '／' || camp ELSE '' END k, SUM(n) v FROM stat_utm WHERE day >= ? GROUP BY src, camp ORDER BY v DESC LIMIT 15", from).catch(() => []),
+    all("SELECT ev || '（' || src || '）' k, SUM(n) v FROM stat_events WHERE day >= ? GROUP BY ev, src ORDER BY v DESC LIMIT 15", from).catch(() => []),
     one("SELECT COUNT(*) n FROM users"),
     all("SELECT date(created_at/1000, 'unixepoch', '+8 hours') day, COUNT(*) n FROM users WHERE created_at >= ? GROUP BY day", now - days * 864e5),
     one("SELECT COUNT(*) n FROM users WHERE last_login >= ?", now - 7 * 864e5),
@@ -39,7 +41,7 @@ export async function onRequestGet({ request, env }) {
   return json({
     days, today,
     totals: { today: { views: sum("views", 1), visitors: sum("visitors", 1) }, d7: { views: sum("views", 7), visitors: sum("visitors", 7) }, period: { views: sum("views", days), visitors: sum("visitors", days) } },
-    series, pages, refs, devs,
+    series, pages, refs, devs, utm, events,
     members: { total: users.n, active7: active.n, newInPeriod: sum("signups", days), spaces: Object.fromEntries(spaces.map(s => [s.kind, s.n])), items: items?.n ?? null },
     feedback: fb,
   });

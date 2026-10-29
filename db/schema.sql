@@ -63,6 +63,10 @@ CREATE INDEX IF NOT EXISTS history_item ON history(space_id, item_id, at);
 -- 網站流量（不用 Cookie、不存 IP；每日訪客只存當天加鹽雜湊，90 天後刪除）與意見回饋
 CREATE TABLE IF NOT EXISTS stat_views (day TEXT NOT NULL, path TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, path));
 CREATE TABLE IF NOT EXISTS stat_refs (day TEXT NOT NULL, ref TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ref));
+-- 廣告來源：網址帶 utm_source／utm_campaign（或 Google 廣告的 gclid）進站的次數
+CREATE TABLE IF NOT EXISTS stat_utm (day TEXT NOT NULL, src TEXT NOT NULL, camp TEXT NOT NULL DEFAULT '', n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, src, camp));
+-- 轉換事件（例如送出詢問表單），src＝這次造訪的來源（utm、來源網站或 direct）
+CREATE TABLE IF NOT EXISTS stat_events (day TEXT NOT NULL, ev TEXT NOT NULL, src TEXT NOT NULL DEFAULT '', n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ev, src));
 CREATE TABLE IF NOT EXISTS stat_devs (day TEXT NOT NULL, dev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, dev));
 CREATE TABLE IF NOT EXISTS stat_visitors (day TEXT NOT NULL, h TEXT NOT NULL, PRIMARY KEY (day, h));
 CREATE TABLE IF NOT EXISTS feedback (

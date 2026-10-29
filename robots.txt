@@ -1,6 +1,153 @@
-User-agent: *
-Disallow: /admin/
+# 稅務小工具 taxtools.tw：歡迎搜尋引擎、AI 搜尋與 AI 助理讀取公開內容，引用時請附原文連結。
+# 網站摘要：https://taxtools.tw/llms.txt　文章全文：https://taxtools.tw/llms-full.txt　稅率資料：https://taxtools.tw/rates.json
+
+User-agent: Googlebot
 Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Applebot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: Meta-ExternalAgent
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: CCBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /scripts/
+Disallow: /lib/
+Disallow: /db/
+Disallow: /join/
+
+User-agent: *
+Allow: /
+Disallow: /admin/
 Disallow: /api/
 Disallow: /scripts/
 Disallow: /lib/

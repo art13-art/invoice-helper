@@ -121,10 +121,38 @@ def main():
         if not ok:
             problems.append(("/api/company", "API", f"統編查詢異常（HTTP {st}）"))
 
+    # GEO：AI 爬蟲讀不讀得到（Cloudflare 的 AI 爬蟲封鎖會回 403，或在 robots.txt 加 Disallow）
+    ai_note = "本機略過"
+    if not LOCAL:
+        blocked = []
+        for bot in ["GPTBot/1.2", "OAI-SearchBot/1.0", "ClaudeBot/1.0", "PerplexityBot/1.0", "Google-Extended"]:
+            req = urllib.request.Request(BASE + "/guide/vat-filing/", headers={"User-Agent": f"Mozilla/5.0 (compatible; {bot}; +https://example.com)"})
+            try:
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    st = r.status
+            except urllib.error.HTTPError as e:
+                st = e.code
+            except Exception:
+                st = 0
+            if st != 200:
+                blocked.append(f"{bot.split('/')[0]} HTTP {st}")
+        st, robots = fetch(BASE + "/robots.txt")
+        for bot in ["GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "OAI-SearchBot"]:
+            m = re.search(rf"User-agent:\s*{bot}\s*\n((?:(?!User-agent).*\n?)*)", robots, re.I)
+            if m and re.search(r"^Disallow:\s*/\s*$", m.group(1), re.M):
+                blocked.append(f"robots.txt 封鎖 {bot}")
+        for f in ["/llms.txt", "/llms-full.txt", "/rates.json"]:
+            if fetch(BASE + f)[0] != 200:
+                blocked.append(f"{f} 讀不到")
+        ai_note = "全部可讀" if not blocked else "；".join(blocked)
+        for b_ in blocked:
+            problems.append(("AI 爬蟲", "GEO", b_))
+
     tw = time.strftime("%Y-%m-%d %H:%M", time.gmtime(time.time() + 8 * 3600))
     lines = [f"# 每日全站檢查 {tw}（台北）", "",
              f"- 結果：{'❌ 有 ' + str(len(problems)) + ' 個問題' if problems else '✅ 全部通過'}",
              f"- 頁面：{len(urls)} 頁 × 桌機／手機；站內連結 {len(links)} 個；統編 API：{api_note}",
+             f"- AI 爬蟲：{ai_note}",
              f"- 耗時：{time.time() - t0:.0f} 秒", ""]
     if problems:
         lines += ["| 頁面 | 檢查 | 問題 |", "| --- | --- | --- |"]
