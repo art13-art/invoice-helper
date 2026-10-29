@@ -141,6 +141,14 @@ async function handle(env, ev, origin) {
       else if (msg.type === "file" && !who.optout) await record(db, chatId, userId, who.name, `［傳了檔案：${msg.fileName || "檔案"}］`, "file:" + msg.id);
       return;   // 群組裡的貼圖、照片、錄音不回應
     }
+    // 私訊（只有 Ben）傳帳單照片：跟群組一樣直接給拆帳表單，不先分析帳目
+    if (msg.type === "image" && env.ANTHROPIC_API_KEY && (await budgetLeft(env, db))) {
+      try {
+        const img = await line.content(msg.id, 4.5 * 1024 * 1024);
+        const hit = await looksLikeBill(env, db, chatId, img);
+        if (hit) { await line.loading(userId, 60).catch(() => {}); return billReply(env, db, line, ev, chatId, userId, [img], hit.bill_no, origin); }
+      } catch (e) { console.log("dm bill check", e.message); }
+    }
     if (video) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, VIDEO_ASK, "（傳了影片）", { id: msg.id, name: msg.fileName || "", video: true, duration: msg.duration, file: msg.type === "file" });
     if (audio) return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, AUDIO_ASK, "（傳了錄音）", { id: msg.id, name: msg.fileName || "", audio: true, duration: msg.duration });
     if (msg.type === "image") return answer({ env, db, line, ev, chatId, userId, userName: who.name, origin, chips }, "（使用者傳來一張照片，請說明內容；如果是文件或公文，整理重點和要注意的期限。）", "（傳了一張照片）", { id: msg.id, name: "照片.jpg" });
@@ -233,10 +241,10 @@ async function handle(env, ev, origin) {
     if (!(await isAdmin(db, userId))) return reply("拆帳設定只有 Ben 能改。");
     const on = !/關|停|取消/.test(sc);
     await kv.set(db, "split:on:" + chatId, on ? "1" : "0");
-    return reply(on ? "好，這個群組開啟拆帳：之後貼帳單照片，我會自動讀，再 @Ben 問人名。" : "好，這個群組關閉自動拆帳。要拆還是可以回覆帳單照片 @我 說「拆帳」。");
+    return reply(on ? "好，這個群組開啟拆帳：之後貼帳單照片，我會直接附拆帳表單。" : "好，這個群組關閉自動拆帳。要拆還是可以回覆帳單照片 @我 說「拆帳」。");
   }
-  if (group && /^(拆帳|分帳)(紀錄|記錄|明細|網頁)$/.test(sc)) return reply(`這個群組的拆帳紀錄：\n${origin}/split?t=${await splitToken(db, chatId)}`);
-  if (group && /^(拆帳|拆單|分帳|拆這張|拆一下|算一下|拆帳單|這張拆帳)$/.test(sc)) {
+  if (/^(拆帳|分帳)(紀錄|記錄|明細|網頁)$/.test(sc)) return reply(`${group ? "這個群組" : "私訊"}的拆帳紀錄：\n${origin}/split?t=${await splitToken(db, chatId)}`);
+  if (/^(拆帳|拆單|分帳|拆這張|拆一下|算一下|拆帳單|這張拆帳)$/.test(sc)) {
     // 回覆某張照片，或抓最近 15 分鐘的照片（最多 2 張，同一張單的明細＋結帳單）
     const ids = [];
     if (msg.quotedMessageId) ids.push(msg.quotedMessageId);

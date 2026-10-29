@@ -151,4 +151,8 @@ await say("U_ben", "關掉拆帳。"); t(sq.prepare("SELECT v FROM line_kv WHERE
 await photo("U_andy", "p9"); t(!claudeCalls.length, "off again");
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_andy" }, message: { type: "text", id: "q1", text: "@小幫手 拆帳", quotedMessageId: "p9", mention: { mentionees: [{ index: 0, length: 4, isSelf: true }] } } });
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /請填寫表單/.test(replies()[0]?.altText || ""), "manual 拆帳 by reply");
+// 11. 私訊（Ben）傳帳單照片：也直接給表單，不走一般分析
+isBill = true; claudeCalls.length = 0;
+await send({ type: "message", source: { type: "user", userId: "U_ben" }, message: { type: "image", id: "dm1" } });
+t(/如要拆單服務/.test(replies()[0]?.altText || "") && claudeCalls.filter(c => /sonnet/.test(c)).length === 1 && sq.prepare("SELECT count(*) n FROM line_splits WHERE chat_id='U_ben'").get().n === 1, "DM bill → form " + JSON.stringify(replies()).slice(0, 150));
 console.log(`${ok} passed, ${bad} failed`);
