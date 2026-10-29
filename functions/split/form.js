@@ -30,7 +30,8 @@ export async function onRequestGet({ request, env }) {
   if (d.guests?.length) guests = d.guests.map(g => ({ k: g.id, name: g.name, sex: g.sex || "男", to: d.merge?.[g.id] || "" }));
   else {
     const m = String(d.guests_note || "").match(/(\d+)\s*\+\s*(\d+)/), one = String(d.guests_note || "").match(/(\d+)/);
-    const men = Math.min(m ? +m[1] : one ? +one[1] : 3, 12), women = Math.min(m ? +m[2] : 0, 12 - men);
+    const hasAi = Number.isFinite(d.men) && d.men + (d.women || 0) > 0;
+    const men = Math.min(hasAi ? d.men : m ? +m[1] : one ? +one[1] : 3, 12), women = Math.min(hasAi ? d.women || 0 : m ? +m[2] : 0, 12 - men);
     guests = [...Array(men).fill("男"), ...Array(women).fill("女")].map((sex, i) => ({ k: "g" + i, name: "", sex, to: "" }));
     if (!guests.length) guests = [{ k: "g0", name: "", sex: "男", to: "" }];
   }

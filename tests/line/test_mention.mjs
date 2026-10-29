@@ -114,9 +114,10 @@ t(p.length === 1 && Object.keys(p[0].body.messages[0].substitution).length === 1
 // 詳細分析按鈕
 await sayG("U_amy", "這個標題好嗎");
 let qr = lastMsgs.at(-1).quickReply?.items?.map(i => i.action.text) || [];
-t(qr.includes("/詳細分析"), "chip shown " + JSON.stringify(qr));
-reply = "好。"; await sayG("U_amy", "收到"); qr = lastMsgs.at(-1).quickReply?.items?.map(i => i.action.text) || [];
-t(!qr.includes("/詳細分析"), "no chip on short reply");
+t(!qr.includes("/詳細分析"), "no chip on ordinary long answer " + JSON.stringify(qr));
+reply = "這三家各有優缺點，簡單說 A 最穩。\n〔可詳細〕"; await sayG("U_amy", "比較一下這三家的策略");
+qr = lastMsgs.at(-1).quickReply?.items?.map(i => i.action.text) || [];
+t(qr.includes("/詳細分析") && !lastMsgs.some(x => /可詳細/.test(x.text || "")), "chip only when AI marks it, marker hidden");
 reply = "這是一段比較長的回答，用來測試下面會不會出現詳細分析的按鈕，內容要超過六十個字才會出現按鈕，所以這裡多寫一些字，再多補幾句讓它超過門檻。";
 await send({ type: "message", source: { type: "group", groupId: "Cad", userId: "U_amy" }, message: { type: "text", id: "mm", text: "/詳細分析" } });
 qr = lastMsgs.at(-1).quickReply?.items?.map(i => i.action.text) || [];

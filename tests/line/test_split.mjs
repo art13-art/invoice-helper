@@ -82,14 +82,14 @@ let m = replies();
 t(claudeCalls.some(c => /sonnet/.test(c)), "sonnet reads bill");
 const bodies = calls.filter(c => c.url.includes("anthropic")).map(c => c.body);
 t(bodies.filter(b => /haiku/.test(b.model)).every(b => b.thinking?.type === "disabled") && bodies.some(b => /haiku/.test(b.model)), "haiku thinking off");
-t(m[0]?.type === "textV2" && m[0].substitution.m0.mentionee.userId === "U_ben" && /開始拆帳/.test(m[0].text), "asks Ben with mention");
-t(m[1]?.type === "flex" && JSON.stringify(m[1]).includes("108,600"), "bill card with cash total");
-t(JSON.stringify(m[1]).includes("/split/form?t=") && !JSON.stringify(m[1]).includes(":gl"), "single 開始拆帳 button");
+t(m.length === 1 && m[0]?.type === "flex" && /如要拆單服務，請填寫表單/.test(m[0].altText), "one line + form button " + JSON.stringify(m).slice(0, 200));
+t(!JSON.stringify(m).includes("108,600") && !JSON.stringify(m).includes("代支"), "no bill breakdown in chat");
+t(JSON.stringify(m[0]).includes("/split/form?t=") && JSON.stringify(m[0]).includes("填寫拆帳表單"), "form button");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 1, "split + photo saved");
 // 第二張（同單號）→ 併進同一張
 await photo("U_andy", "p3");
 t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 1 && sq.prepare("SELECT count(*) n FROM line_split_imgs").get().n === 2, "second photo merged");
-t(/第二張照片/.test(replies()[0]?.text || ""), "merged message");
+t(/第二張也讀進來了/.test(replies()[0]?.altText || ""), "merged message");
 // 「拆帳」（沒回覆照片）＝再貼一次開始拆帳卡片，不重讀
 claudeCalls.length = 0; await say("U_ben", "拆帳");
 t(!claudeCalls.length && JSON.stringify(replies()).includes("/split/form?t="), "resend start card without re-reading");
@@ -150,5 +150,5 @@ await say("U_andy", "拆帳紀錄"); t(/\/split\?t=/.test(replies()[0]?.text), "
 await say("U_ben", "關掉拆帳。"); t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "0", "disabled (關掉拆帳。)"); claudeCalls.length = 0;
 await photo("U_andy", "p9"); t(!claudeCalls.length, "off again");
 await send({ type: "message", source: { type: "group", groupId: G, userId: "U_andy" }, message: { type: "text", id: "q1", text: "@小幫手 拆帳", quotedMessageId: "p9", mention: { mentionees: [{ index: 0, length: 4, isSelf: true }] } } });
-t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /開始拆帳/.test(replies()[0]?.text || ""), "manual 拆帳 by reply");
+t(sq.prepare("SELECT count(*) n FROM line_splits").get().n === 2 && /請填寫表單/.test(replies()[0]?.altText || ""), "manual 拆帳 by reply");
 console.log(`${ok} passed, ${bad} failed`);

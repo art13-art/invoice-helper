@@ -468,8 +468,8 @@ async function answer(ctx, text, logText, attach) {
       content = [...(await toBlocks(f.bytes, f.type, attach.name)), { type: "text", text }];
     } catch (e) { return send(/讀不了|太大/.test(e.message) ? e.message : "檔案沒讀到，可能已經過期了，再傳一次？"); }
   }
-  let out, pending = null;
-  try { const r = await chat(ctx, content, logText); out = r.text + (card && !/雲端備份/.test(tail) ? "" : tail); pending = r.pending; }
+  let out, pending = null, more = false;
+  try { const r = await chat(ctx, content, logText); out = r.text + (card && !/雲端備份/.test(tail) ? "" : tail); pending = r.pending; more = !!r.more; }
   catch (e) {
     console.log("chat error", e.message);
     card = null;
@@ -477,11 +477,11 @@ async function answer(ctx, text, logText, attach) {
     out = (e.status === 401 ? "我這邊連線出了問題，暫時回不了。" : e.status === 429 || e.status === 529 ? "我這邊塞車了，過一分鐘再找我。" : "我這邊出了點狀況，等一下再找我一次。") + (tail ? "\n錄音已經轉好了，晚點叫我整理就好。" + tail : "");
   }
   let quick = pending ? [postback(pending.label, "ok:" + pending.id, "確認"), postback("✕ 取消", "no:" + pending.id, "取消")] : /(要不要|需要).{0,12}待辦.{0,8}(加入|放進|清單)|(加入|放進)待辦清單[嗎？?]/.test(out) ? [say("/加入待辦"), say("/不用")] : chips;
-  // 一般的回答下面放「詳細分析」按鈕（按了＝請它把這則展開；已經是詳細版、確認按鈕、很短的回覆就不放）
+  // 「詳細分析」按鈕：只有 AI 判斷這題值得再深入（回答最後寫了〔可詳細〕）才放；按了＝請它把這則展開
   // 存了文件：網址從文字拿掉（放進卡片）
   const docs = (ctx.savedDocs || []).slice(0, 2);
   if (docs.length) out = out.replace(/[：:]?[ \t]*\n?[ \t]*https:\/\/docs\.google\.com\/\S+/g, "").replace(/\n{3,}/g, "\n\n").trim() || "好了。";
-  if (!pending && !ctx.deep && !card && !docs.length && !ctx.groupPick && out.length > 60 && !/^(好|收到|OK)/i.test(out)) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
+  if (more && !pending && !ctx.deep && !card && !docs.length && !ctx.groupPick) quick = [...(quick || []), { type: "message", label: "詳細分析", text: "/詳細分析" }];
   // 長回答切成最多 5 則（LINE 每則約 5,000 字上限），快速回覆按鈕放在最後一則
   const extra = [...(card ? [card] : []), ...(ctx.groupPick ? [groupPicker(ctx.groupPick.id, ctx.groupPick.groups, ctx.groupPick.best)] : []), ...docs.map(d => docCard(d.title, d.url)), ...(ctx.adminMsgs || [])].slice(0, 3);
   const parts = splitText(out, 4800).slice(0, 5 - extra.length);
