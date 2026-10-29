@@ -120,7 +120,7 @@ t(fr.status === 200 && fj.posted && fj.total === 108600, "form finish ok " + JSO
 let pushed = calls.find(c => c.url.endsWith("/message/push"));
 t(pushed && pushed.body.to === G && pushed.body.messages[0].type === "textV2" && pushed.body.messages[0].substitution.m0.mentionee.type === "all" && /拆帳完畢/.test(pushed.body.messages[0].text), "@All 拆帳完畢 pushed");
 const card = JSON.stringify(pushed.body.messages[1]);
-t(card.includes("$40,818") && card.includes("含 I $6,864") && card.includes("$27,424") && card.includes("$21,894") && card.includes("$18,464") && card.includes("$108,600"), "result card amounts");
+t(card.includes("$40,818") && card.includes("＋ 含 I") && card.includes("\"6,864\"") && card.includes("小姐 ") && card.includes("$27,424") && card.includes("$21,894") && card.includes("$18,464") && card.includes("$108,600"), "result card amounts");
 t(sq.prepare("SELECT status FROM line_splits WHERE id=?").get(sid).status === "done", "saved done");
 const url = (card.match(/https:\/\/x\.dev\/split\?t=\w+&id=\w+/) || [])[0];
 t(!!url, "detail link");
