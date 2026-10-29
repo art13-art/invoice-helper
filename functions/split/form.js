@@ -1,6 +1,6 @@
 // /split/form?t=<群組代碼>&id=<帳單> — 拆帳表單：客人（名字、男女、併給誰）→ 小姐坐誰 → 公費誰分 → 即時試算 → 送出結算。
 // 送出後伺服器重算一次、存檔，並在群組貼「@All 拆帳完畢」＋請款卡（推播）。
-import { kv } from "../../lib/assistant.js";
+import { kv, isGroup } from "../../lib/assistant.js";
 import { loadSplit, finishForm, fmt } from "../../lib/split.js";
 import { lineClient } from "../../lib/line.js";
 
@@ -11,11 +11,11 @@ async function who(request, env) {
   return { chatId, id: u.searchParams.get("id") || "", origin: u.origin };
 }
 
-export async function onRequestPost({ request, env }) {
+export async function onRequestPost({ request, env, waitUntil }) {
   const { chatId, id, origin } = await who(request, env);
   if (!chatId) return Response.json({ error: "連結不對或已失效" }, { status: 404 });
   let body = {}; try { body = await request.json(); } catch (e) {}
-  const r = await finishForm(env, env.DB, lineClient(env.LINE_CHANNEL_TOKEN || ""), { chatId, id, body, origin });
+  const r = await finishForm(env, env.DB, lineClient(env.LINE_CHANNEL_TOKEN || ""), { chatId, id, body, origin, defer: typeof waitUntil === "function" ? p => waitUntil(p) : null });
   return Response.json(r, { status: r.error ? 400 : 200 });
 }
 
@@ -36,7 +36,7 @@ export async function onRequestGet({ request, env }) {
     if (!guests.length) guests = [{ k: "g0", name: "", sex: "男", to: "" }];
   }
   const state = {
-    id: r.id, done: r.status === "done", cash: d.cash,
+    id: r.id, done: r.status === "done", cash: d.cash, back: isGroup(chatId) ? "https://line.me/R/nv/chat" : "https://line.me/R/oaMessage/" + encodeURIComponent(env.LINE_OA_ID || "@249owrao"),
     guests, next: guests.length,
     hostess: d.hostess.map(h => ({ id: h.id, name: h.name, amount: h.amount, mark: h.mark || "", lines: h.lines.map(l => [l.type, l.time, l.units ? l.units + " 節" : ""].filter(Boolean).join(" ")), g: h.guest || "" })),
     shared: d.shared.map(s => ({ id: s.id, name: s.name, amount: s.amount, qty: s.qty, price: s.price, who: s.who || null })),
@@ -138,11 +138,12 @@ async function send() {
     const r = await fetch(location.href, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json(); if (!r.ok) throw new Error(j.error || "送出失敗");
     try { localStorage.removeItem(KEY); } catch (e) {}
+    // 送出成功：直接回 LINE 對話，請款卡會貼在聊天室
     $("#app").hidden = true; $("#bar").hidden = true;
-    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "結算完成"}</h2><p>\${j.posted ? "請款單已經貼到群組。" : "請款單沒貼成功，回群組 @小幫手 說「拆帳紀錄」可以看結果。"}</p>
-      <div class="card list">\${j.payers.map(p => \`<div class="payer"><div class="ptop"><b>\${esc(p.name)}</b><span>$\${fmt(p.total)}</span></div>\${p.includes.map(x => \`<div class="inc">＋ 含 \${esc(x.name)} $\${fmt(x.total)}</div>\`).join("")}</div>\`).join("")}</div>
-      <p class="small">合計 $\${fmt(j.total)}</p>\`;
+    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>請款卡會貼在聊天室。</p><p><a class="back" href="\${S.back}">回到 LINE</a></p>\`;
     $("#done").hidden = false; window.scrollTo(0, 0);
+    try { window.close(); } catch (e) {}
+    setTimeout(() => location.replace(S.back), 300);
   } catch (e) { toast(e.message); $("#send").disabled = false; $("#send").textContent = "送出結算"; }
 }
 function toast(t) { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; document.body.appendChild(el); } el.textContent = t; el.className = "show"; setTimeout(() => el.className = "", 2600); }
@@ -189,7 +190,7 @@ main{max-width:560px;margin:0 auto;padding:4px 16px 20px}section{margin-top:22px
 .sum{flex:1;font-size:14px;color:var(--brand);font-weight:600}.sum.bad{color:var(--warn);font-weight:500}
 #send{border:0;background:var(--brand);color:#fff;font-weight:700;padding:12px 24px;border-radius:12px}#send:disabled{opacity:.45}
 .done{text-align:center;padding:48px 20px;max-width:520px;margin:0 auto}.ok{width:64px;height:64px;border-radius:32px;background:var(--brand);color:#fff;font-size:34px;line-height:64px;margin:0 auto 14px}
-.done h2{font-size:21px;margin:0 0 6px}.done p{color:var(--sub);margin:6px 0}.done .list{text-align:left;margin-top:18px}.small{font-size:13px}
+.done h2{font-size:21px;margin:0 0 6px}.done .back{display:inline-block;margin-top:14px;padding:12px 28px;border-radius:24px;background:var(--brand);color:#fff;text-decoration:none;font-weight:700}.done p{color:var(--sub);margin:6px 0}.done .list{text-align:left;margin-top:18px}.small{font-size:13px}
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1F2937;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#toast.show{opacity:1}
 .empty{text-align:center;color:var(--sub);padding:80px 0}
 </style></head><body>${body}</body></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });

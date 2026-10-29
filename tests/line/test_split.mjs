@@ -99,6 +99,7 @@ const fm = await import(R + "/functions/split/form.js");
 const tok0 = sq.prepare("SELECT v FROM line_kv WHERE k='split:tok:Cbar'").get()?.v;
 const furl = `https://x.dev/split/form?t=${tok0}&id=${sid}`;
 let fr = await fm.onRequestGet({ request: new Request(furl), env }); let fh = await fr.text();
+{ const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(js && okjs && /line\.me\/R\/nv\/chat/.test(fh), "form script valid + back link"); }
 t(fr.status === 200 && (fh.match(/"sex":"男"/g) || []).length === 5 && fh.includes("108,600") && fh.includes("林莎") && fh.includes("格蘭利威13年"), "form prefilled with guests, hostess, shared");
 if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/form.html", fh);
 const sp = JSON.parse(sq.prepare("SELECT data FROM line_splits").get().data);
