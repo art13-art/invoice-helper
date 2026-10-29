@@ -192,7 +192,7 @@ async function send() {
     try { localStorage.removeItem(KEY); } catch (e) {}
     // 送出成功：直接回 LINE 對話，請款卡會貼在聊天室
     $("#app").hidden = true; $("#bar").hidden = true;
-    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>請款卡會貼在聊天室。</p><p><a class="back" href="\${S.back}" onclick="if (backToChat()) return false">回到 LINE</a></p>\`;
+    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>請款卡會貼在聊天室。</p><p class="small">按左上角「✕」關閉這頁，回到聊天室。</p>\`;
     $("#done").hidden = false; window.scrollTo(0, 0);
     if (!backToChat()) { try { window.close(); } catch (e) {} }
   } catch (e) { toast(e.message); $("#send").disabled = false; $("#send").textContent = "送出結算"; }
