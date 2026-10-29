@@ -173,4 +173,22 @@ fr = await fm.onRequestGet({ request: new Request("https://x.dev/split/form?liff
 t(fr.status === 302 && fr.headers.get("location") === furl, "liff.state redirect " + fr.headers.get("location"));
 fh = await (await fm.onRequestGet({ request: new Request(furl), env })).text();
 t(/liff\/edge\/2\/sdk\.js/.test(fh) && /"liff":"2012283214-XTQGE9lq"/.test(fh), "form loads LIFF");
+// 13. 小姐分給多人：平分、分段（依節數）
+{
+  const d = { guests: [{ id: "g0", name: "阿倫" }, { id: "g1", name: "Ben" }, { id: "g2", name: "女友" }], merge: {},
+    hostess: [{ id: "h0", name: "詩涵", amount: 5890, split: [{ u: 12, who: ["g0", "g1"] }, { u: 6, who: ["g2"] }] }, { id: "h1", name: "六月", amount: 3000, split: [{ u: 1, who: ["g0", "g1", "g2"] }] }], shared: [] };
+  const r = S.compute(d), p = id => r.people.find(x => x.id === id);
+  t(r.total === 8890 && Math.abs(p("g0").total - (5890 * 12 / 18 / 2 + 1000)) <= 1 && Math.abs(p("g2").total - (5890 * 6 / 18 + 1000)) <= 1, "segment + even split " + JSON.stringify(r.people.map(x => x.total)));
+  t(p("g0").items.some(x => /詩涵（12節÷2）/.test(x.name)) && p("g2").items.some(x => /六月（÷3）/.test(x.name)) && r.people.every(x => x.items.reduce((a, y) => a + y.amount, 0) === x.total), "segment item names + sums");
+}
+calls.length = 0;
+fr = await pl({ idToken: "U_ben", guests, hostess: { ...Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), [h("沐熙")]: { segs: [{ u: 2, who: ["A", "J"] }, { u: 1, who: ["B"] }] }, [h("UU")]: { even: ["A", "B", "J", "I", "玄"] } } });
+fj = await fr.json();
+t(fr.status === 200 && fj.total === 108600, "form with segments ok " + JSON.stringify(fj).slice(0, 120));
+const saved = JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid).data);
+t(saved.hostess.find(x => x.name === "沐熙").split.length === 2 && saved.hostess.find(x => x.name === "UU").split[0].who.length === 5, "segments saved");
+fr = await pl({ idToken: "U_ben", guests, hostess: { ...Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), [h("沐熙")]: { segs: [{ u: 0, who: ["A"] }, { u: 1, who: ["B"] }] } } });
+t(fr.status === 400 && /節數/.test((await fr.json()).error), "segment needs units");
+fh = await (await fm.onRequestGet({ request: new Request(furl), env })).text();
+{ const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(okjs && /"mode":"seg"/.test(fh) && /"mode":"even"/.test(fh), "form restores segment modes"); }
 console.log(`${ok} passed, ${bad} failed`);

@@ -43,7 +43,7 @@ function detail(r, t) {
   }).join("") : "";
   const people = res ? res.people.map(p => `<details><summary><span>${esc(p.name)}${p.sex ? `<em>${esc(p.sex)}</em>` : ""}</span><b>$${fmt(p.total)}</b></summary>
       <ul>${p.items.map(i => `<li><span>${esc(i.name)}</span><span>${fmt(i.amount)}</span></li>`).join("")}</ul></details>`).join("") : "";
-  const hostess = (d.hostess || []).map(h => `<tr><td>${esc(h.name)}${h.mark ? `<small>${esc(h.mark)}</small>` : ""}<div class="lines">${h.lines.map(l => esc([l.type, l.time, l.units ? l.units + " 節" : ""].filter(Boolean).join(" "))).join("<br>")}</div></td><td>${nm(h.guest)}</td><td class="num">${fmt(h.amount)}</td></tr>`).join("");
+  const hostess = (d.hostess || []).map(h => `<tr><td>${esc(h.name)}${h.mark ? `<small>${esc(h.mark)}</small>` : ""}<div class="lines">${h.lines.map(l => esc([l.type, l.time, l.units ? l.units + " 節" : ""].filter(Boolean).join(" "))).join("<br>")}</div></td><td>${h.split ? h.split.map(sg => (h.split.length > 1 ? sg.u + " 節：" : "") + sg.who.map(nm).join("、")).join("<br>") : nm(h.guest)}</td><td class="num">${fmt(h.amount)}</td></tr>`).join("");
   const shared = (d.shared || []).map(s => `<tr><td>${esc(s.name)}${s.qty > 1 ? `<small>${s.qty} × ${fmt(s.price)}</small>` : ""}</td><td>${s.who ? s.who.map(nm).join("、") : "全部平分"}</td><td class="num">${fmt(s.amount)}</td></tr>`).join("");
   const photos = [0, 1, 2, 3].map(n => `<a href="/split/img?t=${esc(t)}&id=${esc(r.id)}&n=${n}" target="_blank" class="ph" data-n="${n}"><img loading="lazy" src="/split/img?t=${esc(t)}&id=${esc(r.id)}&n=${n}" alt="帳單照片" onerror="this.parentNode.remove()"></a>`).join("");
   return `
