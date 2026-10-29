@@ -69,8 +69,13 @@ def main():
                             and not IGNORE_CONSOLE.search(u):
                         errs.append(f"資源 HTTP {r.status}：{u.replace(BASE, '')}")
                 page.on("response", on_resp)
-                page.on("requestfailed", lambda r: not LOCAL and not IGNORE_CONSOLE.search(r.url)
-                        and errs.append(f"資源載入失敗：{r.url[:120]}"))
+                def on_fail(r):
+                    why = r.failure or ""
+                    # 關頁時被中止的請求（ERR_ABORTED）不算問題
+                    if LOCAL or "ABORTED" in why or IGNORE_CONSOLE.search(r.url):
+                        return
+                    errs.append(f"資源載入失敗（{why}）：{r.url[:120]}")
+                page.on("requestfailed", on_fail)
                 try:
                     resp = page.goto(url, wait_until="networkidle", timeout=30000)
                 except Exception as e:
