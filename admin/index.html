@@ -167,7 +167,7 @@ table.rank .meter i{display:block;height:100%;background:var(--s1);border-radius
   }
   function ranks(){
     $("#pages").innerHTML=rank(data.pages,p=>PAGE[p]?`${PAGE[p]}（${p}）`:p,"path");
-    const REF={google:"Google 搜尋",bing:"Bing",yahoo:"Yahoo",facebook:"Facebook",line:"LINE",instagram:"Instagram",threads:"Threads",ptt:"PTT",dcard:"Dcard"};
+    const REF={google:"Google 搜尋",bing:"Bing",yahoo:"Yahoo",facebook:"Facebook",line:"LINE",instagram:"Instagram",threads:"Threads",ptt:"PTT",dcard:"Dcard",chatgpt:"ChatGPT",perplexity:"Perplexity",gemini:"Gemini",claude:"Claude",copilot:"Copilot"};
     $("#refs").innerHTML=data.refs.length?rank(data.refs,r=>REF[r]||r,"ref"):`<p class="empty">目前都是直接打開（書籤、手打網址或 App 內連結）。</p>`;
     $("#devs").innerHTML=rank(data.devs,d=>d,"dev");
     $("#utm").innerHTML=(data.utm||[]).length?rank(data.utm,k=>k,"k"):`<p class="empty">還沒有帶 utm 的造訪。廣告連結請加 ?utm_source=…&utm_campaign=…</p>`;

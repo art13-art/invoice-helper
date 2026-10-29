@@ -1,0 +1,37 @@
+# push 到 main 後，把有改到的頁面用 IndexNow 通知 Bing（ChatGPT 搜尋等大量依賴 Bing 索引）。
+# 等 Cloudflare Pages 部署完（約 1–2 分鐘）再送。
+name: IndexNow 通知
+on:
+  push:
+    branches: [main]
+    paths: ["**/index.html", "llms.txt", "llms-full.txt", "rates.json"]
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 50 }
+      - name: 找出改到的網址並通知
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          KEY=532f1c1431fd88c91f86c178d5d6568f
+          if [ -n "$BEFORE" ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            files=$(git diff --name-only "$BEFORE" HEAD)
+          else
+            files=$(git ls-files '*index.html')
+          fi
+          urls=$(echo "$files" | grep -E '(^|/)index\.html$' | grep -vE '^(admin|join|functions|lib|worker|tests|embed)/|^404' \
+                 | sed -E 's#index\.html$##; s#^#https://taxtools.tw/#' | sort -u)
+          [ -z "$urls" ] && { echo "沒有要通知的頁面"; exit 0; }
+          echo "$urls"
+          sleep 120
+          list=$(echo "$urls" | head -1000 | jq -R . | jq -s .)
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://api.indexnow.org/indexnow \
+            -H "Content-Type: application/json; charset=utf-8" \
+            -d "{\"host\":\"taxtools.tw\",\"key\":\"$KEY\",\"keyLocation\":\"https://taxtools.tw/$KEY.txt\",\"urlList\":$list}")
+          echo "IndexNow 回應 HTTP $code"
+          case "$code" in 200|202) ;; *) exit 1;; esac

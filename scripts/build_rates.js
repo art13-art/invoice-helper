@@ -13,8 +13,9 @@ const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
 const P = R.pit, I = R.insurance;
 
 const sections = [
-  { id: "wage", h: `${R.year} 年基本工資`, lead: `${R.year} 年（${R.year + 1911} 年）基本工資每月 ${n(R.basicWage)} 元，${R.year} 年 1 月 1 日起適用。`,
-    rows: [["每月基本工資", `${n(R.basicWage)} 元`, "勞動基準法第 21 條；勞動部公告"]], tool: ["/overtime-pay/", "加班費計算機"] },
+  { id: "wage", h: `${R.year} 年最低工資（基本工資）`, lead: `${R.year} 年（${R.year + 1911} 年）最低工資每月 ${n(R.basicWage)} 元、每小時 196 元，${R.year} 年 1 月 1 日起適用；114 年起「基本工資」依最低工資法改稱「最低工資」。`,
+    rows: [["每月最低工資", `${n(R.basicWage)} 元`, "最低工資法；勞動部公告"], ["每小時最低工資", "196 元", "最低工資法；勞動部公告"],
+           ...(R.nextMinWage ? [[`${+R.nextMinWage.from.slice(0, 4) - 1911} 年 1 月 1 日起`, `每月 ${n(R.nextMinWage.month)} 元、每小時 ${n(R.nextMinWage.hour)} 元`, "行政院 115 年 10 月 14 日核定"]] : [])], tool: ["/overtime-pay/", "加班費計算機"] },
   { id: "vat", h: "營業稅", lead: `加值型營業稅稅率 ${pct(R.vat.rate)}，含稅金額 ÷ ${1 + R.vat.rate} 就是未稅金額。`,
     rows: [["加值型營業稅稅率", pct(R.vat.rate), "加值型及非加值型營業稅法第 10 條"],
            ["小規模營業人（查定課徵）", "1%", "加值型及非加值型營業稅法第 13 條"],
@@ -27,11 +28,11 @@ const sections = [
   { id: "nonresident", h: "各類所得扣繳率（非居住者）", lead: `付給非居住者（一年在台未滿 183 天）的租金、執行業務報酬扣繳率 ${pct(R.rent.nonResident)}。`,
     rows: [["租賃所得", pct(R.rent.nonResident), R.sources.rent],
            ["執行業務、稿費等", `${pct(R.fee.nonResident)}；稿費等每次給付 ≤ ${n(R.fee.nonResident9BExemptAtOrBelow)} 元免扣`, R.sources.fee],
-           ["薪資", `${pct(R.salary.nonResidentHigh)}；全月給付 ≤ ${n(R.salary.nonResidentLowMax)} 元（基本工資 1.5 倍）扣 ${pct(R.salary.nonResidentLow)}`, "各類所得扣繳率標準"]], tool: ["/labor-report/", "勞報單扣繳計算機"] },
-  { id: "nhi", h: "二代健保補充保費", lead: `補充保費費率 ${pct(R.nhi.rate)}，執行業務、租金、股利、利息等單次給付達 ${n(R.nhi.minPerPayment)} 元起扣，兼職薪資單次達基本工資 ${n(R.nhi.partTimeMin)} 元起扣。`,
+           ["薪資", `${pct(R.salary.nonResidentHigh)}；全月給付 ≤ ${n(R.salary.nonResidentLowMax)} 元（最低工資 1.5 倍）扣 ${pct(R.salary.nonResidentLow)}`, "各類所得扣繳率標準"]], tool: ["/labor-report/", "勞報單扣繳計算機"] },
+  { id: "nhi", h: "二代健保補充保費", lead: `補充保費費率 ${pct(R.nhi.rate)}，執行業務、租金、股利、利息等單次給付達 ${n(R.nhi.minPerPayment)} 元起扣，兼職薪資單次達最低工資 ${n(R.nhi.partTimeMin)} 元起扣。`,
     rows: [["補充保費費率", pct(R.nhi.rate), R.sources.nhi],
            ["執行業務、租金、股利、利息起扣", `單次給付達 ${n(R.nhi.minPerPayment)} 元，上限 ${n(R.nhi.capPerPayment)} 元`, R.sources.nhi],
-           ["兼職薪資起扣", `單次給付達 ${n(R.nhi.partTimeMin)} 元（基本工資）`, R.sources.nhi]], tool: ["/labor-report/", "勞報單扣繳計算機"] },
+           ["兼職薪資起扣", `單次給付達 ${n(R.nhi.partTimeMin)} 元（最低工資）`, R.sources.nhi]], tool: ["/labor-report/", "勞報單扣繳計算機"] },
   { id: "insurance", h: "勞保、健保、勞退費率", lead: `勞保（含就業保險）費率 ${pct(I.li.ordinary + I.li.employment)}，勞工自付 ${pct(I.li.worker)}；健保費率 ${pct(I.nhi.rate)}，勞工自付 ${pct(I.nhi.worker)}；雇主勞退提繳 ${pct(I.pension)}。`,
     rows: [["勞保普通事故＋就業保險", `${pct(I.li.ordinary)}＋${pct(I.li.employment)}；勞工 ${pct(I.li.worker)}、雇主 ${pct(I.li.employer)}、政府 10%`, "勞工保險條例、就業保險法"],
            ["勞保投保薪資", `最低 ${n(I.liGrades[0])} 元（部分工時）、最高 ${n(I.li.max)} 元`, "勞工保險投保薪資分級表"],
@@ -69,13 +70,13 @@ ${s.rows.map(r => `        <tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${e
     </table></div>
     <p class="more-tool">直接算：<a href="${s.tool[0]}">${s.tool[1]} →</a></p>`).join("\n");
 
-const desc = `${R.year} 年（${R.year + 1911}）台灣稅務與勞健保數字一頁看完：基本工資 ${n(R.basicWage)} 元、營業稅 5%、租金與執行業務扣繳 10%、二代健保補充保費 ${pct(R.nhi.rate)}、勞健保費率、綜所稅免稅額與級距，每項附法條依據與最後查證日期。`;
+const desc = `${R.year} 年（${R.year + 1911}）台灣稅務與勞健保數字一頁看完：最低工資 ${n(R.basicWage)} 元、營業稅 5%、租金與執行業務扣繳 10%、二代健保補充保費 ${pct(R.nhi.rate)}、勞健保費率、綜所稅免稅額與級距，每項附法條依據與最後查證日期。`;
 const html = `<!doctype html>
 <html lang="zh-Hant-TW">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>${R.year} 年稅務與勞健保數字速查：扣繳率、補充保費、基本工資、綜所稅級距｜稅務小工具</title>
+<title>${R.year} 年稅務與勞健保數字速查：扣繳率、補充保費、最低工資、綜所稅級距｜稅務小工具</title>
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="https://taxtools.tw/rates/">
 <meta property="article:published_time" content="2026-10-30">
