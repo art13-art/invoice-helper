@@ -250,4 +250,21 @@ await dm("新增後台 小王");
 const sk = ((replies()[0]?.text || "").match(/\/bo\?k=(\w+)/) || [])[1];
 t(sk && (await bget("k=" + sk)).status === 200, "staff link works");
 await dm("取消後台 小王"); t(/已停用/.test(replies()[0]?.text || "") && (await bget("k=" + sk)).status === 404, "staff revoked");
+// 16. 晚到／早走：整晚的費用照在場時間分
+sq.prepare("DELETE FROM line_kv WHERE k='liff:split'").run();
+{
+  const g2 = guests.map(g => g.name === "玄" ? { ...g, late: 18 } : g);
+  const sp2 = JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid).data);
+  const room = sp2.shared.find(x => /包廂/.test(x.name));
+  fr = await fm.onRequestPost({ request: new Request(furl, { method: "POST", body: JSON.stringify({ guests: g2, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), night: 36, byTime: { [room.id]: true } }) }), env });
+  fj = await fr.json();
+  const res = JSON.parse(sq.prepare("SELECT result FROM line_splits WHERE id=?").get(sid).result);
+  const it = nm => res.people.find(p => p.name === nm).items.find(x => x.name.startsWith(room.name));
+  t(fr.status === 200 && fj.total === 108600 && /在場 18\/36 節/.test(it("玄").name) && Math.abs(it("玄").amount - room.amount * 18 / (36 * 4 + 18)) <= 1, "room by time " + JSON.stringify([it("玄"), it("A")]));
+  fr = await fm.onRequestPost({ request: new Request(furl, { method: "POST", body: JSON.stringify({ guests: g2, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) }) }), env });
+  t(fr.status === 400 && /整晚共幾節/.test((await fr.json()).error), "late needs night");
+  fh = await (await fm.onRequestGet({ request: new Request(furl), env })).text();
+  t(/"late":18/.test(fh) && /"night":36/.test(fh) && /"bt":true/.test(fh), "form restores late/night/byTime");
+  if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/form2.html", fh);
+}
 console.log(`${ok} passed, ${bad} failed`);
