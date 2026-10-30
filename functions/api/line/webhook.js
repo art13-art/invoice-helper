@@ -5,10 +5,12 @@ import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
 import { splitOn, splitMode, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink, sameBill, redoMessages } from "../../../lib/split.js";
-import { chat, member, isGroup, kv, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
+import { chat, member, isGroup, kv, rid, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 import { adminFor, decisionCard, newDecision, toAdmin, watchAdmin } from "../../../lib/escalate.js";
+import { normStore, facts, sampleCard } from "../../../lib/billstats.js";
+import { setOwner } from "../../bo/index.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
 const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
@@ -240,6 +242,59 @@ async function handle(env, ev, origin) {
 
   // ---- 拆帳 ----（「賬」「单」也算；說法放寬：啟動／開始／啟用、幫我拆帳…）
   const sc = c.replace(/賬/g, "帳").replace(/单/g, "單").replace(/[。！!～~\s]+$/g, "").replace(/^(請|幫我|麻煩)?/, "");
+  // ---- 後台（只有管理員，私訊）：自己的連結、新增／取消內部人員 ----
+  if (!group && /^(後台|後臺)(連結)?$/.test(sc) && (await isAdmin(db, userId))) {
+    let t = await kv.get(db, "bome:" + userId);
+    if (!t) { t = rid(16) + rid(16); await kv.set(db, "botok:" + t, JSON.stringify({ name: who.name || "Ben", by: userId, at: Date.now() })); await kv.set(db, "bome:" + userId, t); }
+    return reply(`後台（帳單存檔、各店行情、誰的單）：\n${origin}/bo?k=${t}\n這個連結等於鑰匙，不要外流。要給內部人員，說「新增後台 名字」。`);
+  }
+  const bo = !group && sc.match(/^(新增|取消|刪除|停用)後台(人員)?\s*(.+)?$/);
+  if (bo && (await isAdmin(db, userId))) {
+    const nm = (bo[3] || "").trim().slice(0, 20), list = await kv.json(db, "bostaff", []);
+    if (!nm) return reply(`要加誰？例如「新增後台 小王」。目前：${list.map(x => x.name).join("、") || "沒有"}`);
+    if (bo[1] === "新增") {
+      const t = rid(16) + rid(16);
+      await kv.set(db, "botok:" + t, JSON.stringify({ name: nm, by: userId, at: Date.now() }));
+      await kv.set(db, "bostaff", JSON.stringify([...list.filter(x => x.name !== nm), { name: nm, t }]));
+      return reply(`給 ${nm} 的後台連結（轉給他就好，不要貼在群組）：\n${origin}/bo?k=${t}\n要停用就說「取消後台 ${nm}」。`);
+    }
+    const hit = list.find(x => x.name === nm);
+    if (!hit) return reply(`沒有叫「${nm}」的後台人員。目前：${list.map(x => x.name).join("、") || "沒有"}`);
+    await db.prepare("DELETE FROM line_kv WHERE k=?").bind("botok:" + hit.t).run();
+    await kv.set(db, "bostaff", JSON.stringify(list.filter(x => x.name !== nm)));
+    return reply(`好，${nm} 的後台連結已停用。`);
+  }
+  if (!group && /^後台人員$/.test(sc) && (await isAdmin(db, userId))) return reply(`後台人員：${(await kv.json(db, "bostaff", [])).map(x => x.name).join("、") || "只有你"}`);
+
+  // ---- 這是 XX 的單：標在這個聊天室最近一張帳單（7 天內） ----
+  const own = sc.match(/^(這|這張|那張)?(單|帳單)?(是|算)\s*(.{1,12}?)\s*的(單|客人?|帳單?)$/);
+  if (own && !/^(誰|什麼|哪|哪位|哪個)/.test(own[4])) {
+    if (own[4].trim() === "我") own[4] = who.name || "我";
+    const r = await db.prepare("SELECT * FROM line_splits WHERE chat_id=? AND status!='cancelled' AND created>? ORDER BY created DESC LIMIT 1").bind(chatId, Date.now() - 7 * 864e5).first();
+    if (!r) return reply("這裡 7 天內沒有帳單，先貼帳單再說一次。");
+    await setOwner(db, r, own[4].trim(), who.name);
+    const f = facts(r);
+    return reply(`好，${[f.rawStore || f.store, f.date, f.bill_no ? "單號 " + f.bill_no : ""].filter(Boolean).join(" ")}（現金 ${f.cash.toLocaleString("en-US")}）記為「${own[4].trim()}的單」。`);
+  }
+
+  // ---- 消費範例：「SS 範例」「範例 SS」，人名換假名（店名對不上就交給 AI，免得「合約範例」被當成店名） ----
+  const ex1 = sc.match(/^(?:消費)?範例\s*(.{0,12})$/), ex2 = !ex1 && sc.match(/^(.{1,12}?)\s*的?(?:消費)?範例$/);
+  const ex = ex1 || ex2;
+  let exHit = null, exStores = [];
+  if (ex) {
+    const want = normStore(ex[1] || "");
+    const { results } = await db.prepare("SELECT id,chat_id,status,created,data,result FROM line_splits WHERE status='done' ORDER BY created DESC LIMIT 500").all();
+    const all = results.map(r => ({ r, f: facts(r) })).filter(x => x.f.cash > 0).sort((a, b) => (b.f.payers > 0) - (a.f.payers > 0));   // 拆完、有請款的優先
+    exStores = [...new Set(all.map(x => x.f.store))].filter(x => x !== "未知");
+    if (ex1 && !ex[1]) return reply(exStores.length ? "要看哪一家的消費範例？" : "還沒有結算過的帳單可以當範例。", exStores.slice(0, 12).map(st => say(st + " 範例")));
+    exHit = all.find(x => x.f.store === want) || (want.length >= 2 ? all.find(x => x.f.store.includes(want) || want.includes(x.f.store)) : null);
+    if (!exHit && ex1) return reply(`還沒有「${ex[1]}」的帳單。` + (exStores.length ? `目前有：${exStores.slice(0, 12).join("、")}` : ""));
+  }
+  if (exHit) {
+    const hit = exHit;
+    return line.reply(ev.replyToken, [sampleCard(hit.r)]).catch(e => console.log("sample reply failed", e.message));
+  }
+
   if (group && /^(開啟|打開|啟動|啟用|開始|開|關閉|關掉|停止|停用|取消)(自動)?(拆帳|分帳|拆單)(功能|模式)?$/.test(sc)) {
     if (!(await isAdmin(db, userId))) return reply("拆帳設定只有 Ben 能改。");
     const on = !/關|停|取消/.test(sc);

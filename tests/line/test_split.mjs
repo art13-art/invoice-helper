@@ -209,4 +209,45 @@ calls.length = 0;
 fr = await pl({ idToken: "U_ben", guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
 await new Promise(r => setTimeout(r, 20));
 { const ps = calls.find(c => c.url.endsWith("/message/push")); t(ps && JSON.stringify(ps.body.messages[1]).includes("修改") && JSON.stringify(ps.body.messages[1]).includes("/split/form?t="), "result card has 修改 button"); }
+// 15. 帳單欄位、誰的單、消費範例（假名）、後台
+{
+  const B = await import(R + "/lib/billstats.js");
+  const row = sq.prepare("SELECT * FROM line_splits WHERE chat_id='Cbar' AND result IS NOT NULL ORDER BY done_at DESC").get();
+  const f = B.facts(row);
+  t(f.store === "威仕登" && f.cash === 108600 && f.pax === 5 && f.units > 0 && f.unitPrice > 0, "facts " + JSON.stringify(f).slice(160, 400));
+  t(B.normStore("ｓｓ ") === "SS" && B.itemKind({ name: "DM/12" }) === "drink" && B.itemKind({ name: "經理檯" }) === "manager", "normStore + kinds");
+  t(B.durText(B.duration({ hostess: [{ lines: [{ type: "坐檯", time: "10-0~10-2" }, { type: "坐檯", time: "12-5~02-0" }, { type: "出場", time: "10-3~06-0" }] }] })) === "約 4 小時", "duration skips 出場");
+}
+await say("U_ben", "這是香閣的單");
+t(/記為「香閣的單」/.test(replies()[0]?.text || "") && JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE chat_id='Cbar' ORDER BY created DESC").get().data).owner === "香閣", "owner set " + replies()[0]?.text);
+await say("U_ben", "這是誰的單"); t(!/記為/.test(replies()[0]?.text || ""), "who? not an owner");
+await say("U_andy", "威仕登 範例");
+{ const m = replies()[0], js = JSON.stringify(m); t(m?.type === "flex" && /消費範例/.test(m.altText) && js.includes("王小明") && js.includes("小美") && !js.includes("林莎") && js.includes("108,600"), "sample card with fake names " + (m?.altText || JSON.stringify(replies()).slice(0, 100))); }
+await say("U_andy", "範例"); t((replies()[0]?.quickReply?.items || []).some(x => /威仕登 範例/.test(x.action.text)), "範例 → store buttons");
+claudeCalls.length = 0; await say("U_andy", "幫我寫合約範例"); t(claudeCalls.length > 0 && !/還沒有/.test(replies()[0]?.text || ""), "合約範例 → AI, not store");
+// 後台
+const dm = text => send({ type: "message", source: { type: "user", userId: "U_ben" }, message: { type: "text", id: "d" + n, text } });
+await dm("後台");
+const bk = ((replies()[0]?.text || "").match(/\/bo\?k=(\w+)/) || [])[1];
+t(bk && bk.length >= 20, "後台 link " + replies()[0]?.text);
+await dm("後台"); t((replies()[0]?.text || "").includes(bk), "same link again");
+await send({ type: "message", source: { type: "user", userId: "U_andy" }, message: { type: "text", id: "dx", text: "後台" } });
+t(!(replies()[0]?.text || "").includes("/bo?k="), "non-admin no link");
+const bo = await import(R + "/functions/bo/index.js");
+const bget = q => bo.onRequestGet({ request: new Request("https://x.dev/bo?" + q), env });
+let bh = await (await bget("k=" + bk)).text();
+t(bh.includes("威仕登") && bh.includes("香閣的單") && bh.includes("帳單存檔"), "bo list");
+t((await bget("k=wrongwrongwrongwrongwrong")).status === 404, "bo bad key");
+bh = await (await bget("k=" + bk + "&v=stores")).text(); t(bh.includes("威仕登") && bh.includes("樣本少"), "bo stores");
+bh = await (await bget("k=" + bk + "&v=owners")).text(); t(bh.includes("香閣"), "bo owners");
+const csvr = await bget("k=" + bk + "&v=csv"); t(/text\/csv/.test(csvr.headers.get("content-type")) && (await csvr.text()).includes("威仕登"), "bo csv");
+const rid0 = sq.prepare("SELECT id FROM line_splits WHERE chat_id='Cbar' ORDER BY created DESC").get().id;
+bh = await (await bget("k=" + bk + "&id=" + rid0)).text(); t(bh.includes("消費範例卡") && bh.includes("林莎") && bh.includes("/bo/img?k="), "bo detail real names + sample");
+const fdat = new FormData(); fdat.set("id", rid0); fdat.set("owner", "子瑤");
+const pr = await bo.onRequestPost({ request: new Request("https://x.dev/bo?k=" + bk, { method: "POST", body: fdat }), env });
+t(pr.status === 303 && JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(rid0).data).owner === "子瑤", "bo set owner");
+await dm("新增後台 小王");
+const sk = ((replies()[0]?.text || "").match(/\/bo\?k=(\w+)/) || [])[1];
+t(sk && (await bget("k=" + sk)).status === 200, "staff link works");
+await dm("取消後台 小王"); t(/已停用/.test(replies()[0]?.text || "") && (await bget("k=" + sk)).status === 404, "staff revoked");
 console.log(`${ok} passed, ${bad} failed`);
