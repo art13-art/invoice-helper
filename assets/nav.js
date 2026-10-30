@@ -74,7 +74,7 @@
           const r=await fetch("/api/feedback",{method:"POST",headers:{"content-type":"application/json","x-tt":"1"},body:JSON.stringify(data),credentials:"same-origin"});
           const j=await r.json().catch(()=>({}));
           if(!r.ok) throw new Error(j.error||"送出失敗，請稍後再試");
-          f.reset(); msg.textContent="收到了，謝謝你！"; setTimeout(()=>{ dlg.close(); msg.textContent=""; },1400);
+          f.reset(); window.ttEvent&&ttEvent("feedback"); msg.textContent="收到了，謝謝你！"; setTimeout(()=>{ dlg.close(); msg.textContent=""; },1400);
         }catch(err){ msg.textContent=err.message; }
         btn.disabled=false;
       });

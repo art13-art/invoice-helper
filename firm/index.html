@@ -13,10 +13,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<script src="/assets/calc.js?v=2026103001"></script>
-<link rel="stylesheet" href="/assets/base.css?v=2026103001">
-<link rel="stylesheet" href="/assets/nav.css?v=2026103001">
-<link rel="stylesheet" href="/assets/calc.css?v=2026103001">
+<script src="/assets/calc.js?v=2026103002"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026103002">
+<link rel="stylesheet" href="/assets/nav.css?v=2026103002">
+<link rel="stylesheet" href="/assets/calc.css?v=2026103002">
 <style>
 /* Firm dashboard: who needs chasing this period, the client invite link with QR, and staff. */
 .fg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:28px;align-items:start}
@@ -90,8 +90,8 @@ select.sel{font:inherit;font-size:15px;min-height:44px;border-radius:8px;border:
   <p class="site-foot">客戶的帳本資料只有客戶本人、客戶邀請的成員，以及客戶連結的事務所看得到。客戶可以隨時取消連結。營業稅預估依客戶記帳資料計算（銷項稅額減可扣抵進項稅額），僅供參考。</p>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="/assets/nav.js?v=2026103001"></script>
-<script src="/assets/auth.js?v=2026103001"></script>
+<script src="/assets/nav.js?v=2026103002"></script>
+<script src="/assets/auth.js?v=2026103002"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
 <script>
 const $=id=>document.getElementById(id), AUTH=window.TT_AUTH;
@@ -139,7 +139,7 @@ function createForm(f){
     const body={name:$("fn").value.trim(),ubn:$("fu").value,profile:{phone:$("fp").value,line:$("fl").value,email:$("fe").value,intro:$("fi").value}};
     if(!body.name){ $("msg").textContent="請輸入事務所名稱。"; $("msg").hidden=false; return; }
     try{ if(f){ await AUTH.api("/api/spaces",{action:"update",space:f.id,...body}); toast("已儲存"); }
-      else{ const j=await AUTH.api("/api/spaces",{action:"create",kind:"firm",...body}); FIRM=j.space; toast("事務所建立好了，現在可以邀請客戶"); }
+      else{ const j=await AUTH.api("/api/spaces",{action:"create",kind:"firm",...body}); FIRM=j.space; window.ttEvent&&ttEvent("firm_signup"); toast("事務所建立好了，現在可以邀請客戶"); }
       start(); }catch(e){ $("msg").textContent=e.message; $("msg").hidden=false; }
   };
 }
@@ -203,7 +203,7 @@ function render(){
   document.querySelectorAll("[data-firm]").forEach(b=>b.onclick=()=>{ FIRM=b.dataset.firm; LINK=null; try{ localStorage.setItem(KEY,JSON.stringify({firm:FIRM})); }catch(e){} load(); });
   const ed=$("edit"); if(ed) ed.onclick=()=>createForm(f);
   const mk=$("mkLink"), rg=$("regen");
-  const makeLink=async()=>{ try{ LINK=(await AUTH.api("/api/invite",{action:"create",space:FIRM,kind:"client"})).url; render(); toast("已產生邀請連結"); }catch(e){ toast(e.message); } };
+  const makeLink=async()=>{ try{ LINK=(await AUTH.api("/api/invite",{action:"create",space:FIRM,kind:"client"})).url; window.ttEvent&&ttEvent("invite_client"); render(); toast("已產生邀請連結"); }catch(e){ toast(e.message); } };
   if(mk) mk.onclick=makeLink;
   if(rg) rg.onclick=()=>{ if(confirm("重新產生後，舊的連結和 QR Code 就不能再用了（已經加入的客戶不受影響）。確定？")) makeLink(); };
   if(LINK){

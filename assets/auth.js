@@ -13,7 +13,7 @@ window.TT_AUTH=(function(){
     try{
       const g=await loadGsi();
       g.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,ux_mode:"popup",auto_select:false,itp_support:true,callback:async resp=>{
-        try{ const j=await api("/api/auth/google",{credential:resp.credential}); onUser(j.user); }catch(e){ (onError||alert)(e.message); }
+        try{ const j=await api("/api/auth/google",{credential:resp.credential}); window.ttEvent&&ttEvent("login"); onUser(j.user); }catch(e){ (onError||alert)(e.message); }
       }});
       const dark=matchMedia("(prefers-color-scheme: dark)").matches;
       g.accounts.id.renderButton(el,{theme:dark?"filled_black":"outline",size:"large",shape:"pill",text:"signin_with",locale:"zh-TW",width:Math.min(320,el.clientWidth||320)});
