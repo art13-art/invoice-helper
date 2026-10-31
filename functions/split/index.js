@@ -50,7 +50,7 @@ function detail(r, t) {
     <header class="hero"><a class="back" href="?t=${esc(t)}">‹ 所有帳單</a>
       <div class="kicker">${r.status === "done" ? "請款單" : "拆帳中"}</div><h1>${esc(d.store || "帳單")}</h1>
       <div class="meta light">${esc(d.date || tw(r.created))}${d.bill_no ? "｜單號 " + esc(d.bill_no) : ""}</div>
-      <div class="total"><span>現金總額</span><b>$${fmt(d.cash)}</b></div>${d.card ? `<div class="meta light">刷卡價格 $${fmt(d.card)}</div>` : ""}</header>
+      <div class="total"><span>現金總額</span><b>$${fmt(d.cash)}</b></div>${d.card ? `<div class="meta light">刷卡價格 $${fmt(d.card)}</div>` : ""}${d.payee ? `<div class="payto">請轉給 <b>${esc(d.payee)}</b></div>` : ""}</header>
     <main>
       ${payers ? `<h2>請款</h2><section class="card">${payers}</section>` : ""}
       ${people ? `<h2>每個人的明細</h2><section class="card people">${people}</section>` : ""}
@@ -68,7 +68,7 @@ function page(title, body, status = 200) {
 @media (prefers-color-scheme:dark){:root{--soft:#1E2B2A;--ink:#E8EEED;--sub:#9AA8A6;--line:#2A3735;--bg:#0F1716;--card:#16201F}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;-webkit-font-smoothing:antialiased}
 .hero{background:var(--brand);color:#fff;padding:22px 18px 26px;border-radius:0 0 22px 22px}
-.hero h1{margin:2px 0 4px;font-size:24px;letter-spacing:.5px}.kicker{font-size:12px;color:#CFE3E1;letter-spacing:1px}
+.hero h1{margin:2px 0 4px;font-size:24px;letter-spacing:.5px}.payto{margin-top:10px;display:inline-block;background:rgba(242,140,40,.18);color:#FFD9B0;border-radius:999px;padding:5px 12px;font-size:13.5px}.payto b{color:#fff}.kicker{font-size:12px;color:#CFE3E1;letter-spacing:1px}
 .back{color:#CFE3E1;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:10px}
 .meta{font-size:13px;color:var(--sub)}.meta.light{color:#CFE3E1}
 .total{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18)}

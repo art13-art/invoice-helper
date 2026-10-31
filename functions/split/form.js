@@ -60,7 +60,8 @@ export async function onRequestGet({ request, env }) {
   const state = {
     night: d.night || (mins ? Math.round(mins / 10) : sitMax) || 0,
     liff: (await kv.get(env.DB, "liff:split")) || "",
-    id: r.id, done: r.status === "done", cash: d.cash, back: isGroup(chatId) ? "https://line.me/R/nv/chat" : "https://line.me/R/oaMessage/" + encodeURIComponent(env.LINE_OA_ID || "@249owrao"),
+    id: r.id, done: r.status === "done", cash: d.cash, back: isGroup(chatId) ? "https://line.me/R/nv/chat" : "https://line.me/R/oaMessage/" + encodeURIComponent(d.bot === "miao" ? env.MIAO_OA_ID || "@366dzslm" : env.LINE_OA_ID || "@249owrao"),
+    bot: d.bot === "miao" ? "拆帳喵" : "小幫手", payee: d.payee || "",
     guests, next: guests.length,
     hostess: d.hostess.map(h => ({ id: h.id, name: h.name, amount: h.amount, mark: h.mark || "", lines: h.lines.map(l => [l.type, l.time, l.units ? l.units + " 節" : ""].filter(Boolean).join(" ")), units: h.lines.reduce((a, l) => a + (l.units || 0), 0), g: h.guest || "",
       mode: h.split && h.split.length > 1 ? "seg" : "pick", w: h.split && h.split.length === 1 ? h.split[0].who : h.guest ? [h.guest] : [], segs: h.split && h.split.length > 1 ? h.split.map(sg => ({ u: sg.u, w: sg.who })) : [] })),
@@ -69,7 +70,7 @@ export async function onRequestGet({ request, env }) {
     members: (await env.DB.prepare("SELECT name FROM line_members WHERE chat_id=? AND name IS NOT NULL AND optout=0 ORDER BY updated DESC LIMIT 30").bind(chatId).all()).results.map(x => x.name).filter(n => n && n !== "成員"),
   };
   return html("拆帳", `
-  <header class="hero"><div class="kicker">拆帳${r.status === "done" ? "｜已結算，可修改後重送" : ""}</div><h1>${esc(d.store || "帳單")}</h1>
+  <header class="hero"><div class="kicker">${d.bot === "miao" ? "拆帳喵" : "拆帳"}${r.status === "done" ? "｜已結算，可修改後重送" : ""}</div><h1>${esc(d.store || "帳單")}</h1>
     <div class="meta">${esc([d.date, d.bill_no ? "單號 " + d.bill_no : "", d.guests_note ? "帳單人數 " + d.guests_note : ""].filter(Boolean).join("｜"))}</div>
     <div class="total"><span>現金總額</span><b>$${fmt(d.cash)}</b></div>
     ${d.warn ? `<div class="warn">⚠ ${esc(d.warn)}</div>` : ""}</header>
@@ -80,7 +81,8 @@ export async function onRequestGet({ request, env }) {
     <section><div class="step"><span>2</span>小姐坐誰</div><p class="hint">點要付這位小姐的人；點好幾位就平分，或按「全部平分」。</p><div id="hostess"></div></section>
     <section><div class="step"><span>3</span>公費誰分</div><p class="hint">預設全部平分；只有部分人付的，直接點要付的人。</p><div id="shared"></div>
       ${state.free.length ? `<div class="free">招待：${state.free.map(esc).join("、")}</div>` : ""}</section>
-    <section><div class="step"><span>4</span>試算</div><div class="card" id="preview"></div></section>
+    <section><div class="step"><span>4</span>試算</div><div class="card" id="preview"></div>
+      <div class="payee"><label for="payee">買單人<small>選填</small></label><input id="payee" maxlength="20" placeholder="誰先付的？請款單會寫「轉給 他」" autocomplete="off"><div class="chips" id="payeechips"></div></div></section>
   </main>
   <footer class="bar" id="bar"><div class="sum" id="sum"></div><button id="send" type="button">送出結算</button></footer>
   <div class="done" id="done" hidden></div>
@@ -139,6 +141,7 @@ function derived() {
       <div class="pills" data-s="\${s.id}">\${pick("data-sg", g => !all && s.who.includes(g.k))}<button type="button" class="pill all \${all ? "on" : ""}" data-all="\${s.id}">全部平分</button></div>
       \${anyLate() ? \`<div class="segfoot"><span>\${s.bt ? "照在場時間分" : "平分"}</span><button type="button" class="reset" data-bt="\${s.id}">\${s.bt ? "改成平分" : "照在場時間分"}</button></div>\` : ""}</div>\`; }).join("");
   $("#night").innerHTML = anyLate() ? \`<label>整晚共<input type="number" inputmode="numeric" min="1" id="nightu" value="\${S.night || ""}">節</label><span class="sub">包廂、桌面、經理檯、小費預設照在場時間分</span>\` : "";
+  $("#payeechips").innerHTML = ns.map(g => \`<button type="button" class="chip \${$("#payee").value.trim() === g.name.trim() ? "on" : ""}" data-payee="\${esc(g.name.trim())}">\${esc(g.name.trim())}</button>\`).join("");
   preview();
   persist();
 }
@@ -170,6 +173,7 @@ document.addEventListener("input", e => {
   if (e.target.dataset.late) { const g = S.guests.find(x => x.k === e.target.dataset.late), was = anyLate(); g.late = Math.max(0, +e.target.value || 0);
     if (!was && anyLate() && !S.btSet) { S.shared.forEach(s => { if (s.whole) s.bt = true; }); S.btSet = true; }
     derived(); return; }
+  if (e.target.id === "payee") { document.querySelectorAll("[data-payee]").forEach(b => b.classList.toggle("on", b.dataset.payee === e.target.value.trim())); return; }
   if (e.target.id === "nightu") { S.night = Math.max(0, +e.target.value || 0); preview(); persist(); return; }
   if (e.target.dataset.hu) { const h = S.hostess.find(x => x.id === e.target.dataset.hu); h.segs[+e.target.dataset.i].u = +e.target.value || 0; preview(); persist(); const f = e.target.closest(".item").querySelector(".segfoot"); if (f && h.units) f.firstChild.textContent = \`帳單 \${h.units} 節，已填 \${h.segs.reduce((a, x) => a + (+x.u || 0), 0)} 節\`; e.target.closest(".item").classList.toggle("todo", !hDone(h)); return; } if (e.target.classList.contains("name")) { S.guests.find(g => g.k === e.target.dataset.k).name = e.target.value; derived(); } });
 document.addEventListener("change", e => { if (e.target.tagName === "SELECT") { S.guests.find(g => g.k === e.target.dataset.k).to = e.target.value; derived(); } });
@@ -192,25 +196,27 @@ document.addEventListener("click", e => {
   else if (b.dataset.sg) { const s = S.shared.find(x => x.id === b.closest(".pills").dataset.s), all = named().map(g => g.k), k = b.dataset.sg; const cur = s.who || []; const nx = cur.includes(k) ? cur.filter(x => x !== k) : [...cur, k]; s.who = !nx.length || all.every(x => nx.includes(x)) ? null : nx; derived(); }
   else if (b.dataset.bt) { const s = S.shared.find(x => x.id === b.dataset.bt); s.bt = !s.bt; derived(); }
   else if (b.dataset.all) { S.shared.find(x => x.id === b.dataset.all).who = null; derived(); }
+  else if (b.dataset.payee !== undefined) { const v = b.dataset.payee; $("#payee").value = $("#payee").value.trim() === v ? "" : v; derived(); }
   else if (b.id === "send") send();
 });
 async function send() {
   const ns = named(), name = k => (S.guests.find(g => g.k === k) || {}).name?.trim() || "";
   if (S.done && !confirm("這張已經結算過，要用新的內容更正嗎？群組會再貼一次請款單。")) return;
   $("#send").disabled = true; $("#send").textContent = "結算中…";
-  const body = { idToken: TOKEN, guests: ns.map(g => ({ name: g.name.trim(), sex: g.sex, to: name(g.to), late: +g.late || 0 })), night: +S.night || 0, byTime: Object.fromEntries(S.shared.filter(s => s.bt && anyLate()).map(s => [s.id, true])), hostess: Object.fromEntries(S.hostess.map(h => [h.id, h.mode === "pick" ? (h.w.length === 1 ? name(h.w[0]) : { even: h.w.map(name).filter(Boolean) }) : { segs: h.segs.map(sg => ({ u: +sg.u || 0, who: sg.w.map(name).filter(Boolean) })) }])), shared: Object.fromEntries(S.shared.filter(s => s.who).map(s => [s.id, s.who.map(name).filter(Boolean)])) };
+  const body = { idToken: TOKEN, payee: ($("#payee").value || "").trim(), guests: ns.map(g => ({ name: g.name.trim(), sex: g.sex, to: name(g.to), late: +g.late || 0 })), night: +S.night || 0, byTime: Object.fromEntries(S.shared.filter(s => s.bt && anyLate()).map(s => [s.id, true])), hostess: Object.fromEntries(S.hostess.map(h => [h.id, h.mode === "pick" ? (h.w.length === 1 ? name(h.w[0]) : { even: h.w.map(name).filter(Boolean) }) : { segs: h.segs.map(sg => ({ u: +sg.u || 0, who: sg.w.map(name).filter(Boolean) })) }])), shared: Object.fromEntries(S.shared.filter(s => s.who).map(s => [s.id, s.who.map(name).filter(Boolean)])) };
   try {
     const r = await fetch(location.href, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     const j = await r.json(); if (!r.ok) throw new Error(j.error || "送出失敗");
     try { localStorage.removeItem(KEY); } catch (e) {}
     // 送出成功：直接回 LINE 對話，請款卡會貼在聊天室
     $("#app").hidden = true; $("#bar").hidden = true;
-    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>關掉這頁回到聊天室，按「<b>貼出請款單</b>」（或 @小幫手 說「請款單」）就會貼出。</p><p class="small">10 分鐘內沒人按，小幫手會自動貼。</p>\`;
+    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>回到聊天室，按「<b>貼出請款單</b>」或說「請款單」就會貼出。</p><p class="small">10 分鐘內沒人按，\${S.bot}會自動貼。</p>\`;
     $("#done").hidden = false; window.scrollTo(0, 0);
     if (!backToChat()) { try { window.close(); } catch (e) {} }
   } catch (e) { toast(e.message); $("#send").disabled = false; $("#send").textContent = "送出結算"; }
 }
 function toast(t) { let el = $("#toast"); if (!el) { el = document.createElement("div"); el.id = "toast"; document.body.appendChild(el); } el.textContent = t; el.className = "show"; setTimeout(() => el.className = "", 2600); }
+$("#payee").value = S.payee || "";
 renderGuests();
 liffInit();
 </script>`);
@@ -260,5 +266,7 @@ main{max-width:560px;margin:0 auto;padding:4px 16px 20px}section{margin-top:22px
 .done h2{font-size:21px;margin:0 0 6px}.done .back{display:inline-block;margin-top:14px;padding:12px 28px;border-radius:24px;background:var(--brand);color:#fff;text-decoration:none;font-weight:700}.done p{color:var(--sub);margin:6px 0}.done .list{text-align:left;margin-top:18px}.small{font-size:13px}
 #toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:#1F2937;color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}#toast.show{opacity:1}
 .empty{text-align:center;color:var(--sub);padding:80px 0}
+.payee{margin-top:12px;background:var(--card);border-radius:16px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}.payee label{display:flex;align-items:center;gap:6px;font-weight:700;font-size:15px;margin-bottom:8px}.payee small{font-weight:500;font-size:11px;color:var(--sub);background:var(--soft);border-radius:6px;padding:1px 6px}
+.payee input{width:100%;font:inherit;font-size:16px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);outline:none}.payee input:focus{border-color:var(--brand)}.payee .chips{margin-top:8px}.payee .chip{border:1.5px solid var(--line);box-shadow:none}.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
 </style></head><body>${body}</body></html>`, { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-robots-tag": "noindex" } });
 }

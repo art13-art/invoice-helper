@@ -48,12 +48,12 @@ t(replies().length === 1 && replies()[0].auth === "Bearer tmiao" && /拆帳喵/.
 
 // 2. 任何人拉進群組都留下，記下「拆帳喵在這裡」
 await post({ type: "join", source: { type: "group", groupId: "Cg" } });
-t(!calls.some(c => c.url.includes("/leave")) && /大家好，我是拆帳喵/.test(rtext()), "join stays + welcome");
+t(!calls.some(c => c.url.includes("/leave")) && /嗨，我是拆帳喵/.test(rtext()) && /怎麼用/.test(rtext()), "join stays + welcome");
 t(sq.prepare("SELECT v FROM line_kv WHERE k='miao:in:Cg'").get()?.v === "1", "miao:in flag");
 
 // 3. 一般人貼帳單 → 表單卡；記錄是拆帳喵讀的
 await photo("Cg", "U_andy", "p1");
-t(claude.length === 2 && /拆單服務/.test(rtext()) && replies()[0].auth === "Bearer tmiao", "bill → form card " + claude.join());
+t(claude.length === 2 && /喊我|叫我/.test(rtext()) && replies()[0].auth === "Bearer tmiao", "bill → form card " + claude.join());
 const sp = sq.prepare("SELECT * FROM line_splits WHERE chat_id='Cg'").get();
 t(sp && JSON.parse(sp.data).bot === "miao", "split tagged bot=miao");
 // 不是帳單：群組不出聲
@@ -64,28 +64,28 @@ await post({ type: "message", source: { type: "group", groupId: "Cg", userId: "U
 t(claude.length === 0, "main bot skips bill check where miao is in");
 
 // 5. 每日上限（測試設 2 張）：第三張不讀、只講一次
-billNo = "B2"; await photo("Cg", "U_andy", "p4"); t(/拆單服務/.test(rtext()), "2nd bill ok");
+billNo = "B2"; await photo("Cg", "U_andy", "p4"); t(/喊我|叫我/.test(rtext()), "2nd bill ok");
 billNo = "B3"; await photo("Cg", "U_andy", "p5");
-t(/上限/.test(rtext()) && !claude.some(m => /sonnet/.test(m)), "3rd bill capped, not read");
+t(/明天再來/.test(rtext()) && !claude.some(m => /sonnet/.test(m)), "3rd bill capped, not read");
 billNo = "B4"; await photo("Cg", "U_andy", "p6"); t(!replies().length, "cap notice only once a day");
 sq.prepare("UPDATE line_splits SET created=? WHERE bill_no='B1'").run(Date.now() - 20 * 60e3);
-billNo = "B1"; await photo("Cg", "U_andy", "p7"); t(/拆單服務/.test(rtext()) && !claude.some(m => /sonnet/.test(m)), "same bill re-post still answered without re-reading");
+billNo = "B1"; await photo("Cg", "U_andy", "p7"); t(/喊我|叫我/.test(rtext()) && !claude.some(m => /sonnet/.test(m)), "same bill re-post still answered without re-reading");
 
 // 6. 文字：沒 @ 的閒聊不回；「請款單」「拆帳紀錄」不用 @；@ 了說別的 → 說明
 await text("Cg", "U_andy", "今天喝很多"); t(!replies().length, "chatter ignored");
 await text("Cg", "U_andy", "拆帳紀錄"); t(/split\?t=/.test(rtext()), "records link without @");
 await text("Cg", "U_andy", "請款單"); t(/沒有拆好的帳單/.test(rtext()), "請款單 without @ " + rtext());
-await text("Cg", "U_andy", "幫我訂位", true); t(/我是拆帳喵/.test(rtext()) && !claude.length, "other request → help, no AI");
-await text("Cg", "U_andy", "這是香閣的單", true); t(/我是拆帳喵/.test(rtext()), "non-admin can't set owner");
+await text("Cg", "U_andy", "幫我訂位", true); t(/帳單照片丟給我/.test(rtext()) && !claude.length, "other request → help, no AI");
+await text("Cg", "U_andy", "這是香閣的單", true); t(/帳單照片丟給我/.test(rtext()), "non-admin can't set owner");
 await text("Cg", "U_ben", "這是香閣的單", true); t(/香閣的單/.test(rtext()), "admin sets owner");
 await text("Cg", "U_andy", "關閉拆帳", true); t(/不看這裡的照片/.test(rtext()), "anyone can turn off in their group");
 await photo("Cg", "U_andy", "p8"); t(!claude.length, "off → no check");
 
 // 7. 私訊：不是 Ben 也能用
 billNo = "D1"; await post({ type: "message", source: { type: "user", userId: "U_stranger" }, message: { type: "image", id: "d1" } });
-t(/拆單服務/.test(rtext()), "anyone can DM a bill");
+t(/喊我|叫我/.test(rtext()), "anyone can DM a bill");
 isBill = false; await post({ type: "message", source: { type: "user", userId: "U_stranger" }, message: { type: "image", id: "d2" } });
-t(/不是有小姐代支/.test(rtext()), "DM non-bill explained"); isBill = true;
+t(/不收|不是我要的|不歸我管/.test(rtext()), "DM non-bill explained"); isBill = true;
 
 // 8. 請款卡 10 分鐘沒人貼：用拆帳喵推播
 const d = JSON.parse(sp.data); d.formAt = Date.now() - 20 * 60e3; d.cardAt = null; d.guests = [{ id: "g0", name: "A" }]; d.merge = {};
@@ -102,5 +102,41 @@ t(await U.checkSpendAlert(env, db), "spend alert fires");
 const ap = calls.find(c => c.url.endsWith("/message/push"));
 t(ap?.body.to === "U_ben" && ap.auth === "Bearer tmain" && /US\$8/.test(JSON.stringify(ap.body)), "alert DM to Ben via 小幫手");
 t(!(await U.checkSpendAlert(env, db)), "alert only once a month");
+
+// 10. 語氣：同一句不會連續出現；請款單用拆帳喵的話，有買單人就加「轉給」
+const V = await import(R + "/lib/voice.js");
+let prev = "", rep = false;
+for (let i = 0; i < 30; i++) { const x = await V.pick(db, "Cv", "ask"); if (x === prev) rep = true; prev = x; }
+t(!rep, "no consecutive repeat");
+const d2 = JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sp.id).data); d2.payee = "Ben"; d2.cardFix = false;
+sq.prepare("UPDATE line_splits SET data=? WHERE id=?").run(JSON.stringify(d2), sp.id);
+const cm = await S.cardMessages(db, { ...sq.prepare("SELECT * FROM line_splits WHERE id=?").get(sp.id), d: d2 });
+t(/算|好了/.test(cm[0].text) && /Ben/.test(cm[0].text) && !/拆帳完畢/.test(cm[0].text), "miao card head + payee: " + cm[0].text);
+t(JSON.stringify(cm[1]).includes("請轉給 Ben"), "card header shows payee");
+// 小幫手的單：原本的說法＋請轉給
+const cm2 = await S.cardMessages(db, { id: "x", chat_id: "Cz", result: null, d: { ...d2, bot: undefined } });
+t(/拆帳完畢/.test(cm2[0].text) && /請轉給 Ben/.test(cm2[0].text), "main card unchanged + payee");
+// 表單送出帶買單人
+sq.prepare("INSERT INTO line_splits(id,chat_id,created,status,data) VALUES('fp','Cg',?,'ask',?)").run(Date.now(), JSON.stringify({ ...S.normalize(BILL), guests: [], merge: {}, bot: "miao" }));
+const fr = await S.finishForm(env, db, null, { chatId: "Cg", id: "fp", body: { payee: " 王董 ", guests: [{ name: "A" }], hostess: { h0: "A" } } });
+t(fr.ok && JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id='fp'").get().data).payee === "王董", "form saves payee");
+
+// 11. 偶爾的梗：同一家店本月第三次（3 天內只講一次）
+const mk = (id, store, hs) => sq.prepare("INSERT INTO line_splits(id,chat_id,created,status,data) VALUES(?,'Ct',?,'done',?)").run(id, Date.now() - 1000, JSON.stringify({ store, cash: 9000, hostess: hs.map(n => ({ name: n })) }));
+mk("t1", "香閣", ["小美"]); mk("t2", "香閣", ["小花"]); mk("t3", "香閣", ["小青"]);
+const T = async id => V.tease(env, db, { chatId: "Ct", group: true, split: { id, d: JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(id).data) } });
+t(/第三次 香閣/.test(await T("t3") || ""), "3rd visit tease");
+t(!/香閣/.test(await T("t3") || ""), "store tease cools down");
+mk("t4", "別家", ["小美"]);
+t(/小美又在你們桌上/.test(await T("t4") || ""), "repeat hostess tease");
+t(await T("t4") === null, "nothing else to tease");
+mk("t5", "別家2", []); sq.prepare("UPDATE line_splits SET data=? WHERE id='t5'").run(JSON.stringify({ store: "別家2", cash: 200000, hostess: [] }));
+t(/先不說什麼/.test(await T("t5") || ""), "big bill tease");
+
+// 12. 群組裡 @拆帳喵 回覆一張不是帳單的照片說「拆帳」：回一句、不讀帳單
+isBill = false;
+await grp("Cg2", "U_andy", { type: "text", id: "q1", text: "@拆帳喵 拆帳", quotedMessageId: "img9", mention: { mentionees: [{ index: 0, length: 4, isSelf: true }] } });
+t(/不收|不是我要的|不歸我管/.test(rtext()) && !claude.some(m => /sonnet/.test(m)), "tagged non-bill → short line, no read");
+isBill = true;
 
 console.log(`${ok} passed, ${bad} failed`);
