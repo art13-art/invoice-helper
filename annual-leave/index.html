@@ -36,7 +36,7 @@
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "特休天數計算機", "url": "https://taxtools.tw/annual-leave/", "description": "輸入到職日，馬上算出現在有幾天特休、下一次什麼時候增加，並列出每一年的特休天數。依勞動基準法第 38 條：滿半年 3 天、滿 1 年 7 天、滿 2 年 10 天、滿 3 年 14 天、滿 5 年 15 天，滿 10 年起每年加 1 天到 30 天。也能算沒休完的特休要折算多少錢。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "特休天數怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "依勞動基準法第 38 條，在同一公司工作滿 6 個月有 3 天，滿 1 年 7 天，滿 2 年 10 天，滿 3 年起每年 14 天，滿 5 年起每年 15 天，滿 10 年起每多 1 年加 1 天，最多 30 天。"}}, {"@type": "Question", "name": "週年制和曆年制有什麼不同？", "acceptedAnswer": {"@type": "Answer", "text": "週年制是從到職日起算，每滿一個年資階段就給一次特休，這頁是用週年制計算。曆年制是公司為了方便管理，統一以每年 1 月 1 日到 12 月 31 日計算，到職未滿一年的部分按比例給；採曆年制時，給的天數不能少於週年制。"}}, {"@type": "Question", "name": "特休沒休完怎麼辦？", "acceptedAnswer": {"@type": "Answer", "text": "特休年度結束或離職時還沒休完的天數，公司要發給工資，以日薪（月薪 ÷ 30）乘以未休天數計算。勞資雙方也可以協商把未休的天數遞延到下一年度，下一年度結束還沒休完的，一樣要折算工資（勞動基準法第 38 條第 4 項）。"}}, {"@type": "Question", "name": "特休要怎麼排？公司可以指定嗎？", "acceptedAnswer": {"@type": "Answer", "text": "特休日期由員工自己排定。公司因為經營上的急迫需求，或員工因為個人原因，才可以和對方協商調整（勞動基準法第 38 條第 2 項）。"}}, {"@type": "Question", "name": "部分工時也有特休嗎？", "acceptedAnswer": {"@type": "Answer", "text": "有。部分工時員工的年資一樣照到職日計算，特休天數依工作時數按比例給，詳細可以參考勞動部的部分工時勞工權益保障指導原則。"}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "特休天數怎麼算？", "acceptedAnswer": {"@type": "Answer", "text": "依勞動基準法第 38 條，在同一公司工作滿 6 個月有 3 天，滿 1 年 7 天，滿 2 年 10 天，滿 3 年起每年 14 天，滿 5 年起每年 15 天，滿 10 年起每多 1 年加 1 天，最多 30 天。"}}, {"@type": "Question", "name": "週年制和曆年制有什麼不同？", "acceptedAnswer": {"@type": "Answer", "text": "週年制是從到職日起算，每滿一個年資階段就給一次特休，這頁是用週年制計算。曆年制是公司為了方便管理，統一以每年 1 月 1 日到 12 月 31 日計算，到職未滿一年的部分按比例給；採曆年制時，給的天數不能少於週年制。"}}, {"@type": "Question", "name": "特休沒休完怎麼辦？", "acceptedAnswer": {"@type": "Answer", "text": "特休年度結束或離職時還沒休完的天數，公司要發給工資，以日薪（月薪 ÷ 30）乘以未休天數計算。勞資雙方也可以協商把未休的天數遞延到下一年度，下一年度結束還沒休完的，一樣要折算工資（勞動基準法第 38 條第 4 項）。"}}, {"@type": "Question", "name": "特休要怎麼排？公司可以指定嗎？", "acceptedAnswer": {"@type": "Answer", "text": "特休日期由員工自己排定。公司因為經營上的急迫需求，或員工因為個人原因，才可以和對方協商調整（勞動基準法第 38 條第 2 項）。"}}, {"@type": "Question", "name": "部分工時也有特休嗎？", "acceptedAnswer": {"@type": "Answer", "text": "有。部分工時員工的年資一樣照到職日計算，特休天數依工作時數按比例給，依勞動部「僱用部分時間工作勞工應行注意事項」計算；如果每週上班天數和全時員工一樣、只是每天工時較短，就要給足天數。詳細算法請見特休天數怎麼算。"}}]}</script>
 <!--/seo-->
 </head>
 <body>
@@ -74,7 +74,7 @@
         <div class="field">
           <label for="left">還沒休的天數</label>
           <input id="left" inputmode="decimal" placeholder="例如 3">
-          <p class="hint">特休年度結束或離職時還沒休完的天數，公司要折算工資：日薪（月薪 ÷ 30）× 未休天數。</p>
+          <p class="hint">特休年度結束或離職時還沒休完的天數，公司要折算工資：日薪（月薪 ÷ 30）× 未休天數。月薪要填最近一個月正常工作時間的全部工資（含固定加給、全勤獎金等），不是只填底薪。</p>
         </div>
       </section>
     </form>
@@ -88,12 +88,12 @@
         <details><summary>週年制和曆年制有什麼不同？</summary><p>週年制是從到職日起算，每滿一個年資階段就給一次特休，這頁是用週年制計算。曆年制是公司為了方便管理，統一以每年 1 月 1 日到 12 月 31 日計算，到職未滿一年的部分按比例給；採曆年制時，給的天數不能少於週年制。</p></details>
         <details><summary>特休沒休完怎麼辦？</summary><p>特休年度結束或離職時還沒休完的天數，公司要發給工資，以日薪（月薪 ÷ 30）乘以未休天數計算。勞資雙方也可以協商把未休的天數遞延到下一年度，下一年度結束還沒休完的，一樣要折算工資（勞動基準法第 38 條第 4 項）。</p></details>
         <details><summary>特休要怎麼排？公司可以指定嗎？</summary><p>特休日期由員工自己排定。公司因為經營上的急迫需求，或員工因為個人原因，才可以和對方協商調整（勞動基準法第 38 條第 2 項）。</p></details>
-        <details><summary>部分工時也有特休嗎？</summary><p>有。部分工時員工的年資一樣照到職日計算，特休天數依工作時數按比例給，詳細可以參考勞動部的部分工時勞工權益保障指導原則。</p></details>
+        <details><summary>部分工時也有特休嗎？</summary><p>有。部分工時員工的年資一樣照到職日計算，特休天數依工作時數按比例給，依勞動部「僱用部分時間工作勞工應行注意事項」計算；如果每週上班天數和全時員工一樣、只是每天工時較短，就要給足天數。詳細算法請見<a href="/guide/annual-leave/#part-time">特休天數怎麼算</a>。</p></details>
       </section>
     </div>
   </div>
 
-  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/overtime-pay/">加班費計算機</a><a href="/severance-pay/">資遣費計算機</a><a href="/labor-health/">勞健保計算機</a></nav>
+  <nav class="guide-links" aria-label="相關工具"><span>相關</span><a href="/guide/annual-leave/">特休天數怎麼算（解答）</a><a href="/overtime-pay/">加班費計算機</a><a href="/severance-pay/">資遣費計算機</a><a href="/labor-health/">勞健保計算機</a></nav>
   <p class="site-foot">依勞動基準法第 38 條（特別休假）及同法施行細則第 24 條之 1（未休特休工資＝一日工資 × 未休日數，月薪制一日工資為月薪 ÷ 30）以週年制計算。公司給的特休優於法令的，依公司約定。僅供參考，實際以勞動部及地方勞工主管機關解釋為準。</p>
 </div>
 
