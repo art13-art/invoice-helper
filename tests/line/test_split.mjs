@@ -68,7 +68,7 @@ t(r1.people.reduce((a, p) => a + p.total, 0) === 108600, "uneven split still sum
 
 // 1. 沒說過開啟的群組：預設用嚴格標準（只認酒店／KTV 帳單），不是就不回
 isBill = false; await photo("U_andy", "p0");
-t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && calls.some(c => c.body?.system && /便服店/.test(c.body.system)) && !replies().length, "default strict check, silent");
+t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && calls.some(c => c.body?.system && /小姐的代支/.test(c.body.system)) && !replies().length, "default strict check, silent");
 // 廠商群組不判斷
 sq.prepare(`INSERT INTO line_kv VALUES('flows','[{"notify":"Cvendor"}]')`).run(); claudeCalls.length = 0;
 await send({ type: "message", source: { type: "group", groupId: "Cvendor", userId: "U_andy" }, message: { type: "image", id: "pv" } });
@@ -81,7 +81,7 @@ t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "1", 
 await say("U_andy", "說明"); t(JSON.stringify(replies()[0]).includes("拆帳單"), "help card shows split item when on");
 // 3. 一般照片：只花 Haiku、不回
 isBill = false; claudeCalls.length = 0; await photo("U_andy", "p1");
-t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length && calls.some(c => c.body?.system && /便服店/.test(c.body.system)), "non-bill photo silent (strict even when enabled)");
+t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length && calls.some(c => c.body?.system && /小姐的代支/.test(c.body.system)), "non-bill photo silent (strict even when enabled)");
 // 4. 帳單照片 → 讀帳單 → @Ben 問人名
 isBill = true; claudeCalls.length = 0; await photo("U_andy", "p2");
 let m = replies();
