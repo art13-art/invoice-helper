@@ -11,6 +11,7 @@ import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
 import { adminFor, decisionCard, newDecision, toAdmin, watchAdmin } from "../../../lib/escalate.js";
 import { normStore, facts, sampleCard } from "../../../lib/billstats.js";
 import { setOwner } from "../../bo/index.js";
+import { handleMiao } from "../../../lib/miao.js";
 import { isAudioName, transcribe, saveTranscript, recordTranscribe, budgetLeft, findTranscripts, MAX_AUDIO } from "../../../lib/audio.js";
 
 const AUDIO_ASK = "（請整理這段錄音。第一行寫「1. 重點」，下面先一句話說這是什麼會議或在談什麼，再條列重點；有決定、待辦（誰／做什麼／何時）就在重點裡標明，沒有就省略。明確的待辦（有人、有事）直接用 add_todos 加入。有適合提醒的時間點（會議、截止日）就在最後一行寫「可提醒：」列出建議的時間和事項，但不要問要不要設。不要寫「2. 逐字稿」「3. 是否需要提醒」，也不要貼逐字稿或連結：這兩項系統會用卡片和按鈕附在下面。）";
@@ -23,8 +24,11 @@ const USER_CHIPS = [];
 
 export async function onRequestPost({ request, env, waitUntil }) {
   const body = await request.text();
-  if (!(await verifySignature(env.LINE_CHANNEL_SECRET, body, request.headers.get("x-line-signature"))))
-    return new Response("bad signature", { status: 401 });
+  // 兩個帳號共用這個入口：簽章對得上小幫手就是小幫手，對得上拆帳喵（/api/line/miao 也指到這裡）就是拆帳喵
+  const sig = request.headers.get("x-line-signature");
+  const bot = (await verifySignature(env.LINE_CHANNEL_SECRET, body, sig)) ? "main"
+    : env.MIAO_CHANNEL_SECRET && (await verifySignature(env.MIAO_CHANNEL_SECRET, body, sig)) ? "miao" : null;
+  if (!bot) return new Response("bad signature", { status: 401 });
   let events = [];
   try { events = JSON.parse(body).events || []; } catch (e) { return new Response("bad json", { status: 400 }); }
   const origin = new URL(request.url).origin;
@@ -36,7 +40,7 @@ export async function onRequestPost({ request, env, waitUntil }) {
     catch (e) { console.log("queue send failed, handling inline", e.message); }
   }
   const runEnv = fromQueue ? { ...env, LONG_RUN: "1" } : env;
-  const work = (async () => { for (const ev of events) { try { await handle(runEnv, ev, origin); } catch (e) { console.log("line event error", e.stack || e.message); } } })();
+  const work = (async () => { for (const ev of events) { try { await (bot === "miao" ? handleMiao(runEnv, ev, origin) : handle(runEnv, ev, origin)); } catch (e) { console.log("line event error", e.stack || e.message); } } })();
   if (fromQueue || !waitUntil) await work; else waitUntil(work);
   return new Response("ok");
 }
@@ -135,7 +139,8 @@ async function handle(env, ev, origin) {
       else if (msg.type === "image" && !who.optout) await record(db, chatId, userId, who.name, "［傳了一張照片］", msg.id);
       // 開了拆帳的群組：照片先讓便宜的 AI 看是不是帳單，是就開始拆帳
       // 群組照片：預設用嚴格標準判斷是不是酒店／KTV 帳單；說過「開啟拆帳」的群組用寬鬆標準；關掉的、廠商群組不判斷
-      const sm = msg.type === "image" ? await splitMode(db, chatId) : "off";
+      // 拆帳喵也在這個群組：帳單交給拆帳喵，小幫手不判斷
+      const sm = msg.type === "image" && !(await kv.get(db, "miao:in:" + chatId)) ? await splitMode(db, chatId) : "off";
       if (sm !== "off" && env.ANTHROPIC_API_KEY && (await budgetLeft(env, db))) {
         try {
           const img = await line.content(msg.id, 4.5 * 1024 * 1024);

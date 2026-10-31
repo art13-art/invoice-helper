@@ -1,7 +1,7 @@
 // POST /api/line/tick — 定時（約每 1 分鐘）呼叫：送出到期提醒，並清掉過期紀錄。
 // 不需要金鑰：重複呼叫也只會送出已到期且尚未送出的提醒（先標記再送，不會重複）。
 import { lineClient, mentionMessage, textMessage, say, doneCard } from "../../../lib/line.js";
-import { recordPush, monthlyReport, checkQuota } from "../../../lib/usage.js";
+import { recordPush, monthlyReport, checkQuota, checkSpendAlert } from "../../../lib/usage.js";
 import { gas, gasConf } from "../../../lib/books.js";
 import { runFlows } from "../../../lib/orders.js";
 import { buildDigests } from "../../../lib/digest.js";
@@ -70,6 +70,7 @@ export async function onRequestPost({ request, env }) {
   // 拆帳送出 10 分鐘還沒人按「貼出請款單」：推播請款卡（備援）
   try { const n = await pendingCards(env, db, line, now); if (n) sent.cards = n; } catch (e) { console.log("cards failed", e.message); }
 
+  try { await checkSpendAlert(env, db); } catch (e) { console.log("spend alert failed", e.message); }
   try { await checkQuota(env, db, line, now); } catch (e) { console.log("quota failed", e.message); }
 
   // 補做以前沒存成的每日摘要（10/28 前 Haiku 的回答被思考用光、摘要都是空的）：每次補 2 天，補到 29 天前
