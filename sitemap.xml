@@ -1,31 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://taxtools.tw/about/</loc><lastmod>2026-10-30</lastmod><priority>0.5</priority></url>
-  <url><loc>https://taxtools.tw/annual-leave/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/company-lookup/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/embed/</loc><lastmod>2026-10-30</lastmod><priority>0.5</priority></url>
-  <url><loc>https://taxtools.tw/firm/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/guide/</loc><lastmod>2026-10-30</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/about/</loc><lastmod>2026-10-31</lastmod><priority>0.5</priority></url>
+  <url><loc>https://taxtools.tw/annual-leave/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/company-lookup/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/embed/</loc><lastmod>2026-10-31</lastmod><priority>0.5</priority></url>
+  <url><loc>https://taxtools.tw/firm/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/guide/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
   <url><loc>https://taxtools.tw/guide/invoice-mistake/</loc><lastmod>2026-10-27</lastmod><priority>0.7</priority></url>
   <url><loc>https://taxtools.tw/guide/labor-report/</loc><lastmod>2026-10-30</lastmod><priority>0.7</priority></url>
   <url><loc>https://taxtools.tw/guide/rent-withholding/</loc><lastmod>2026-10-30</lastmod><priority>0.7</priority></url>
   <url><loc>https://taxtools.tw/guide/tax-included/</loc><lastmod>2026-10-27</lastmod><priority>0.7</priority></url>
   <url><loc>https://taxtools.tw/guide/vat-filing/</loc><lastmod>2026-10-27</lastmod><priority>0.7</priority></url>
   <url><loc>https://taxtools.tw/guide/withholding-statement/</loc><lastmod>2026-10-30</lastmod><priority>0.7</priority></url>
-  <url><loc>https://taxtools.tw/income-tax/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/</loc><lastmod>2026-10-30</lastmod><priority>1.0</priority></url>
-  <url><loc>https://taxtools.tw/invoice-helper/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/invoice-lottery/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/labor-health/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/labor-report/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/landlord-tax/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/ledger/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/overtime-pay/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/privacy/</loc><lastmod>2026-10-30</lastmod><priority>0.5</priority></url>
+  <url><loc>https://taxtools.tw/income-tax/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/</loc><lastmod>2026-10-31</lastmod><priority>1.0</priority></url>
+  <url><loc>https://taxtools.tw/invoice-helper/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/invoice-lottery/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/labor-health/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/labor-report/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/landlord-tax/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/ledger/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/overtime-pay/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/privacy/</loc><lastmod>2026-10-31</lastmod><priority>0.5</priority></url>
   <url><loc>https://taxtools.tw/rates/</loc><lastmod>2026-10-25</lastmod><priority>0.5</priority></url>
-  <url><loc>https://taxtools.tw/rent-withholding/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/severance-pay/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/tax-calendar/2027/</loc><lastmod>2026-10-30</lastmod><priority>0.7</priority></url>
-  <url><loc>https://taxtools.tw/tax-calendar/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
-  <url><loc>https://taxtools.tw/tax-included/</loc><lastmod>2026-10-30</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/rent-withholding/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/salary/100000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/120000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/150000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/200000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/29500/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/30000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/31000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/32000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/33000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/34000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/35000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/36000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/37000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/38000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/39000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/40000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/41000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/42000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/43000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/44000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/45000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/46000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/47000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/48000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/49000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/50000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/51000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/52000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/53000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/54000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/55000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/56000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/57000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/58000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/59000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/60000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/65000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/70000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/75000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/80000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/85000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/90000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/95000/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/salary/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/severance-pay/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/tax-calendar/2027/</loc><lastmod>2026-10-31</lastmod><priority>0.7</priority></url>
+  <url><loc>https://taxtools.tw/tax-calendar/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
+  <url><loc>https://taxtools.tw/tax-included/</loc><lastmod>2026-10-31</lastmod><priority>0.8</priority></url>
 </urlset>

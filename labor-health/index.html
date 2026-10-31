@@ -15,6 +15,7 @@
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
 <script src="/assets/rates.js?v=2026103002"></script>
 <script src="/assets/calc.js?v=2026103002"></script>
+<script src="/assets/insurance.js?v=2026103101"></script>
 <link rel="stylesheet" href="/assets/base.css?v=2026103002">
 <link rel="stylesheet" href="/assets/nav.css?v=2026103002">
 <link rel="stylesheet" href="/assets/calc.css?v=2026103002">
@@ -129,7 +130,7 @@
     </div>
   </div>
 
-  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/overtime-pay/">加班費計算機</a><a href="/annual-leave/">特休天數計算機</a><a href="/severance-pay/">資遣費計算機</a></nav>
+  <nav class="guide-links" aria-label="相關工具"><span>相關工具</span><a href="/salary/">月薪勞健保對照表</a><a href="/overtime-pay/">加班費計算機</a><a href="/annual-leave/">特休天數計算機</a><a href="/severance-pay/">資遣費計算機</a></nav>
   <p class="site-foot">依勞工保險條例、就業保險法、勞工職業災害保險及保護法、勞工退休金條例、全民健康保險法，以及勞動部、衛福部公告之 115 年 1 月 1 日起投保薪資分級表計算（勞保普通事故 11.5%、就保 1%、上下班災害 0.07%、健保 5.17%、平均眷口數 0.56）。月中加保或退保會按日計算，這裡以整月計。僅供參考，實際以勞保局、健保署繳款單為準。法規數字最後確認：<span id="checked"></span>。</p>
 </div>
 
@@ -148,32 +149,9 @@ const money=n=>Math.round(n).toLocaleString("zh-TW");
 const val=n=>document.querySelector(`input[name=${n}]:checked`).value;
 const amt=()=>{ const v=parseInt(String($("amt").value).replace(/[^\d]/g,""),10); return isFinite(v)&&v>0?v:0; };
 const r=x=>Math.round(x);
-/* smallest grade at or above the wage, capped at the table top */
-const grade=(list,w,max)=>{ const g=list.find(x=>x>=w)??list[list.length-1]; return Math.min(g,max??g); };
-
 function calc(w){
-  const pt=val("pt")==="1", senior=val("st")==="senior", dep=+val("dep"), vol=+val("vol");
-  const occRate=Math.max(0,Math.min(5,parseFloat($("occ").value)||0))/100;
-  const liList=pt?I.liGrades:I.liGrades.filter(x=>x>=R_.basicWage);
-  const all=[...new Set([...I.liGrades,...I.nhiGrades])].sort((a,b)=>a-b);
-  const occList=(pt?all:all.filter(x=>x>=R_.basicWage));
-  const pList=[...I.pensionLow,...I.nhiGrades.filter(x=>x<=I.pensionMax)];
-  const gLI=w?grade(liList,w,I.li.max):0;
-  const gOcc=w?grade(occList,w,I.occ.max):0;
-  const gP=w?grade(pt?pList:pList.filter(x=>x>=R_.basicWage),w,I.pensionMax):0;
-  const gN=w?grade(I.nhiGrades,w):0;
-  const L=I.li, N=I.nhi;
-  const e={}, b={};
-  e.li = senior?0:r(gLI*L.ordinary*L.worker)+r(gLI*L.employment*L.worker);
-  b.li = senior?0:r(gLI*L.ordinary*L.employer)+r(gLI*L.employment*L.employer);
-  e.occ=0; b.occ=r(gOcc*(occRate+I.occ.commute));
-  b.arr=senior?0:r(gLI*I.arrears);
-  const nhiSelf=r(gN*N.rate*N.worker);
-  e.nhi=nhiSelf*(1+Math.min(dep,N.maxDependents));
-  b.nhi=r(gN*N.rate*N.employer*(1+N.avgDependents));
-  e.pen=r(gP*vol); b.pen=r(gP*I.pension);
-  const eT=e.li+e.nhi+e.pen, bT=b.li+b.occ+b.arr+b.nhi+b.pen;
-  return {w,pt,senior,dep,vol,occRate,gLI,gOcc,gP,gN,nhiSelf,e,b,eT,bT,take:w-eT,cost:w+bT};
+  return ttInsurance(R_, w, { pt: val("pt")==="1", senior: val("st")==="senior", dep: +val("dep"), vol: +val("vol"),
+    occRate: Math.max(0,Math.min(5,parseFloat($("occ").value)||0))/100 });
 }
 
 function render(){
@@ -258,7 +236,8 @@ $("occ").addEventListener("input",render);
 $("f").addEventListener("submit",e=>e.preventDefault());
 $("toRes").onclick=()=>$("result").scrollIntoView({behavior:"smooth",block:"start"});
 $("checked").textContent=R_.checked.replace(/-/g,"/");
-load(); if(/^#(worker|boss)$/.test(location.hash)) S.role=location.hash.slice(1); if(!$("amt").value) $("amt").value="36,000";
+load(); { const q=shareParams(); if(/^\d{4,7}$/.test(q.s||"")) $("amt").value=(+q.s).toLocaleString("zh-TW"); }
+if(/^#(worker|boss)$/.test(location.hash)) S.role=location.hash.slice(1); if(!$("amt").value) $("amt").value="36,000";
 render();
 </script>
 </body>

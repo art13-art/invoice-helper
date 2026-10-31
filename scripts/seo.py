@@ -10,7 +10,7 @@ import datetime as dt, html, json, pathlib, re
 SITE = "https://taxtools.tw"
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TODAY = dt.date.today().isoformat()
-NOT_TOOLS = {"", "privacy", "join", "guide", "embed", "rates", "about"}
+NOT_TOOLS = {"", "privacy", "join", "guide", "embed", "rates", "about", "salary"}
 
 def text(s):
     return html.unescape(re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", s))).strip()
@@ -21,7 +21,7 @@ ORG = {"@type": "Organization", "name": "稅務小工具", "alternateName": "tax
 AI_BOTS = ["Googlebot", "Bingbot", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-SearchBot", "Claude-User",
            "PerplexityBot", "Perplexity-User", "Google-Extended", "Applebot", "Applebot-Extended", "DuckAssistBot", "Meta-ExternalAgent", "CCBot"]
 pages = []
-for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("guide/*/index.html"), *ROOT.glob("tax-calendar/*/index.html")]):
+for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("guide/*/index.html"), *ROOT.glob("tax-calendar/*/index.html"), *ROOT.glob("salary/*/index.html")]):
     rel = f.parent.relative_to(ROOT).as_posix()
     rel = "" if rel == "." else rel
     if rel.startswith(("scripts", "functions", "lib", "assets", "join", "db", "admin", "worker", "tests")):
@@ -58,6 +58,12 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
             {"@type": "ListItem", "position": 1, "name": "稅務小工具", "item": f"{SITE}/"},
             {"@type": "ListItem", "position": 2, "name": "報稅解答", "item": f"{SITE}/guide/"},
             {"@type": "ListItem", "position": 3, "name": h1, "item": url}]})
+    if rel.startswith("salary/"):
+        h1 = text(re.search(r"<h1>(.*?)</h1>", src, re.S).group(1))
+        ld.append({"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "稅務小工具", "item": f"{SITE}/"},
+            {"@type": "ListItem", "position": 2, "name": "月薪勞健保對照表", "item": f"{SITE}/salary/"},
+            {"@type": "ListItem", "position": 3, "name": h1, "item": url}]})
     if rel == "rates":
         mod = re.search(r'<meta property="article:modified_time" content="([^"]+)"', src)
         ld.append({"@context": "https://schema.org", "@type": "Dataset", "name": title.split("｜")[0], "description": desc, "url": url,
@@ -89,7 +95,7 @@ for f in sorted([ROOT / "index.html", *ROOT.glob("*/index.html"), *ROOT.glob("gu
         src = src.replace("</head>", seo + "\n</head>", 1)
     f.write_text(src)
     mod = re.search(r'<meta property="article:modified_time" content="([^"]+)"', src)
-    pages.append((url, mod.group(1) if mod else TODAY, 1.0 if not rel else 0.7 if rel.startswith(("guide", "tax-calendar/")) else 0.5 if rel in NOT_TOOLS else 0.8))
+    pages.append((url, mod.group(1) if mod else TODAY, 1.0 if not rel else 0.7 if rel.startswith(("guide", "tax-calendar/", "salary")) else 0.5 if rel in NOT_TOOLS else 0.8))
     print(f"{url:45} faq={len(qa) if faq else 0}")
 
 (ROOT / "sitemap.xml").write_text('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
@@ -120,7 +126,7 @@ def md(src):
 
 full = ["# 稅務小工具（taxtools.tw）解答文章全文", "",
         "> 民間網站，非政府官方。內容依現行法規整理，僅供參考，實際以主管機關規定為準。引用時請附原文連結。", ""]
-for f in [ROOT / "rates/index.html", *sorted(ROOT.glob("guide/*/index.html"))]:
+for f in [ROOT / "rates/index.html", ROOT / "salary/index.html", *sorted(ROOT.glob("guide/*/index.html"))]:
     if not f.exists():
         continue
     src = f.read_text()
