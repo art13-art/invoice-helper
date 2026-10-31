@@ -13,11 +13,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<script src="/assets/rates.js?v=2026103002"></script>
-<script src="/assets/calc.js?v=2026103002"></script>
-<link rel="stylesheet" href="/assets/base.css?v=2026103002">
-<link rel="stylesheet" href="/assets/nav.css?v=2026103002">
-<link rel="stylesheet" href="/assets/calc.css?v=2026103002">
+<script src="/assets/rates.js?v=2026103101"></script>
+<script src="/assets/calc.js?v=2026103101"></script>
+<link rel="stylesheet" href="/assets/base.css?v=2026103101">
+<link rel="stylesheet" href="/assets/nav.css?v=2026103101">
+<link rel="stylesheet" href="/assets/calc.css?v=2026103101">
 <style>
 /* Layout: one search field on top, the answer card directly under it; the checksum explainer and FAQ sit below. */
 .search-wrap{max-width:860px;display:grid;gap:18px}
@@ -67,7 +67,7 @@
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebApplication", "name": "統編查詢", "url": "https://taxtools.tw/company-lookup/", "description": "輸入統一編號或公司名稱，查公司全名、登記狀態、代表人、地址和資本額，並檢查統編檢查碼。一鍵複製名稱和統編，或直接帶進手開發票。", "inLanguage": "zh-Hant-TW", "applicationCategory": "FinanceApplication", "operatingSystem": "Any", "isAccessibleForFree": true, "offers": {"@type": "Offer", "price": "0", "priceCurrency": "TWD"}}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "為什麼查不到？", "acceptedAnswer": {"@type": "Answer", "text": "這裡查的是經濟部的公司和商業（行號）登記。機關、學校、非營利團體、執行業務事務所等也有統編，但不在這份資料裡；可以改到財政部稅籍登記資料查詢。剛設立或剛變更的公司，資料可能要幾天才會更新。"}}, {"@type": "Question", "name": "用公司名稱查，為什麼只有部分結果？", "acceptedAnswer": {"@type": "Answer", "text": "名稱查詢只列出目前「核准設立」的公司，最多 20 筆。名稱越完整，結果越準；行號（商號）請改用統編查詢。"}}, {"@type": "Question", "name": "狀態是「解散」或「撤銷」可以開發票嗎？", "acceptedAnswer": {"@type": "Answer", "text": "公司已經解散或撤銷，通常已經停止營業，開三聯式發票前請先跟對方確認是否填錯統編，或是否有新設立的公司。"}}, {"@type": "Question", "name": "資料來源是什麼？", "acceptedAnswer": {"@type": "Answer", "text": "經濟部商工行政資料開放平臺（公司登記、商業登記資料），每次查詢的結果會暫存一天。正式資料以經濟部商工登記公示資料查詢服務為準。"}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "為什麼查不到？", "acceptedAnswer": {"@type": "Answer", "text": "這裡查的是經濟部的公司和商業（行號）登記。機關、學校、非營利團體、執行業務事務所等也有統編，但不在這份資料裡；可以改到財政部稅籍登記資料查詢。剛設立或剛變更的公司，資料可能要幾天才會更新。"}}, {"@type": "Question", "name": "用公司名稱查，為什麼只有部分結果？", "acceptedAnswer": {"@type": "Answer", "text": "名稱查詢只列出目前「核准設立」的公司，最多 20 筆。名稱越完整，結果越準；行號（商號）請改用統編查詢。"}}, {"@type": "Question", "name": "狀態是「解散」或「撤銷」可以開發票嗎？", "acceptedAnswer": {"@type": "Answer", "text": "公司已經解散或撤銷，通常已經停止營業，開三聯式發票前請先跟對方確認是否填錯統編，或是否有新設立的公司。"}}, {"@type": "Question", "name": "統一編號是幾碼？個人有統編嗎？", "acceptedAnswer": {"@type": "Answer", "text": "統一編號是 8 碼數字，最後一碼是檢查碼。公司、行號、機關團體才有統一編號；個人沒有統編，開發票給個人時不用寫統編。"}}, {"@type": "Question", "name": "資料來源是什麼？", "acceptedAnswer": {"@type": "Answer", "text": "經濟部商工行政資料開放平臺（公司登記、商業登記資料），每次查詢的結果會暫存一天。正式資料以經濟部商工登記公示資料查詢服務為準。"}}]}</script>
 <!--/seo-->
 </head>
 <body>
@@ -100,21 +100,32 @@
       <div id="chk"></div>
     </section>
 
+    <section class="card plain" id="next">
+      <h2>查到統編之後：開發票前確認這 3 件事</h2>
+      <ol>
+        <li><b>名稱寫全名</b>：買受人名稱照登記的公司全名寫，「股份有限公司」「有限公司」不要省略。上面可以一鍵複製。</li>
+        <li><b>狀態是「核准設立」</b>：對方顯示解散、撤銷或停業時，先跟對方確認統編有沒有給錯。</li>
+        <li><b>金額拆成銷售額和稅額</b>：開給公司行號的三聯式發票，要分開寫銷售額和 5% 稅額，可以用<a href="/tax-included/">含稅未稅計算機</a>或直接帶進<a href="/invoice-helper/">手開發票小幫手</a>。</li>
+      </ol>
+      <p class="hint">發票已經開錯了，請看<a href="/guide/invoice-mistake/">發票開錯怎麼辦</a>。記帳事務所要幫很多客戶查統編、收發票，可以試試<a href="/firm/">記帳士事務所協作</a>。</p>
+    </section>
+
     <section class="card faq">
       <h2>常見問題</h2>
       <details><summary>為什麼查不到？</summary><p>這裡查的是經濟部的公司和商業（行號）登記。機關、學校、非營利團體、執行業務事務所等也有統編，但不在這份資料裡；可以改到財政部稅籍登記資料查詢。剛設立或剛變更的公司，資料可能要幾天才會更新。</p></details>
       <details><summary>用公司名稱查，為什麼只有部分結果？</summary><p>名稱查詢只列出目前「核准設立」的公司，最多 20 筆。名稱越完整，結果越準；行號（商號）請改用統編查詢。</p></details>
       <details><summary>狀態是「解散」或「撤銷」可以開發票嗎？</summary><p>公司已經解散或撤銷，通常已經停止營業，開三聯式發票前請先跟對方確認是否填錯統編，或是否有新設立的公司。</p></details>
+      <details><summary>統一編號是幾碼？個人有統編嗎？</summary><p>統一編號是 8 碼數字，最後一碼是檢查碼。公司、行號、機關團體才有統一編號；個人沒有統編，開發票給個人時不用寫統編。</p></details>
       <details><summary>資料來源是什麼？</summary><p>經濟部商工行政資料開放平臺（公司登記、商業登記資料），每次查詢的結果會暫存一天。正式資料以經濟部商工登記公示資料查詢服務為準。</p></details>
     </section>
   </div>
 
-  <nav class="guide-links" aria-label="相關解答"><span>相關解答</span><a href="/guide/invoice-mistake/">發票開錯怎麼辦？手開發票作廢、重開、折讓單</a></nav>
+  <nav class="guide-links" aria-label="相關解答"><span>相關解答</span><a href="/guide/invoice-mistake/">發票開錯怎麼辦？手開發票作廢、重開、折讓單</a><a href="/guide/tax-included/">含稅未稅怎麼算？</a><a href="/guide/vat-filing/">營業稅怎麼報？</a></nav>
   <p class="site-foot">資料來源：經濟部商工行政資料開放平臺。統編檢查碼依財政部財政資訊中心公告的檢查邏輯（可被 5 整除）。僅供參考，正式資料以經濟部商工登記公示資料為準。</p>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script src="/assets/nav.js?v=2026103002"></script>
+<script src="/assets/nav.js?v=2026103101"></script>
 <script>
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));

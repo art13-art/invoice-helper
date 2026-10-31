@@ -95,3 +95,9 @@ details.more .inner{padding:0 14px 14px;display:grid;gap:12px}
 .guide-links{display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;font-size:15px}
 .guide-links span{color:var(--muted);font-weight:700}
 .guide-links a{display:inline-flex;align-items:center;min-height:40px;color:var(--accent)}
+/* 表格（文章、計算機共用） */
+.tbl{overflow-x:auto;margin:4px 0 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.tbl table{border-collapse:collapse;width:100%;font-size:15.5px;line-height:1.65}
+.tbl th,.tbl td{text-align:left;vertical-align:top;padding:10px 12px;border-top:1px solid var(--line)}
+.tbl thead th{border-top:0;background:var(--sunk);color:var(--muted);font-weight:700;font-size:14px;white-space:nowrap}
+.tbl td.n{font-variant-numeric:tabular-nums;white-space:nowrap}

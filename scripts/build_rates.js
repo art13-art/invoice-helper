@@ -89,9 +89,9 @@ const html = `<!doctype html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="tt-font" content="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap">
-<link rel="stylesheet" href="/assets/base.css?v=2026103001">
-<link rel="stylesheet" href="/assets/nav.css?v=2026103001">
-<link rel="stylesheet" href="/assets/guide.css?v=2026103001">
+<link rel="stylesheet" href="/assets/base.css?v=2026103101">
+<link rel="stylesheet" href="/assets/nav.css?v=2026103101">
+<link rel="stylesheet" href="/assets/guide.css?v=2026103101">
 <!--seo-->
 <!--/seo-->
 </head>
@@ -118,7 +118,7 @@ ${body}
 
   <p class="site-foot">本頁依現行法規整理，僅供參考，實際以財政部、勞動部等主管機關規定為準。</p>
 </div>
-<script src="/assets/nav.js?v=2026103001"></script>
+<script src="/assets/nav.js?v=2026103101"></script>
 </body>
 </html>
 `;
