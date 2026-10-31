@@ -73,3 +73,5 @@ CREATE TABLE IF NOT EXISTS feedback (
   id INTEGER PRIMARY KEY AUTOINCREMENT, ts INTEGER NOT NULL, page TEXT, kind TEXT, text TEXT NOT NULL, contact TEXT,
   user_id TEXT, iph TEXT, status TEXT NOT NULL DEFAULT 'new', note TEXT);
 CREATE INDEX IF NOT EXISTS feedback_ts ON feedback(ts);
+-- 每一頁從哪個外部網站進來（只記有外部來源的瀏覽）
+CREATE TABLE IF NOT EXISTS stat_page_refs (day TEXT NOT NULL, path TEXT NOT NULL, ref TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, path, ref));

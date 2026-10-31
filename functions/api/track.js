@@ -1,4 +1,5 @@
 // POST /api/track → 匿名統計（每日彙總，不存 IP、不用 Cookie）
+//   外部來源另記一份「頁面 × 來源」（stat_page_refs），看每一頁的 Google／AI 助理流量
 //   瀏覽：{ p: 路徑, r: 從哪個網站來, u: { s: utm_source, c: utm_campaign } | null }
 //   轉換事件：{ e: 事件名稱, s: 這次造訪的廣告來源 }
 import { tpDay, isBot, visitorHash, cleanPath, refHost } from "../../lib/stats.js";
@@ -25,7 +26,8 @@ export async function onRequestPost({ request, env }) {
   const dev = /Mobi|Android|iPhone|iPod/i.test(ua) ? "手機" : /iPad|Tablet/i.test(ua) ? "平板" : "電腦";
   const h = await visitorHash(request, env, day);
   const batch = [up("stat_views", "path", path), up("stat_devs", "dev", dev), db.prepare("INSERT OR IGNORE INTO stat_visitors (day, h) VALUES (?, ?)").bind(day, h)];
-  if (ref) batch.push(up("stat_refs", "ref", ref));
+  if (ref) batch.push(up("stat_refs", "ref", ref),
+    db.prepare("INSERT INTO stat_page_refs (day, path, ref, n) VALUES (?, ?, ?, 1) ON CONFLICT(day, path, ref) DO UPDATE SET n = n + 1").bind(day, path, ref));
   const src = tag(b.u && b.u.s);
   if (src) batch.push(db.prepare("INSERT INTO stat_utm (day, src, camp, n) VALUES (?, ?, ?, 1) ON CONFLICT(day, src, camp) DO UPDATE SET n = n + 1")
     .bind(day, src, String(b.u.c || "").replace(/[<>"']/g, "").slice(0, 60)));
