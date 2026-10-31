@@ -122,16 +122,29 @@ const fr = await S.finishForm(env, db, null, { chatId: "Cg", id: "fp", body: { p
 t(fr.ok && JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id='fp'").get().data).payee === "王董", "form saves payee");
 
 // 11. 偶爾的梗：同一家店本月第三次（3 天內只講一次）
-const mk = (id, store, hs) => sq.prepare("INSERT INTO line_splits(id,chat_id,created,status,data) VALUES(?,'Ct',?,'done',?)").run(id, Date.now() - 1000, JSON.stringify({ store, cash: 9000, hostess: hs.map(n => ({ name: n })) }));
+const mk = (id, store, hs) => sq.prepare("INSERT INTO line_splits(id,chat_id,created,status,data) VALUES(?,'Ct',?,'done',?)").run(id, Date.now() - 1000, JSON.stringify({ store, cash: 50000, hostess: hs.map(n => ({ name: n })) }));
 mk("t1", "香閣", ["小美"]); mk("t2", "香閣", ["小花"]); mk("t3", "香閣", ["小青"]);
-const T = async id => V.tease(env, db, { chatId: "Ct", group: true, split: { id, d: JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(id).data) } });
-t(/第三次 香閣/.test(await T("t3") || ""), "3rd visit tease");
+const T = async id => V.tease({ ...env, MIAO_TEASE_GAP_H: "0" }, db, { chatId: "Ct", group: true, split: { id, d: JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(id).data) } });
+const t3 = await T("t3") || ""; t(/香閣/.test(t3) && (/三/.test(t3) || /專一/.test(t3)), "3rd visit tease " + t3);
 t(!/香閣/.test(await T("t3") || ""), "store tease cools down");
 mk("t4", "別家", ["小美"]);
-t(/小美又在你們桌上/.test(await T("t4") || ""), "repeat hostess tease");
+t(/小美/.test(await T("t4") || ""), "repeat hostess tease");
 t(await T("t4") === null, "nothing else to tease");
 mk("t5", "別家2", []); sq.prepare("UPDATE line_splits SET data=? WHERE id='t5'").run(JSON.stringify({ store: "別家2", cash: 200000, hostess: [] }));
-t(/先不說什麼/.test(await T("t5") || ""), "big bill tease");
+t(V.LINES.t_big.includes(await T("t5") || ""), "big bill tease");
+// 好酒、很多小姐、坐很久
+const mk2 = (id, d) => sq.prepare("INSERT INTO line_splits(id,chat_id,created,status,data) VALUES(?,'Ct',?,'done',?)").run(id, Date.now(), JSON.stringify(d));
+mk2("t6", { store: "甲", cash: 50000, hostess: [], shared: [{ name: "麥卡倫 18年", qty: 1, price: 12000, amount: 12000, cat: "酒" }] });
+t(/麥卡倫18年/.test(await T("t6") || ""), "fancy bottle tease");
+mk2("t7", { store: "乙", cash: 60000, hostess: "ABCDEFGHI".split("").map(n => ({ name: "妹" + n, lines: [] })) });
+t(/九位/.test(await T("t7") || ""), "many hostesses tease");
+mk2("t8", { store: "丙", cash: 60000, hostess: [{ name: "Z", lines: [{ type: "坐檯", time: "21:0~03:1", units: 1, amount: 400 }] }] });
+const lt = await T("t8") || ""; t(/個多小時/.test(lt), "long night tease " + lt);
+mk2("t9", { store: "丁", cash: 9000, hostess: [{ name: "Y", lines: [] }] });
+t(V.LINES.t_small.includes(await T("t9") || ""), "small bill tease");
+// 任何梗之間預設隔 6 小時
+t(await V.tease(env, db, { chatId: "Cgap", group: true, split: { id: "zz", d: { cash: 300000, hostess: [] } } }) !== null, "gap: first fires");
+t(await V.tease(env, db, { chatId: "Cgap", group: true, split: { id: "zz2", d: { cash: 300000, hostess: [{ name: "x" }], shared: [{ name: "好酒", price: 20000, amount: 20000, cat: "酒" }] } } }) === null, "gap: second within 6h silent");
 
 // 12. 群組裡 @拆帳喵 回覆一張不是帳單的照片說「拆帳」：回一句、不讀帳單
 isBill = false;
