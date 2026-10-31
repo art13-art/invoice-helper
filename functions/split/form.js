@@ -205,7 +205,7 @@ async function send() {
     try { localStorage.removeItem(KEY); } catch (e) {}
     // 送出成功：直接回 LINE 對話，請款卡會貼在聊天室
     $("#app").hidden = true; $("#bar").hidden = true;
-    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>請款卡會貼在聊天室。</p><p class="small">按左上角「✕」關閉這頁，回到聊天室。</p>\`;
+    $("#done").innerHTML = \`<div class="ok">✓</div><h2>\${j.fix ? "已更正" : "已送出"}</h2><p>關掉這頁回到聊天室，按「<b>貼出請款單</b>」（或 @小幫手 說「請款單」）就會貼出。</p><p class="small">10 分鐘內沒人按，小幫手會自動貼。</p>\`;
     $("#done").hidden = false; window.scrollTo(0, 0);
     if (!backToChat()) { try { window.close(); } catch (e) {} }
   } catch (e) { toast(e.message); $("#send").disabled = false; $("#send").textContent = "送出結算"; }

@@ -29,7 +29,7 @@ globalThis.fetch = async (url, init = {}) => {
   if (u.includes("oauth2/v2.1/verify")) { const tk = new URLSearchParams(String(init.body)).get("id_token"); return tk === "bad" ? new Response("{}", { status: 400 }) : new Response(JSON.stringify({ sub: tk }), { status: 200 }); }
   if (u.includes("api.anthropic.com")) {
     claudeCalls.push(body.model + ":" + body.system.slice(0, 12));
-    const txt = /是不是消費帳單/.test(body.system) ? JSON.stringify({ bill: isBill, bill_no: isBill ? "61020010[005-1]" : "" })
+    const txt = /判斷這張照片是不是/.test(body.system) ? JSON.stringify({ bill: isBill, bill_no: isBill ? "61020010[005-1]" : "" })
       : /帳單判讀/.test(body.system) ? JSON.stringify(BILL) : /拆一張酒店帳單/.test(body.system) ? JSON.stringify(guestsAnswer || { answer: false }) : "好";
     return new Response(JSON.stringify({ content: [{ type: "text", text: txt }], stop_reason: "end_turn", usage: { input_tokens: 10, output_tokens: 5 } }), { status: 200 });
   }
@@ -81,7 +81,7 @@ t(sq.prepare("SELECT v FROM line_kv WHERE k='split:on:Cbar'").get()?.v === "1", 
 await say("U_andy", "說明"); t(JSON.stringify(replies()[0]).includes("拆帳單"), "help card shows split item when on");
 // 3. 一般照片：只花 Haiku、不回
 isBill = false; claudeCalls.length = 0; await photo("U_andy", "p1");
-t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length && !calls.some(c => c.body?.system && /便服店/.test(c.body.system)), "non-bill photo silent (broad check)");
+t(claudeCalls.length === 1 && /haiku/.test(claudeCalls[0]) && !replies().length && calls.some(c => c.body?.system && /便服店/.test(c.body.system)), "non-bill photo silent (strict even when enabled)");
 // 4. 帳單照片 → 讀帳單 → @Ben 問人名
 isBill = true; claudeCalls.length = 0; await photo("U_andy", "p2");
 let m = replies();
@@ -105,7 +105,7 @@ const fm = await import(R + "/functions/split/form.js");
 const tok0 = sq.prepare("SELECT v FROM line_kv WHERE k='split:tok:Cbar'").get()?.v;
 const furl = `https://x.dev/split/form?t=${tok0}&id=${sid}`;
 let fr = await fm.onRequestGet({ request: new Request(furl), env }); let fh = await fr.text();
-{ const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(js && okjs && /按左上角/.test(fh), "form script valid + close hint"); }
+{ const js = (fh.match(/<script>([\s\S]*?)<\/script>/) || [])[1] || ""; let okjs = true; try { new Function(js); } catch (e) { okjs = false; console.log(e.message); } t(js && okjs && /貼出請款單/.test(fh), "form script valid + post hint"); }
 t(fr.status === 200 && (fh.match(/"sex":"男"/g) || []).length === 5 && fh.includes("108,600") && fh.includes("林莎") && fh.includes("格蘭利威13年"), "form prefilled with guests, hostess, shared");
 if (process.env.DUMP) (await import("node:fs")).writeFileSync(process.env.DUMP + "/form.html", fh);
 const sp = JSON.parse(sq.prepare("SELECT data FROM line_splits").get().data);
@@ -122,9 +122,13 @@ t(fr.status === 400 && /至少要有一個人分/.test((await fr.json()).error),
 calls.length = 0;
 fr = await post({ guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
 let fj = await fr.json();
-t(fr.status === 200 && fj.posted && fj.total === 108600, "form finish ok " + JSON.stringify(fj));
-let pushed = calls.find(c => c.url.endsWith("/message/push"));
-t(pushed && pushed.body.to === G && pushed.body.messages[0].type === "textV2" && pushed.body.messages[0].substitution.m0.mentionee.type === "all" && /拆帳完畢/.test(pushed.body.messages[0].text), "@All 拆帳完畢 pushed");
+t(fr.status === 200 && fj.waiting && fj.total === 108600 && !calls.some(c => c.url.endsWith("/message/push")), "form finish ok, no push " + JSON.stringify(fj).slice(0, 80));
+// 按「貼出請款單」→ 用回覆貼（免費）
+await send({ type: "postback", source: { type: "group", groupId: G, userId: "U_andy" }, postback: { data: "sp:post:" + sid } });
+let posted = replies();
+t(posted[0]?.type === "textV2" && posted[0].substitution.m0.mentionee.type === "all" && /拆帳完畢/.test(posted[0].text) && !calls.some(c => c.url.endsWith("/message/push")), "post button → reply @All 拆帳完畢");
+t(JSON.parse(sq.prepare("SELECT data FROM line_splits WHERE id=?").get(sid).data).cardAt > 0, "cardAt marked");
+let pushed = { body: { messages: posted } };
 const card = JSON.stringify(pushed.body.messages[1]);
 t(card.includes("$40,818") && card.includes("＋ 含 I") && card.includes("\"6,864\"") && card.includes("小姐 ") && card.includes("$27,424") && card.includes("$21,894") && card.includes("$18,464") && card.includes("$108,600"), "result card amounts");
 t(sq.prepare("SELECT status FROM line_splits WHERE id=?").get(sid).status === "done", "saved done");
@@ -133,7 +137,7 @@ t(!!url, "detail link");
 // 公費改成 J 沒份小費 → 重送＝更正
 calls.length = 0;
 fr = await post({ guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])), shared: { [s("支小費")]: ["A", "B", "I", "玄"] } });
-fj = await fr.json(); pushed = calls.find(c => c.url.endsWith("/message/push"));
+fj = await fr.json(); await say("U_ben", "請款單"); pushed = { body: { messages: replies() } };
 t(fj.fix && /拆帳更正/.test(pushed?.body.messages[0].text) && fj.payers.find(p => p.name === "J").total === 27424 - 400, "correction resend " + JSON.stringify(fj.payers));
 // 舊卡片按鈕 → 指向表單
 await press("U_ben", `sp:${sid}:ok`); t(/表單/.test(replies()[0]?.text), "old card buttons point to form");
@@ -202,13 +206,19 @@ sq.prepare("UPDATE line_kv SET v='1' WHERE k='split:on:Cbar'").run();
 sq.prepare("UPDATE line_splits SET status='done' WHERE chat_id='Cbar'").run();
 isBill = true; claudeCalls.length = 0;
 await photo("U_andy", "p20");
-{ const m = replies(); t(/已經拆過帳了/.test(m[0]?.altText || "") && JSON.stringify(m).includes("重新拆帳") && JSON.stringify(m).includes("split:no") && !claudeCalls.some(c => /sonnet/.test(c)), "repost done bill → redo prompt, no re-read " + JSON.stringify(m).slice(0, 120)); }
+{ const m = replies(); t(/已經拆過帳了/.test(m[0]?.altText || "") && JSON.stringify(m).includes("重新拆帳") && JSON.stringify(m).includes("sp:post:") && !claudeCalls.some(c => /sonnet/.test(c)), "repost done bill → redo prompt, no re-read " + JSON.stringify(m).slice(0, 120)); }
 await send({ type: "postback", source: { type: "group", groupId: G, userId: "U_ben" }, postback: { data: "split:no" } });
 t(!replies().length, "不用 → quiet");
 calls.length = 0;
 fr = await pl({ idToken: "U_ben", guests, hostess: Object.fromEntries(Object.entries(plan).map(([k, v]) => [h(k), v])) });
 await new Promise(r => setTimeout(r, 20));
-{ const ps = calls.find(c => c.url.endsWith("/message/push")); t(ps && JSON.stringify(ps.body.messages[1]).includes("修改") && JSON.stringify(ps.body.messages[1]).includes("/split/form?t="), "result card has 修改 button"); }
+// 沒人按「貼出請款單」：10 分鐘後計時器推播（備援），只推一次
+{ const L = (await import(R + "/lib/line.js")).lineClient("t");
+  t(await S.pendingCards(env, db, L, Date.now() + 5 * 60e3) === 0, "not yet at 5 min");
+  calls.length = 0; const n1 = await S.pendingCards(env, db, L, Date.now() + 11 * 60e3);
+  const ps = calls.find(c => c.url.endsWith("/message/push"));
+  t(n1 === 1 && ps && JSON.stringify(ps.body.messages[1]).includes("修改") && JSON.stringify(ps.body.messages[1]).includes("/split/form?t="), "fallback push after 10 min, card has 修改");
+  t(await S.pendingCards(env, db, L, Date.now() + 12 * 60e3) === 0, "pushed only once"); }
 // 15. 帳單欄位、誰的單、消費範例（假名）、後台
 {
   const B = await import(R + "/lib/billstats.js");

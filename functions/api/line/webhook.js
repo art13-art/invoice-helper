@@ -4,7 +4,7 @@ import { vendorReply } from "../../../lib/orders.js";
 import { toBlocks } from "../../../lib/files.js";
 import { verifySignature, lineClient, textMessage, say, postback, meetingCard, docCard, groupPicker, helpCard } from "../../../lib/line.js";
 import { watchCommit, settleCommit } from "../../../lib/commit.js";
-import { splitOn, splitMode, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink, sameBill, redoMessages } from "../../../lib/split.js";
+import { splitOn, splitMode, looksLikeBill, startSplit, askMessages, openSplit, splitPostback, splitToken, formLink, sameBill, redoMessages, replyCard } from "../../../lib/split.js";
 import { chat, member, isGroup, kv, rid, when, applyGroupPick, todoText, completeByText, KEEP_DAYS, HELP_GROUP, HELP_USER, JOIN_NOTICE } from "../../../lib/assistant.js";
 import { gas, getBook, saveBook, admins, isAdmin, settlePending } from "../../../lib/books.js";
 import { buildReport, reportText, recordPush } from "../../../lib/usage.js";
@@ -300,6 +300,13 @@ async function handle(env, ev, origin) {
     const on = !/關|停|取消/.test(sc);
     await kv.set(db, "split:on:" + chatId, on ? "1" : "0");
     return reply(on ? "好，這個群組開啟拆帳：之後貼帳單照片，我會直接附拆帳表單。" : "好，這個群組關閉自動拆帳。要拆還是可以回覆帳單照片 @我 說「拆帳」。");
+  }
+  // 「請款單」：用回覆貼出這裡最近一張已結算、還沒貼的請款卡（免費）；都貼過了就貼最近一張
+  if (/^(貼出)?(請款單|請款卡)$/.test(c.replace(/[。！!～~\s]+$/g, "").trim())) {
+    const { results } = await db.prepare("SELECT * FROM line_splits WHERE chat_id=? AND status='done' AND done_at>? ORDER BY done_at DESC LIMIT 5").bind(chatId, Date.now() - 7 * 864e5).all();
+    const r = results.find(x => JSON.parse(x.data || "{}").cardAt === null) || results[0];
+    if (!r) return reply("這裡 7 天內沒有拆好的帳單。");
+    return line.reply(ev.replyToken, await replyCard(db, { ...r, d: JSON.parse(r.data) })).catch(e => console.log("card reply failed", e.message));
   }
   if (/^(拆帳|分帳)(紀錄|記錄|明細|網頁)$/.test(sc)) return reply(`${group ? "這個群組" : "私訊"}的拆帳紀錄：\n${origin}/split?t=${await splitToken(db, chatId)}`);
   if (/^(拆帳|拆單|分帳|拆這張|拆一下|算一下|拆帳單|這張拆帳)$/.test(sc)) {

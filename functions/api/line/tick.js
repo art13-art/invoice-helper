@@ -6,6 +6,7 @@ import { gas, gasConf } from "../../../lib/books.js";
 import { runFlows } from "../../../lib/orders.js";
 import { buildDigests } from "../../../lib/digest.js";
 import { cleanupTranscripts } from "../../../lib/audio.js";
+import { pendingCards } from "../../../lib/split.js";
 import { kv, nextDue, ymd, hm, md, parseLocal, isGroup, KEEP_DAYS } from "../../../lib/assistant.js";
 
 export async function onRequestPost({ request, env }) {
@@ -65,6 +66,9 @@ export async function onRequestPost({ request, env }) {
   }
 
   try { if (await gasConf(env)) { const f = await runFlows(env, db, now); if (f.length) sent.flows = f; } } catch (e) { console.log("flows failed", e.message); }
+
+  // 拆帳送出 10 分鐘還沒人按「貼出請款單」：推播請款卡（備援）
+  try { const n = await pendingCards(env, db, line, now); if (n) sent.cards = n; } catch (e) { console.log("cards failed", e.message); }
 
   try { await checkQuota(env, db, line, now); } catch (e) { console.log("quota failed", e.message); }
 
